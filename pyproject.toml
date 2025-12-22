@@ -1,0 +1,26 @@
+[project]
+name = "my-garage"
+version = "0.1.0"
+description = "Automotive asset management and valuation platform"
+requires-python = ">=3.12"
+dependencies = [
+    "django>=5.2,<5.3",  # Targeting the 5.2 LTS
+    "fastapi",
+    "uvicorn",
+    "requests",
+    "pydantic",
+    "django-environ",
+    "psycopg2-binary",
+    "pillow",
+    "celery",
+    "redis",
+]
+
+[tool.pixi.project]
+channels = ["conda-forge"]
+platforms = ["linux-64", "win-64", "osx-64", "osx-arm64"]
+
+[tool.pixi.tasks]
+migrate = "python manage.py migrate"
+server = "python manage.py runserver"
+worker = "celery -A config.celery_app worker -l info"
