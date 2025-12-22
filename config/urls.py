@@ -1,7 +1,27 @@
+"""Main URL Configuration."""
+from django.contrib import admin
+from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
+from django.views.generic import TemplateView
+
 urlpatterns = [
-    path("", TemplateView.as_view(template_name="pages/home.html"), name="home"),
-    # ... other paths ...
-    path("garage/", include("my_garage.urls", namespace="my_garage")),
-    # FastAPI is served separately via Uvicorn, but we can mount the router here
-    # if using a unified gateway or handle it via the api_router.
+    # Admin
+    path('admin/', admin.site.urls),
+
+    # My Garage App
+    path('garage/', include('django_apps.my_garage.urls', namespace='my_garage')),
+
+    # Home
+    path('', TemplateView.as_view(template_name='pages/home.html'), name='home'),
 ]
+
+# Serve media files in development
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+
+    # Debug toolbar
+    if 'debug_toolbar' in settings.INSTALLED_APPS:
+        import debug_toolbar
+        urlpatterns = [path('__debug__/', include(debug_toolbar.urls))] + urlpatterns

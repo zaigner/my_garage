@@ -1,20 +1,38 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "my-garage"
 version = "0.1.0"
 description = "Automotive asset management and valuation platform"
 requires-python = ">=3.12"
 dependencies = [
-    "django>=5.2,<5.3",  # Targeting the 5.2 LTS
-    "fastapi",
-    "uvicorn",
-    "requests",
-    "pydantic",
-    "django-environ",
-    "psycopg2-binary",
-    "pillow",
-    "celery",
-    "redis",
+    "django>=5.2,<5.3",
+    "djangorestframework>=3.14,<4.0",
+    "django-cors-headers>=4.0,<5.0",
+    "django-debug-toolbar>=4.2,<5.0",
+    "fastapi>=0.104,<1.0",
+    "uvicorn[standard]>=0.24,<1.0",
+    "requests>=2.31,<3.0",
+    "pydantic>=2.0,<3.0",
+    "psycopg2-binary>=2.9,<3.0",
+    "pillow>=10.0,<11.0",
+    "celery>=5.3,<6.0",
+    "redis>=5.0,<6.0",
 ]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4,<8.0",
+    "pytest-django>=4.5,<5.0",
+    "pytest-cov>=4.1,<5.0",
+    "factory-boy>=3.3,<4.0",
+    "faker>=19.0,<20.0",
+]
+
+[tool.setuptools.packages.find]
+include = ["config*", "django_apps*", "fastapi_services*"]
 
 [tool.pixi.project]
 channels = ["conda-forge"]
