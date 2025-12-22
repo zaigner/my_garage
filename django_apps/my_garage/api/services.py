@@ -4,7 +4,7 @@ from django.db import transaction
 from decimal import Decimal
 from typing import Dict, Any, Optional
 
-from .models import Vehicle, ServiceRecord, Upgrade, ConditionReport
+from ..models import Vehicle, ServiceRecord, Upgrade, ConditionReport
 
 # Configuration from settings (set via Pixi/env)
 FASTAPI_BASE_URL = settings.FASTAPI_BASE_URL
@@ -75,6 +75,39 @@ def service_record_create_from_ocr(vehicle: Vehicle, receipt_image: Any) -> Serv
     # response = requests.post(f"{FASTAPI_BASE_URL}/api/v1/ai/process-document/", ...)
 
     return record
+
+
+def service_record_process_ocr_data(record: ServiceRecord) -> bool:
+    """
+    Processes OCR data for a service record by calling FastAPI OCR service.
+    Returns True if successful, False otherwise.
+    """
+    try:
+        # Call FastAPI OCR endpoint
+        ocr_url = f"{FASTAPI_BASE_URL}/ocr/process"
+        files = {'file': record.receipt_image.open('rb')}
+
+        response = requests.post(ocr_url, files=files, timeout=30)
+        response.raise_for_status()
+
+        ocr_data = response.json()
+
+        # Update record with OCR data
+        record.ocr_raw_data = ocr_data
+        record.vendor = ocr_data.get('vendor', record.vendor)
+        record.description = ocr_data.get('description', record.description)
+        record.total_cost = Decimal(str(ocr_data.get('total_cost', record.total_cost)))
+        record.is_verified = True
+        record.save()
+
+        return True
+
+    except (requests.RequestException, ValueError, KeyError) as e:
+        # Log error and return False
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"OCR processing failed for record {record.id}: {str(e)}")
+        return False
 
 
 @transaction.atomic

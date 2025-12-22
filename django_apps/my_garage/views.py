@@ -5,8 +5,8 @@ from django.http import HttpRequest, HttpResponse
 
 # Import our custom Application Layer components
 from .models import Vehicle
-from .selectors import vehicle_get_build_summary, vehicle_list_wishlist_items
-from .services import service_record_create_from_ocr
+from .api.selectors import vehicle_get_build_summary, vehicle_list_wishlist_items
+from .api.services import service_record_create_from_ocr
 from .tasks import task_update_market_valuation
 
 

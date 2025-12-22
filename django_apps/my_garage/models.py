@@ -7,7 +7,7 @@ class Vehicle(models.Model):
     """The core asset: represents a user's car."""
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_backend=models.CASCADE,
+        on_delete=models.CASCADE,
         related_name="vehicles"
     )
     make = models.CharField(max_length=50)

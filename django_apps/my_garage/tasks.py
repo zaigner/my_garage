@@ -5,7 +5,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from decimal import Decimal
 
 # Import the service layer logic
-from .services import (
+from .api.services import (
     vehicle_update_market_valuation,
     VehicleServiceError,
     service_record_process_ocr_data

@@ -3,7 +3,7 @@ from django.db.models.functions import Coalesce
 from decimal import Decimal
 from typing import Dict, Any
 
-from .models import Vehicle, ServiceRecord, Upgrade, ConditionReport
+from ..models import Vehicle, ServiceRecord, Upgrade, ConditionReport
 
 
 def vehicle_get_total_maintenance_cost(vehicle: Vehicle) -> Decimal:
