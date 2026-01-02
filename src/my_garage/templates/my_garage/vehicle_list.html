@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block title %}My Vehicles - My Garage{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+    <h1 class="text-3xl font-bold text-gray-900 mb-6">My Vehicles</h1>
+    
+    {% if vehicles %}
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {% for vehicle in vehicles %}
+                <div class="bg-white overflow-hidden shadow rounded-lg">
+                    <div class="px-4 py-5 sm:p-6">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900">{{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}</h3>
+                        <p class="mt-1 max-w-2xl text-sm text-gray-500">{{ vehicle.trim }}</p>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="text-gray-500">You haven't added any vehicles yet.</p>
+    {% endif %}
+</div>
+{% endblock %}

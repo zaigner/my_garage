@@ -44,8 +44,8 @@ My Garage is an automotive asset management platform that empowers car enthusias
 ## Technical Architecture Guidelines
 
 ### Django Project Structure
-- **Configuration** in `config/` separate from application code
-- **Applications** in `django_apps/` following single responsibility
+- **Configuration** in `src/config/` separate from application code
+- **Applications** in `src/` following single responsibility
 - **Settings** split by environment (base, local, production, test)
 - **Static/Media** files properly organized and served
 - **Utils** in `utils/` for shared infrastructure (e.g., MongoDB clients)

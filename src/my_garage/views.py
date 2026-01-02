@@ -11,6 +11,13 @@ from .tasks import task_update_market_valuation
 
 
 @login_required
+def vehicle_list(request):
+    """List all vehicles owned by the user."""
+    vehicles = Vehicle.objects.filter(owner=request.user)
+    return render(request, "my_garage/vehicle_list.html", {"vehicles": vehicles})
+
+
+@login_required
 def garage_dashboard(request: HttpRequest) -> HttpResponse:
     """
     Primary dashboard showing all vehicles in the user's garage.

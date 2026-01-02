@@ -1,97 +1,42 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Garage - Automotive Asset Management</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            color: white;
-        }
-        .container {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 3rem;
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
-        }
-        h1 {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-        }
-        p {
-            font-size: 1.2rem;
-            line-height: 1.6;
-            margin-bottom: 2rem;
-        }
-        .links {
-            display: flex;
-            gap: 1rem;
-            margin-top: 2rem;
-        }
-        a {
-            display: inline-block;
-            padding: 1rem 2rem;
-            background: white;
-            color: #667eea;
-            text-decoration: none;
-            border-radius: 10px;
-            font-weight: 600;
-            transition: transform 0.2s;
-        }
-        a:hover {
-            transform: translateY(-2px);
-        }
-        .features {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-            margin-top: 3rem;
-        }
-        .feature {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 1.5rem;
-            border-radius: 10px;
-        }
-        .feature h3 {
-            margin-top: 0;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>🚗 My Garage</h1>
-        <p>Welcome to My Garage - your comprehensive automotive asset management and valuation platform.</p>
+{% extends 'base.html' %}
 
-        <div class="links">
-            <a href="/admin/">Admin Panel</a>
-            <a href="/garage/">My Garage</a>
+{% block title %}Home - My Garage{% endblock %}
+
+{% block content %}
+<div class="flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] text-center px-4 sm:px-6 lg:px-8 py-12">
+    <h1 class="text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl drop-shadow-md">
+        My Garage
+    </h1>
+    <p class="mt-6 text-xl text-gray-100 max-w-3xl drop-shadow-sm">
+        Track your automotive assets, manage service history, and monitor market value.
+    </p>
+    
+    <div class="mt-10 flex flex-wrap justify-center gap-4">
+        <a href="{% url 'admin:index' %}" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm transition-colors">
+            Manage Data
+        </a>
+    </div>
+
+    <!-- Features Grid -->
+    <div class="mt-20 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 max-w-7xl w-full">
+        <div class="bg-gray-900/60 backdrop-blur-sm rounded-xl p-6 text-left border border-gray-700/50 shadow-lg">
+            <h3 class="text-lg font-bold text-white">
+                <a href="{% url 'my_garage:dashboard' %}" class="hover:text-indigo-400 transition-colors">Digital Vehicle Vault</a>
+            </h3>
+            <p class="mt-2 text-gray-300 text-sm">Track your vehicles with VIN decoding, purchase prices, and real-time market valuations.</p>
         </div>
-
-        <div class="features">
-            <div class="feature">
-                <h3>📊 Digital Vehicle Vault</h3>
-                <p>Track your vehicles with VIN decoding, purchase prices, and real-time market valuations.</p>
-            </div>
-            <div class="feature">
-                <h3>📄 Paperless Service Catalog</h3>
-                <p>AI-powered OCR for digitizing service receipts and tracking maintenance history.</p>
-            </div>
-            <div class="feature">
-                <h3>🔧 Upgrade Project Manager</h3>
-                <p>Plan and track modifications from wishlist to installation with cost tracking.</p>
-            </div>
-            <div class="feature">
-                <h3>💰 Market Intelligence</h3>
-                <p>Real-time market valuation using web scraping to find comparable listings.</p>
-            </div>
+        <div class="bg-gray-900/60 backdrop-blur-sm rounded-xl p-6 text-left border border-gray-700/50 shadow-lg">
+            <h3 class="text-lg font-bold text-white">Paperless Service Catalog</h3>
+            <p class="mt-2 text-gray-300 text-sm">AI-powered OCR for digitizing service receipts and tracking maintenance history.</p>
+        </div>
+        <div class="bg-gray-900/60 backdrop-blur-sm rounded-xl p-6 text-left border border-gray-700/50 shadow-lg">
+            <h3 class="text-lg font-bold text-white">Upgrade Project Manager</h3>
+            <p class="mt-2 text-gray-300 text-sm">Plan and track modifications from wishlist to installation with cost tracking.</p>
+        </div>
+        <div class="bg-gray-900/60 backdrop-blur-sm rounded-xl p-6 text-left border border-gray-700/50 shadow-lg">
+            <h3 class="text-lg font-bold text-white">Market Intelligence</h3>
+            <p class="mt-2 text-gray-300 text-sm">Real-time market valuation using web scraping to find comparable listings.</p>
         </div>
     </div>
-</body>
-</html>
+</div>
+{% endblock %}
