@@ -1,6 +1,6 @@
 """Django forms for my_garage."""
 from django import forms
-from .models import Vehicle, ServiceRecord, Upgrade
+from my_garage.models import Vehicle, ServiceRecord, Upgrade
 
 
 class VehicleForm(forms.ModelForm):

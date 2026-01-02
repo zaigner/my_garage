@@ -4,7 +4,7 @@
 
 My Garage is an automotive asset management and valuation platform designed for car enthusiasts. It helps users track their vehicles as financial assets, manage service history, plan upgrades, and understand their car's market value through AI-powered tools and real-time market intelligence.
 
-**Current Status:** ✅ **Production-Ready Structure** - Fully restructured following django-kedro pattern, with working Django application, migrations applied, and admin interface ready to use.
+**Current Status:** ✅ **Production-Ready Structure** - Fully restructured following django-kedro pattern, with working Django application, migrations applied, admin interface ready, **Celery tasks implemented**, and **DRF API layer active**.
 
 ## Core Features
 
@@ -18,13 +18,14 @@ My Garage is an automotive asset management and valuation platform designed for 
 
 ### Backend
 - **Django 5.2 LTS** - Web framework
-- **Django REST Framework 3.14+** - API framework (configured, not yet used)
+- **Django REST Framework 3.14+** - API framework (active)
 - **Celery 5.3+** - Async task queue
 - **Redis 5.0+** - Celery broker and result backend
 
 ### Database
 - **Development:** SQLite3 (no setup required)
 - **Production:** PostgreSQL 2.9+ (recommended)
+- **Documents:** MongoDB (for unstructured OCR data)
 
 ### External Services
 - **FastAPI 0.104+** - Separate microservice for compute-intensive AI/OCR tasks
@@ -48,6 +49,7 @@ my_garage/
 │   │   ├── production.py           # Production (PostgreSQL, security)
 │   │   └── test.py                 # Testing (in-memory DB)
 │   ├── urls.py                     # Main URL routing
+│   ├── api_router.py               # DRF API routing
 │   ├── wsgi.py                     # WSGI entry point
 │   ├── asgi.py                     # ASGI entry point
 │   └── celery_app.py               # Celery configuration
@@ -56,7 +58,10 @@ my_garage/
 │   └── my_garage/                  # Main App
 │       ├── api/                    # Service Layer (django-kedro pattern)
 │       │   ├── selectors.py        # Read operations (queries)
-│       │   └── services.py         # Write operations (business logic)
+│       │   ├── services.py         # Write operations (business logic)
+│       │   ├── serializers.py      # DRF Serializers
+│       │   └── views.py            # DRF ViewSets
+│       ├── utils/                  # Shared utilities (e.g. mongo.py)
 │       ├── migrations/             # Database migrations
 │       ├── templates/my_garage/    # HTML templates
 │       ├── static/my_garage/       # App static files
@@ -112,6 +117,7 @@ vehicle_get_total_maintenance_cost(vehicle: Vehicle) -> Decimal
   - Raise custom exceptions (e.g., `VehicleServiceError`)
   - Handle external API calls (FastAPI OCR, Web MCP)
   - Call selectors when needing to read data
+  - **Async**: Heavy operations (OCR, External APIs) must be offloaded to Celery tasks
 
 **Example Functions:**
 ```python
@@ -225,8 +231,11 @@ python manage.py runserver
 # Start Celery worker (in another terminal)
 celery -A config.celery_app worker -l info
 
+# Start Celery Beat (in another terminal)
+celery -A config.celery_app beat -l info
+
 # Start FastAPI service (when implemented)
-cd fastapi_services
+cd src/fastapi_services
 uvicorn main:app --reload --port 8001
 ```
 
@@ -235,6 +244,7 @@ uvicorn main:app --reload --port 8001
 - **Home Page:** http://localhost:8000/
 - **Admin Panel:** http://localhost:8000/admin/ (admin/admin)
 - **My Garage:** http://localhost:8000/garage/
+- **API Root:** http://localhost:8000/api/
 - **Debug Toolbar:** Available in DEBUG mode
 
 ### Adding New Features
@@ -254,12 +264,12 @@ uvicorn main:app --reload --port 8001
    - Create functions for business logic
    - Use `@transaction.atomic` where needed
 
-4. **Add Views** (`views.py`)
+4. **Add Views** (`views.py` or `api/views.py`)
    - Call selectors for data
    - Call services for mutations
    - Keep views thin
 
-5. **Add URLs** (`urls.py`)
+5. **Add URLs** (`urls.py` or `api_router.py`)
    - Wire up new views
 
 6. **Add Forms** (`forms.py`)
@@ -427,13 +437,13 @@ task_update_market_valuation.delay(vehicle.id)
 - ✅ Django admin interface
 - ✅ Service layer pattern
 - ✅ Forms and basic views
+- ✅ Celery tasks for background processing
+- ✅ API endpoints with DRF
 
 ### Short-term (To Implement)
 - ⏳ FastAPI OCR service endpoints
 - ⏳ FastAPI MCP integration endpoints
 - ⏳ Dashboard templates and views
-- ⏳ Celery tasks for background processing
-- ⏳ API endpoints with DRF (optional)
 
 ### Mid-term
 - VIN decoder integration
@@ -469,7 +479,8 @@ task_update_market_valuation.delay(vehicle.id)
 - **Models:** `django_apps/my_garage/models.py`
 - **Selectors:** `django_apps/my_garage/api/selectors.py`
 - **Services:** `django_apps/my_garage/api/services.py`
-- **Views:** `django_apps/my_garage/api/views.py`
+- **Views:** `django_apps/my_garage/views.py`
+- **API Views:** `django_apps/my_garage/api/views.py`
 - **Tasks:** `django_apps/my_garage/tasks.py`
 - **Admin:** `django_apps/my_garage/admin.py`
 - **URLs:** `django_apps/my_garage/urls.py`
@@ -500,12 +511,12 @@ python manage.py test
 
 # Celery
 celery -A config.celery_app worker -l info
-celery -A config.celery_app beat
+celery -A config.celery_app beat -l info
 ```
 
 ---
 
 **Last Updated:** 2025-12-21
-**Project Status:** ✅ Production-Ready Structure
+**Project Status:** ✅ Production-Ready Structure with Async Tasks & API
 **Django Version:** 5.2.9
 **Python Version:** 3.12+

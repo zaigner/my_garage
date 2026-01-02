@@ -1,6 +1,6 @@
 """Django admin configuration for my_garage."""
 from django.contrib import admin
-from .models import Vehicle, ServiceRecord, Upgrade, ConditionReport
+from my_garage.models import Vehicle, ServiceRecord, Upgrade, ConditionReport
 
 
 @admin.register(Vehicle)

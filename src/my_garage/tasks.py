@@ -1,5 +1,5 @@
 import logging
-from celery import shared_task
+from config.celery_app import app as celery_app
 from django.db import transaction
 from django.core.exceptions import ObjectDoesNotExist
 from decimal import Decimal
@@ -10,9 +10,7 @@ from .api.services import (
     VehicleServiceError,
     service_record_process_ocr_data
 )
-# Models are imported here, but remember: in Django 5.2 shell,
-# they are auto-imported for debugging!
-from .models import Vehicle, ServiceRecord
+from my_garage.models import Vehicle, ServiceRecord
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +23,7 @@ RETRY_KWARGS = {
 }
 
 
-@shared_task(bind=True, **RETRY_KWARGS)
+@celery_app.task(bind=True, **RETRY_KWARGS)
 def task_process_receipt_ocr(self, record_id: int):
     """
     Background task to process a receipt via the FastAPI AI engine.
@@ -52,7 +50,7 @@ def task_process_receipt_ocr(self, record_id: int):
         raise self.retry(exc=exc)
 
 
-@shared_task(bind=True, name="my_garage.update_valuation", **RETRY_KWARGS)
+@celery_app.task(bind=True, name="my_garage.update_valuation", **RETRY_KWARGS)
 def task_update_market_valuation(self, vehicle_id: int):
     """
     Updates the current market value of a vehicle using the Web MCP agent.
@@ -73,7 +71,7 @@ def task_update_market_valuation(self, vehicle_id: int):
         raise self.retry(exc=e)
 
 
-@shared_task(name="my_garage.bulk_refresh")
+@celery_app.task(name="my_garage.bulk_refresh")
 def task_bulk_valuation_refresh():
     """
     Daily/Weekly periodic task to refresh all vehicle values.

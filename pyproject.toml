@@ -32,7 +32,8 @@ dev = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["config*", "django_apps*", "fastapi_services*"]
+where = ["src"]
+include = ["config*", "my_garage*", "fastapi_services*"]
 
 [tool.pixi.project]
 channels = ["conda-forge"]

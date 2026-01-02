@@ -1,6 +1,12 @@
 """Celery configuration."""
 import os
+import sys
+from pathlib import Path
 from celery import Celery
+
+# Add src to python path
+BASE_DIR = Path(__file__).resolve().parent.parent
+sys.path.append(str(BASE_DIR / 'src'))
 
 # Set default Django settings module
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings.local')

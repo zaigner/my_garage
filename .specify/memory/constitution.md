@@ -48,6 +48,7 @@ My Garage is an automotive asset management platform that empowers car enthusias
 - **Applications** in `django_apps/` following single responsibility
 - **Settings** split by environment (base, local, production, test)
 - **Static/Media** files properly organized and served
+- **Utils** in `utils/` for shared infrastructure (e.g., MongoDB clients)
 
 ### Service Layer Pattern (django-kedro inspired)
 - **Models** (`models.py`): Pure data definitions, no business logic
@@ -57,6 +58,7 @@ My Garage is an automotive asset management platform that empowers car enthusias
 - **Tasks** (`tasks.py`): Background jobs via Celery
 - **Forms** (`forms.py`): User input validation and rendering
 - **Admin** (`admin.py`): Comprehensive admin interface configuration
+- **API** (`api/views.py`, `api/serializers.py`): DRF implementation for external access
 
 ### Naming Conventions
 - **Selectors**: `{model}_get_{description}`, `{model}_list_{description}`
@@ -67,6 +69,7 @@ My Garage is an automotive asset management platform that empowers car enthusias
 ### Database Design
 - **Financial Fields**: Use `DecimalField` with `max_digits=12, decimal_places=2`
 - **Relationships**: Clear ForeignKey with `on_delete` behavior defined
+- **Document Storage**: Use MongoDB for unstructured data (OCR results, raw logs)
 - **Validation**: Field-level validators where possible
 - **Timestamps**: `auto_now_add` for creation, `auto_now` for updates
 - **Choices**: Use TextChoices enums for readability
@@ -118,6 +121,12 @@ My Garage is an automotive asset management platform that empowers car enthusias
 - **Scalability**: Can scale FastAPI independently from Django
 - **Technology Choice**: Use best tool for each job (FastAPI for async, Django for CRUD)
 - **Isolation**: AI service failures don't crash main application
+
+### Why MongoDB?
+- **Flexibility**: Schema-less storage perfect for varying OCR result formats
+- **Performance**: Efficiently handles large JSON documents that would bloat Postgres
+- **Scalability**: Horizontal scaling for document storage if needed
+- **Separation**: Keeps relational financial data clean and separate from raw data
 
 ### Why Celery?
 - **Background Processing**: Long-running tasks don't block HTTP requests
@@ -186,6 +195,7 @@ My Garage is an automotive asset management platform that empowers car enthusias
 ### Scalability
 - **Database**: PostgreSQL for production (supports millions of records)
 - **Caching**: Redis already integrated for Celery, can add caching
+- **Documents**: MongoDB handles high-volume unstructured data
 - **Load Balancing**: WSGI/ASGI apps can run behind load balancer
 - **CDN**: Static/media files can move to CDN as needed
 
@@ -220,5 +230,5 @@ If the answer to any is "no", reconsider the approach.
 ---
 
 **Last Updated**: 2025-12-21
-**Version**: 1.0
+**Version**: 1.1
 **Status**: Living Document (update as project evolves)

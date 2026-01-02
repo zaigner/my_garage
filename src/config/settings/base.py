@@ -1,9 +1,16 @@
 """Base settings shared across all environments."""
 import os
+import sys
 from pathlib import Path
+from celery.schedules import crontab
 
 # Build paths
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
+# BASE_DIR is now the root of the project (containing src, manage.py, etc.)
+# Since this file is in src/config/settings/base.py
+BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
+
+# Add src to python path so apps can be found
+sys.path.append(str(BASE_DIR / 'src'))
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-CHANGE-THIS-IN-PRODUCTION-my-garage-2024')
@@ -20,9 +27,10 @@ INSTALLED_APPS = [
     # Third-party apps
     'rest_framework',
     'corsheaders',
+    'django_celery_beat',
 
     # Local apps
-    'django_apps.my_garage.apps.MyGarageConfig',
+    'my_garage.apps.MyGarageConfig',
 ]
 
 MIDDLEWARE = [
@@ -113,6 +121,14 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
+
+# Celery Beat Schedule
+CELERY_BEAT_SCHEDULE = {
+    "bulk_valuation_refresh": {
+        "task": "my_garage.tasks.task_bulk_valuation_refresh",
+        "schedule": crontab(hour=3, minute=0, day_of_week=1),  # Every Monday at 3 AM
+    },
+}
 
 # FastAPI Service URL (separate service)
 FASTAPI_BASE_URL = os.environ.get('FASTAPI_BASE_URL', 'http://localhost:8001')

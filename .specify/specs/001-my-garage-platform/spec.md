@@ -3,7 +3,7 @@
 ## Overview
 
 **Feature ID**: 001-my-garage-platform
-**Status**: ✅ Phase 4 Complete - Production-Ready Structure
+**Status**: ✅ Phase 5 Complete - Async Tasks & API Layer
 **Owner**: Development Team
 **Created**: 2025-12-21
 **Last Updated**: 2025-12-21
@@ -35,6 +35,7 @@ Car enthusiasts lack professional-grade tools to manage their vehicles as financ
 - ✅ Can track mileage and creation date
 - ✅ Can view all my vehicles in a dashboard
 - ✅ Can edit and delete vehicles via admin interface
+- ✅ Can access vehicle data via REST API
 
 ### Epic 2: Service History Tracking
 - **As a** car owner
@@ -43,7 +44,8 @@ Car enthusiasts lack professional-grade tools to manage their vehicles as financ
 
 **Acceptance Criteria:**
 - ✅ Can upload receipt images
-- ⏳ System extracts vendor, date, cost via OCR
+- ✅ System queues OCR processing in background
+- ⏳ System extracts vendor, date, cost via OCR (FastAPI service pending)
 - ✅ Can categorize services as maintenance, repair, or upgrade
 - ✅ Can view service history chronologically
 - ✅ Can verify and edit OCR-extracted data
@@ -66,9 +68,9 @@ Car enthusiasts lack professional-grade tools to manage their vehicles as financ
 - **So that** I can make informed decisions about selling or insuring
 
 **Acceptance Criteria:**
-- ⏳ System scrapes comparable listings from auction sites
+- ⏳ System scrapes comparable listings from auction sites (MCP service pending)
 - ⏳ Calculates median market value automatically
-- ⏳ Updates valuation on demand or scheduled
+- ✅ Updates valuation on demand or scheduled (Celery task implemented)
 - ✅ Displays equity (market value - total investment)
 - ✅ Shows whether vehicle is profitable
 
@@ -194,7 +196,7 @@ task_bulk_valuation_refresh() -> str
 
 ## Implementation Status
 
-### ✅ Completed (Phase 1-4)
+### ✅ Completed (Phase 1-5)
 
 **Phase 1: Project Infrastructure**
 - ✅ Django project structure with config/
@@ -223,6 +225,13 @@ task_bulk_valuation_refresh() -> str
 - ✅ Verified server startup
 - ✅ Admin interface fully functional
 
+**Phase 5: Async Tasks & API**
+- ✅ Implemented Celery tasks for OCR and Valuation
+- ✅ Configured Celery Beat for scheduled updates
+- ✅ Created DRF Serializers and ViewSets
+- ✅ Configured API Router
+- ✅ Integrated tasks with Service Layer
+
 ### ⏳ Remaining Work
 
 **FastAPI OCR Service**
@@ -244,12 +253,6 @@ task_bulk_valuation_refresh() -> str
 - Create service history timeline view
 - Create upgrade tracker with status indicators
 - Create condition report gallery
-
-**Background Processing**
-- Implement Celery task for OCR processing
-- Implement Celery task for market updates
-- Set up Celery Beat for scheduled updates
-- Add task monitoring and error handling
 
 **Additional Features**
 - VIN decoder integration
@@ -384,12 +387,17 @@ task_bulk_valuation_refresh() -> str
 - Django admin interface
 - Service layer pattern
 
-### Version 0.2.0 (Next)
+### Version 0.2.0 (Current) ✅
+- Celery task queue integration
+- DRF API endpoints
+- Async OCR and Valuation triggers
+
+### Version 0.3.0 (Next)
 - FastAPI OCR service
 - Receipt upload and processing
 - Dashboard views
 
-### Version 0.3.0
+### Version 0.4.0
 - MCP market intelligence
 - Automated valuation updates
 - Equity tracking

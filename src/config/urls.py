@@ -9,8 +9,11 @@ urlpatterns = [
     # Admin
     path('admin/', admin.site.urls),
 
+    # API
+    path('api/', include('config.api_router')),
+
     # My Garage App
-    path('garage/', include('django_apps.my_garage.urls', namespace='my_garage')),
+    path('garage/', include('my_garage.urls', namespace='my_garage')),
 
     # Home
     path('', TemplateView.as_view(template_name='pages/home.html'), name='home'),
