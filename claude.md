@@ -4,7 +4,7 @@
 
 My Garage is an automotive asset management and valuation platform designed for car enthusiasts. It helps users track their vehicles as financial assets, manage service history, plan upgrades, and understand their car's market value through AI-powered tools and real-time market intelligence.
 
-**Current Status:** ✅ **Production-Ready Structure** - Fully restructured following django-kedro pattern, with working Django application, migrations applied, admin interface ready, **Celery tasks implemented**, and **DRF API layer active**.
+**Current Status:** ✅ **Production-Ready Structure** - Fully restructured following django-kedro pattern, with working Django application, migrations applied, admin interface ready, **Celery tasks implemented**, **DRF API layer active**, and **UI/UX Refreshed**.
 
 ## Core Features
 
@@ -35,48 +35,49 @@ My Garage is an automotive asset management and valuation platform designed for 
 - **django-debug-toolbar** - Development debugging
 - **django-cors-headers** - CORS handling
 - **pytest** - Testing framework (optional dependency)
+- **Pixi** - Package management
 
 ## Project Architecture
 
-This project follows a **strict layered architecture** pattern inspired by django-kedro:
+This project follows a **strict layered architecture** pattern inspired by django-kedro, now using a `src/` layout:
 
 ```
 my_garage/
-├── config/                          # Project Configuration
-│   ├── settings/
-│   │   ├── base.py                 # Shared settings
-│   │   ├── local.py                # Development (SQLite, debug toolbar)
-│   │   ├── production.py           # Production (PostgreSQL, security)
-│   │   └── test.py                 # Testing (in-memory DB)
-│   ├── urls.py                     # Main URL routing
-│   ├── api_router.py               # DRF API routing
-│   ├── wsgi.py                     # WSGI entry point
-│   ├── asgi.py                     # ASGI entry point
-│   └── celery_app.py               # Celery configuration
-│
-├── django_apps/                     # Django Applications
-│   └── my_garage/                  # Main App
-│       ├── api/                    # Service Layer (django-kedro pattern)
-│       │   ├── selectors.py        # Read operations (queries)
-│       │   ├── services.py         # Write operations (business logic)
-│       │   ├── serializers.py      # DRF Serializers
-│       │   └── views.py            # DRF ViewSets
-│       ├── utils/                  # Shared utilities (e.g. mongo.py)
-│       ├── migrations/             # Database migrations
-│       ├── templates/my_garage/    # HTML templates
-│       ├── static/my_garage/       # App static files
-│       ├── tests/                  # Unit tests
-│       ├── models.py               # Database models
-│       ├── views.py                # Web views
-│       ├── admin.py                # Django admin
-│       ├── forms.py                # Django forms
-│       ├── tasks.py                # Celery tasks
-│       ├── urls.py                 # App URLs
-│       └── apps.py                 # App configuration
-│
-├── fastapi_services/                # FastAPI Microservice
-│   ├── ocr/                        # OCR endpoints (to be implemented)
-│   └── mcp/                        # MCP endpoints (to be implemented)
+├── src/                             # Source Code Root
+│   ├── config/                      # Project Configuration
+│   │   ├── settings/
+│   │   │   ├── base.py              # Shared settings
+│   │   │   ├── local.py             # Development (SQLite, debug toolbar)
+│   │   │   ├── production.py        # Production (PostgreSQL, security)
+│   │   │   └── test.py              # Testing (in-memory DB)
+│   │   ├── urls.py                  # Main URL routing
+│   │   ├── api_router.py            # DRF API routing
+│   │   ├── wsgi.py                  # WSGI entry point
+│   │   ├── asgi.py                  # ASGI entry point
+│   │   └── celery_app.py            # Celery configuration
+│   │
+│   ├── my_garage/                   # Main App
+│   │   ├── api/                     # Service Layer (django-kedro pattern)
+│   │   │   ├── selectors.py         # Read operations (queries)
+│   │   │   ├── services.py          # Write operations (business logic)
+│   │   │   ├── serializers.py       # DRF Serializers
+│   │   │   └── views.py             # DRF ViewSets
+│   │   ├── utils/                   # Shared utilities (e.g. mongo.py)
+│   │   ├── migrations/              # Database migrations
+│   │   ├── templates/my_garage/     # HTML templates
+│   │   ├── static/my_garage/        # App static files
+│   │   ├── tests/                   # Unit tests
+│   │   ├── models.py                # Database models
+│   │   ├── views.py                 # Web views
+│   │   ├── admin.py                 # Django admin
+│   │   ├── forms.py                 # Django forms
+│   │   ├── tasks.py                 # Celery tasks
+│   │   ├── urls.py                  # App URLs
+│   │   └── apps.py                  # App configuration
+│   │
+│   └── fastapi_services/            # FastAPI Microservice
+│       ├── ocr/                     # OCR endpoints (to be implemented)
+│       └── mcp/                     # MCP endpoints (to be implemented)
 │
 ├── templates/                       # Project-level templates
 ├── static/                          # Project-level static files
@@ -87,8 +88,9 @@ my_garage/
 │
 ├── manage.py                        # Django CLI
 ├── pyproject.toml                   # Project configuration
-├── .env                            # Environment variables (not in git)
-└── db.sqlite3                      # Local database (not in git)
+├── pixi.toml                        # Pixi configuration
+├── .env                             # Environment variables (not in git)
+└── db.sqlite3                       # Local database (not in git)
 ```
 
 ## Architecture Pattern: Service Layer in api/
@@ -209,14 +211,11 @@ AI-graded assessments of vehicle condition.
 # Clone and navigate to project
 cd /home/zaigner77/projects/zaigner/my_garage
 
-# Activate virtual environment
-source .venv/bin/activate
+# Install dependencies with Pixi
+pixi install
 
-# Install dependencies (already done)
-pip install -e .
-
-# Run migrations (already done)
-python manage.py migrate
+# Run migrations
+pixi run migrate
 
 # Create superuser (already created: admin/admin)
 python manage.py createsuperuser
@@ -226,17 +225,16 @@ python manage.py createsuperuser
 
 ```bash
 # Start Django development server
-python manage.py runserver
+pixi run server
 
 # Start Celery worker (in another terminal)
-celery -A config.celery_app worker -l info
+pixi run worker
 
 # Start Celery Beat (in another terminal)
-celery -A config.celery_app beat -l info
+pixi run beat
 
 # Start FastAPI service (when implemented)
-cd src/fastapi_services
-uvicorn main:app --reload --port 8001
+pixi run fastapi
 ```
 
 ### Accessing the Application
@@ -251,31 +249,31 @@ uvicorn main:app --reload --port 8001
 
 1. **Update Models** (if needed)
    ```bash
-   # Edit django_apps/my_garage/models.py
-   python manage.py makemigrations
-   python manage.py migrate
+   # Edit src/my_garage/models.py
+   pixi run makemigrations
+   pixi run migrate
    ```
 
-2. **Add Selectors** (`api/selectors.py`)
+2. **Add Selectors** (`src/my_garage/api/selectors.py`)
    - Create functions for data retrieval
    - Use Django ORM aggregations
 
-3. **Add Services** (`api/services.py`)
+3. **Add Services** (`src/my_garage/api/services.py`)
    - Create functions for business logic
    - Use `@transaction.atomic` where needed
 
-4. **Add Views** (`views.py` or `api/views.py`)
+4. **Add Views** (`src/my_garage/views.py` or `src/my_garage/api/views.py`)
    - Call selectors for data
    - Call services for mutations
    - Keep views thin
 
-5. **Add URLs** (`urls.py` or `api_router.py`)
+5. **Add URLs** (`src/my_garage/urls.py` or `src/config/api_router.py`)
    - Wire up new views
 
-6. **Add Forms** (`forms.py`)
+6. **Add Forms** (`src/my_garage/forms.py`)
    - Create ModelForms for data entry
 
-7. **Add Tests** (`tests/`)
+7. **Add Tests** (`src/my_garage/tests/`)
    - Write unit tests for selectors
    - Write integration tests for services
 
@@ -353,7 +351,7 @@ The Django admin provides full CRUD functionality for all models:
 - Mock external API calls (FastAPI, MCP)
 - Use Django's TestCase for database tests
 - Use TransactionTestCase for atomic operations
-- Run tests: `pytest django_apps/my_garage/tests/`
+- Run tests: `pixi run test`
 
 ## Environment Variables
 
@@ -439,6 +437,8 @@ task_update_market_valuation.delay(vehicle.id)
 - ✅ Forms and basic views
 - ✅ Celery tasks for background processing
 - ✅ API endpoints with DRF
+- ✅ Pixi package management
+- ✅ `src/` directory layout
 
 ### Short-term (To Implement)
 - ⏳ FastAPI OCR service endpoints
@@ -476,26 +476,24 @@ task_update_market_valuation.delay(vehicle.id)
 - **Email:** admin@mygarage.com
 
 ### Key Files to Edit
-- **Models:** `django_apps/my_garage/models.py`
-- **Selectors:** `django_apps/my_garage/api/selectors.py`
-- **Services:** `django_apps/my_garage/api/services.py`
-- **Views:** `django_apps/my_garage/views.py`
-- **API Views:** `django_apps/my_garage/api/views.py`
-- **Tasks:** `django_apps/my_garage/tasks.py`
-- **Admin:** `django_apps/my_garage/admin.py`
-- **URLs:** `django_apps/my_garage/urls.py`
+- **Models:** `src/my_garage/models.py`
+- **Selectors:** `src/my_garage/api/selectors.py`
+- **Services:** `src/my_garage/api/services.py`
+- **Views:** `src/my_garage/views.py`
+- **API Views:** `src/my_garage/api/views.py`
+- **Tasks:** `src/my_garage/tasks.py`
+- **Admin:** `src/my_garage/admin.py`
+- **URLs:** `src/my_garage/urls.py`
 
 ### Important Commands
 ```bash
 # Development
-python manage.py runserver
-python manage.py shell
-python manage.py dbshell
+pixi run server
+pixi run shell
 
 # Database
-python manage.py makemigrations
-python manage.py migrate
-python manage.py showmigrations
+pixi run makemigrations
+pixi run migrate
 
 # Admin
 python manage.py createsuperuser
@@ -505,13 +503,11 @@ python manage.py changepassword <username>
 python manage.py collectstatic
 
 # Testing
-pytest
-pytest --cov=django_apps.my_garage
-python manage.py test
+pixi run test
 
 # Celery
-celery -A config.celery_app worker -l info
-celery -A config.celery_app beat -l info
+pixi run worker
+pixi run beat
 ```
 
 ---

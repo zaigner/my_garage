@@ -51,6 +51,9 @@ ipython = ">=8.0"
 default = ["dev"]
 prod = []
 
-# Ensure src is in PYTHONPATH
 [activation]
-scripts = ["export PYTHONPATH=$PYTHONPATH:$(pwd)/src"]
+# Pixi activation scripts must be actual files or inline shell commands depending on OS
+# For cross-platform compatibility, it's better to rely on manage.py setting sys.path
+# or use environment variables in the tasks themselves.
+# Removing the problematic script line.
+env = { PYTHONPATH = "src" }

@@ -44,11 +44,12 @@ My Garage is an automotive asset management platform that empowers car enthusias
 ## Technical Architecture Guidelines
 
 ### Django Project Structure
+- **Source Root**: All application code resides in `src/`
 - **Configuration** in `src/config/` separate from application code
-- **Applications** in `src/` following single responsibility
+- **Applications** in `src/my_garage/` following single responsibility
 - **Settings** split by environment (base, local, production, test)
 - **Static/Media** files properly organized and served
-- **Utils** in `utils/` for shared infrastructure (e.g., MongoDB clients)
+- **Utils** in `src/my_garage/utils/` for shared infrastructure (e.g., MongoDB clients)
 
 ### Service Layer Pattern (django-kedro inspired)
 - **Models** (`models.py`): Pure data definitions, no business logic
@@ -133,6 +134,11 @@ My Garage is an automotive asset management platform that empowers car enthusias
 - **Scheduling**: Celery Beat for periodic market value updates
 - **Reliability**: Task retries and error handling built-in
 - **Monitoring**: Flower and other tools for task monitoring
+
+### Why Pixi?
+- **Reproducibility**: Ensures consistent environments across machines
+- **Cross-Platform**: Handles binary dependencies better than pip
+- **Task Runner**: Simplifies common commands (server, worker, test)
 
 ## Quality Standards
 
@@ -230,5 +236,5 @@ If the answer to any is "no", reconsider the approach.
 ---
 
 **Last Updated**: 2025-12-21
-**Version**: 1.1
+**Version**: 1.2
 **Status**: Living Document (update as project evolves)

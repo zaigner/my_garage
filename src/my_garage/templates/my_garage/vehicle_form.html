@@ -1,0 +1,140 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Vehicle | The Collection</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Pinyon+Script&family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'luxury-black': '#0B1026',
+                        'luxury-card': '#151b33',
+                        'luxury-gold': '#D4AF37',
+                        'luxury-white': '#F5F5F5',
+                        'luxury-text': '#A3A3A3',
+                    },
+                    fontFamily: {
+                        'script': ['"Pinyon Script"', 'cursive'],
+                        'serif': ['"Playfair Display"', 'serif'],
+                        'sans': ['"Montserrat"', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-luxury-black text-luxury-white font-sans min-h-screen flex flex-col">
+
+    <nav class="border-b border-white/10 bg-luxury-black/95 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 py-6 flex justify-between items-center">
+            <a href="{% url 'my_garage:garage_view' %}" class="text-luxury-white hover:text-luxury-gold transition-colors">&larr; Back to Garage</a>
+            <div class="text-3xl text-luxury-gold font-script">Add New Acquisition</div>
+            <div class="w-20"></div>
+        </div>
+    </nav>
+
+    <main class="flex-grow flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-2xl w-full space-y-8 bg-luxury-card p-10 rounded-xl border border-white/5 shadow-2xl">
+
+            <form method="POST" enctype="multipart/form-data" class="space-y-6">
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                <div class="bg-red-900/20 border border-red-500 text-red-200 px-4 py-3 rounded relative" role="alert">
+                    {{ form.non_field_errors }}
+                </div>
+                {% endif %}
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Year -->
+                    <div>
+                        <label for="{{ form.year.id_for_label }}" class="block text-sm font-medium text-luxury-text uppercase tracking-wider mb-2">Year</label>
+                        {{ form.year }}
+                        {% if form.year.errors %}
+                            <p class="text-red-500 text-xs mt-1">{{ form.year.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Make -->
+                    <div>
+                        <label for="{{ form.make.id_for_label }}" class="block text-sm font-medium text-luxury-text uppercase tracking-wider mb-2">Make</label>
+                        {{ form.make }}
+                        {% if form.make.errors %}
+                            <p class="text-red-500 text-xs mt-1">{{ form.make.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Model -->
+                    <div>
+                        <label for="{{ form.model.id_for_label }}" class="block text-sm font-medium text-luxury-text uppercase tracking-wider mb-2">Model</label>
+                        {{ form.model }}
+                        {% if form.model.errors %}
+                            <p class="text-red-500 text-xs mt-1">{{ form.model.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Trim -->
+                    <div>
+                        <label for="{{ form.trim.id_for_label }}" class="block text-sm font-medium text-luxury-text uppercase tracking-wider mb-2">Trim (Optional)</label>
+                        {{ form.trim }}
+                    </div>
+                </div>
+
+                <!-- VIN -->
+                <div>
+                    <label for="{{ form.vin.id_for_label }}" class="block text-sm font-medium text-luxury-text uppercase tracking-wider mb-2">VIN</label>
+                    {{ form.vin }}
+                    {% if form.vin.errors %}
+                        <p class="text-red-500 text-xs mt-1">{{ form.vin.errors.0 }}</p>
+                    {% endif %}
+                    <p class="text-xs text-luxury-text mt-1">{{ form.vin.help_text }}</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Purchase Price -->
+                    <div>
+                        <label for="{{ form.purchase_price.id_for_label }}" class="block text-sm font-medium text-luxury-text uppercase tracking-wider mb-2">Purchase Price</label>
+                        {{ form.purchase_price }}
+                    </div>
+
+                    <!-- Mileage -->
+                    <div>
+                        <label for="{{ form.mileage.id_for_label }}" class="block text-sm font-medium text-luxury-text uppercase tracking-wider mb-2">Mileage</label>
+                        {{ form.mileage }}
+                    </div>
+                </div>
+
+                <div class="pt-6">
+                    <button type="submit" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-black bg-luxury-gold hover:bg-yellow-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-luxury-gold transition-colors uppercase tracking-widest">
+                        Add to Collection
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <style>
+        /* Override Django form widget styles */
+        input[type="text"], input[type="number"] {
+            background-color: #0B1026;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #F5F5F5;
+            padding: 0.75rem;
+            border-radius: 0.375rem;
+            width: 100%;
+            transition: border-color 0.2s;
+        }
+        input:focus {
+            outline: none;
+            border-color: #D4AF37;
+            ring: 1px solid #D4AF37;
+        }
+    </style>
+
+</body>
+</html>

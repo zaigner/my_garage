@@ -57,6 +57,49 @@ def vehicle_update_market_valuation(vehicle: Vehicle) -> Decimal:
         raise VehicleServiceError(f"Failed to reach Valuation Engine: {str(e)}")
 
 
+def vehicle_enrich_from_vin(vehicle: Vehicle) -> bool:
+    """
+    Uses the MCP agent to look up vehicle details and photos based on VIN.
+    Updates the vehicle record with features, specs, and a photo URL.
+    """
+    if not vehicle.vin:
+        return False
+
+    payload = {
+        "tool_name": "lookup_vehicle_details",
+        "arguments": {
+            "vin": vehicle.vin
+        }
+    }
+
+    try:
+        response = requests.post(MCP_EXECUTE_URL, json=payload, timeout=30)
+        response.raise_for_status()
+        data = response.json()
+
+        # Assuming the MCP tool returns a structure like:
+        # { "features": {...}, "specs": {...}, "photo_url": "..." }
+        
+        if 'features' in data:
+            vehicle.features = data['features']
+        
+        if 'specs' in data:
+            vehicle.specs = data['specs']
+            
+        # If we got a photo URL, we might want to download it or just store the URL
+        # For now, let's assume we handle the photo separately or the model supports a URL field
+        # But since our model has an ImageField, we would typically download it here.
+        # For simplicity in this step, we'll just log it or skip if not implementing download logic yet.
+        # proper implementation would involve requests.get(url) and saving to vehicle.photo
+        
+        vehicle.save()
+        return True
+
+    except requests.RequestException:
+        # Log error but don't crash the transaction
+        return False
+
+
 def service_record_create_from_ocr(vehicle: Vehicle, receipt_image: Any) -> ServiceRecord:
     """
     Initializes a service record and triggers the FastAPI OCR pipeline.
@@ -74,7 +117,6 @@ def service_record_create_from_ocr(vehicle: Vehicle, receipt_image: Any) -> Serv
 
     # 2. Trigger Celery task for OCR processing
     # Import locally to avoid circular import with tasks.py
-    # Note: This import will work once files are moved to src/my_garage
     from my_garage.tasks import task_process_receipt_ocr
     
     # Use on_commit to ensure DB record exists before task runs

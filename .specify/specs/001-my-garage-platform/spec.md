@@ -3,7 +3,7 @@
 ## Overview
 
 **Feature ID**: 001-my-garage-platform
-**Status**: ✅ Phase 5 Complete - Async Tasks & API Layer
+**Status**: ✅ Phase 6 Complete - UI/UX Refresh & Refactoring
 **Owner**: Development Team
 **Created**: 2025-12-21
 **Last Updated**: 2025-12-21
@@ -36,6 +36,7 @@ Car enthusiasts lack professional-grade tools to manage their vehicles as financ
 - ✅ Can view all my vehicles in a dashboard
 - ✅ Can edit and delete vehicles via admin interface
 - ✅ Can access vehicle data via REST API
+- ✅ Can add vehicles via a dedicated form in the UI
 
 ### Epic 2: Service History Tracking
 - **As a** car owner
@@ -95,6 +96,7 @@ Car enthusiasts lack professional-grade tools to manage their vehicles as financ
 **Async Tasks**: Celery with Redis broker
 **AI Services**: Separate FastAPI microservice
 **External Data**: Model Context Protocol for web scraping
+**Package Manager**: Pixi
 
 ### Data Model
 
@@ -196,7 +198,7 @@ task_bulk_valuation_refresh() -> str
 
 ## Implementation Status
 
-### ✅ Completed (Phase 1-5)
+### ✅ Completed (Phase 1-6)
 
 **Phase 1: Project Infrastructure**
 - ✅ Django project structure with config/
@@ -231,6 +233,13 @@ task_bulk_valuation_refresh() -> str
 - ✅ Created DRF Serializers and ViewSets
 - ✅ Configured API Router
 - ✅ Integrated tasks with Service Layer
+
+**Phase 6: UI/UX & Refactoring**
+- ✅ Migrated to `src/` directory layout
+- ✅ Integrated Pixi for package management
+- ✅ Implemented "The Collection" luxury theme
+- ✅ Created Dashboard and Garage views
+- ✅ Added Vehicle Creation flow
 
 ### ⏳ Remaining Work
 
@@ -391,6 +400,8 @@ task_bulk_valuation_refresh() -> str
 - Celery task queue integration
 - DRF API endpoints
 - Async OCR and Valuation triggers
+- Pixi integration
+- UI/UX Refresh
 
 ### Version 0.3.0 (Next)
 - FastAPI OCR service

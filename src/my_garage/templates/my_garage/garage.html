@@ -1,0 +1,194 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Collection | My Garage</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pinyon+Script&family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'garage-wall': '#2C2C2C',     /* Concrete Gray */
+                        'garage-floor': '#0a0a0a',    /* Deep Black */
+                        'luxury-gold': '#D4AF37',
+                        'luxury-red': '#8B0000',      /* Deep Racing Red */
+                    },
+                    fontFamily: {
+                        'script': ['"Pinyon Script"', 'cursive'],
+                        'serif': ['"Playfair Display"', 'serif'],
+                        'sans': ['"Montserrat"', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* 1. RACE DECK FLOOR PATTERN */
+        /* Creates a 50x50px grid pattern to look like tiles */
+        .race-deck-floor {
+            background-color: #050505;
+            background-image:
+                linear-gradient(#151515 2px, transparent 2px),
+                linear-gradient(90deg, #151515 2px, transparent 2px);
+            background-size: 50px 50px;
+            perspective: 1000px; /* Adds 3D depth */
+        }
+
+        /* 2. SPOTLIGHT WALL EFFECT */
+        .garage-wall {
+            background: radial-gradient(circle at 50% 30%, #4a4a4a, #2C2C2C 60%, #1a1a1a 100%);
+        }
+
+        /* 3. CAROUSEL TRANSITIONS */
+        .slide {
+            display: none;
+            animation: fadeIn 0.8s ease-in-out;
+        }
+        .slide.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+    </style>
+</head>
+<body class="h-screen w-screen overflow-hidden bg-black flex flex-col">
+
+    <nav class="absolute top-0 w-full z-50 p-6 flex justify-between items-center text-white/50">
+        <a href="{% url 'my_garage:dashboard' %}" class="hover:text-white transition-colors">&larr; Back to Vault</a>
+        <div class="text-3xl text-luxury-gold font-script">My Garage</div>
+        <div class="w-20"></div> </nav>
+
+    <div class="relative w-full h-full flex flex-col">
+
+        <div class="garage-wall h-[65%] w-full relative flex items-end justify-center pb-12 border-b-8 border-luxury-red shadow-[0_0_50px_rgba(0,0,0,0.8)] z-10">
+
+            <div id="carousel" class="w-full max-w-5xl px-12 relative">
+
+                <button onclick="prevSlide()" class="absolute left-0 top-1/2 -translate-y-1/2 p-4 text-white/20 hover:text-luxury-gold hover:scale-110 transition-all z-50">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-16 h-16">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                    </svg>
+                </button>
+                <button onclick="nextSlide()" class="absolute right-0 top-1/2 -translate-y-1/2 p-4 text-white/20 hover:text-luxury-gold hover:scale-110 transition-all z-50">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-16 h-16">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                    </svg>
+                </button>
+
+                {% for vehicle in vehicles %}
+                <div class="slide {% if forloop.first %}active{% endif %} text-center" data-value="{{ vehicle.current_market_value }}" data-year="{{ vehicle.year }}" data-make="{{ vehicle.make }}" data-model="{{ vehicle.model }}">
+                    <a href="{% url 'my_garage:vehicle_detail' vehicle.id %}">
+                        {% if vehicle.photo %}
+                            <img src="{{ vehicle.photo.url }}"
+                                 class="mx-auto h-[40vh] object-contain drop-shadow-2xl hover:scale-105 transition-transform duration-500"
+                                 alt="{{ vehicle }}">
+                        {% else %}
+                            <img src="https://images.unsplash.com/photo-1610899230873-67c4b4d6e992?q=80&w=2670&auto=format&fit=crop"
+                                 class="mx-auto h-[40vh] object-contain drop-shadow-2xl hover:scale-105 transition-transform duration-500"
+                                 alt="Default Car">
+                        {% endif %}
+                    </a>
+                    <div class="mt-4">
+                        <h1 class="text-5xl md:text-7xl font-script text-white drop-shadow-lg">{{ vehicle.year }} {{ vehicle.make }}</h1>
+                        <p class="text-luxury-gold font-sans tracking-[0.2em] text-sm mt-2 uppercase">{{ vehicle.model }} {{ vehicle.trim }}</p>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="slide active text-center">
+                    <div class="mx-auto h-[40vh] flex items-center justify-center text-white/30">
+                        <p>No vehicles in garage</p>
+                    </div>
+                    <div class="mt-4">
+                        <h1 class="text-5xl md:text-7xl font-script text-white drop-shadow-lg">Empty Garage</h1>
+                        <a href="{% url 'my_garage:vehicle_add' %}" class="text-luxury-gold font-sans tracking-[0.2em] text-sm mt-2 uppercase hover:text-white transition-colors border-b border-luxury-gold pb-1">Add your first vehicle</a>
+                    </div>
+                </div>
+                {% endfor %}
+
+            </div>
+        </div>
+
+        <div class="race-deck-floor h-[35%] w-full relative">
+            <div class="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-black/50 to-transparent pointer-events-none"></div>
+
+            <div class="absolute bottom-10 w-full text-center">
+                <div class="inline-flex gap-8 text-white/30 text-xs tracking-widest uppercase">
+                    <div>Valuation: <span class="text-white" id="current-valuation">$0</span></div>
+                    <div>Location: <span class="text-white">Main Garage</span></div>
+                    <div>Status: <span class="text-green-500">Insured</span></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const valuationEl = document.getElementById('current-valuation');
+
+        function updateInfo(index) {
+            if (slides.length === 0) return;
+            const slide = slides[index];
+            const value = slide.getAttribute('data-value');
+            if (value) {
+                // Format currency
+                const formatter = new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: 'USD',
+                    maximumFractionDigits: 0
+                });
+                valuationEl.textContent = formatter.format(value);
+            } else {
+                valuationEl.textContent = '---';
+            }
+        }
+
+        function showSlide(index) {
+            slides.forEach((slide, i) => {
+                slide.classList.remove('active');
+                if (i === index) {
+                    slide.classList.add('active');
+                }
+            });
+            updateInfo(index);
+        }
+
+        function nextSlide() {
+            if (slides.length === 0) return;
+            currentSlide = (currentSlide + 1) % slides.length;
+            showSlide(currentSlide);
+        }
+
+        function prevSlide() {
+            if (slides.length === 0) return;
+            currentSlide = (currentSlide - 1 + slides.length) % slides.length;
+            showSlide(currentSlide);
+        }
+
+        // Keyboard Navigation
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowRight') nextSlide();
+            if (e.key === 'ArrowLeft') prevSlide();
+        });
+
+        // Initialize info
+        if (slides.length > 0) {
+            updateInfo(0);
+        }
+    </script>
+</body>
+</html>

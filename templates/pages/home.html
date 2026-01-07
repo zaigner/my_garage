@@ -1,42 +1,227 @@
-{% extends 'base.html' %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Collection | Vault Dashboard</title>
 
-{% block title %}Home - My Garage{% endblock %}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pinyon+Script&family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
 
-{% block content %}
-<div class="flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] text-center px-4 sm:px-6 lg:px-8 py-12">
-    <h1 class="text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl drop-shadow-md">
-        My Garage
-    </h1>
-    <p class="mt-6 text-xl text-gray-100 max-w-3xl drop-shadow-sm">
-        Track your automotive assets, manage service history, and monitor market value.
-    </p>
-    
-    <div class="mt-10 flex flex-wrap justify-center gap-4">
-        <a href="{% url 'admin:index' %}" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm transition-colors">
-            Manage Data
-        </a>
-    </div>
+    <script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- Features Grid -->
-    <div class="mt-20 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 max-w-7xl w-full">
-        <div class="bg-gray-900/60 backdrop-blur-sm rounded-xl p-6 text-left border border-gray-700/50 shadow-lg">
-            <h3 class="text-lg font-bold text-white">
-                <a href="{% url 'my_garage:dashboard' %}" class="hover:text-indigo-400 transition-colors">Digital Vehicle Vault</a>
-            </h3>
-            <p class="mt-2 text-gray-300 text-sm">Track your vehicles with VIN decoding, purchase prices, and real-time market valuations.</p>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'luxury-black': '#0B1026',      /* Deep Midnight/Charcoal */
+                        'luxury-card': '#151b33',       /* Slightly lighter for cards */
+                        'luxury-gold': '#D4AF37',       /* Classic Metallic Gold */
+                        'luxury-gold-dim': '#8a7020',   /* Dimmed gold for borders */
+                        'luxury-white': '#F5F5F5',      /* Soft white */
+                        'luxury-text': '#A3A3A3',       /* Muted text */
+                    },
+                    fontFamily: {
+                        'script': ['"Pinyon Script"', 'cursive'],
+                        'serif': ['"Playfair Display"', 'serif'],
+                        'sans': ['"Montserrat"', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom Scrollbar for that premium feel */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0B1026;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #D4AF37;
+        }
+
+        /* Subtle fade animation */
+        .fade-in {
+            animation: fadeIn 1.2s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-luxury-black text-luxury-white font-sans antialiased min-h-screen">
+
+    <nav class="border-b border-white/10 bg-luxury-black/95 backdrop-blur-md sticky top-0 z-50 transition-all duration-300">
+        <div class="max-w-7xl mx-auto px-6 py-6 flex justify-between items-center">
+            <button class="text-luxury-white hover:text-luxury-gold transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                </svg>
+            </button>
+
+            <div class="text-4xl md:text-7xl text-luxury-gold font-script tracking-widest cursor-pointer hover:opacity-90 transition-opacity drop-shadow-lg">
+                The Collection
+            </div>
+
+            <div class="flex items-center gap-4">
+                {% if user.is_authenticated %}
+                    <a href="{% url 'admin:index' %}" class="text-luxury-white hover:text-luxury-gold transition-colors text-sm uppercase tracking-widest">Admin</a>
+                {% else %}
+                    <a href="{% url 'admin:login' %}" class="text-luxury-white hover:text-luxury-gold transition-colors text-sm uppercase tracking-widest">Login</a>
+                {% endif %}
+                <button class="text-luxury-white hover:text-luxury-gold transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                    </svg>
+                </button>
+            </div>
         </div>
-        <div class="bg-gray-900/60 backdrop-blur-sm rounded-xl p-6 text-left border border-gray-700/50 shadow-lg">
-            <h3 class="text-lg font-bold text-white">Paperless Service Catalog</h3>
-            <p class="mt-2 text-gray-300 text-sm">AI-powered OCR for digitizing service receipts and tracking maintenance history.</p>
-        </div>
-        <div class="bg-gray-900/60 backdrop-blur-sm rounded-xl p-6 text-left border border-gray-700/50 shadow-lg">
-            <h3 class="text-lg font-bold text-white">Upgrade Project Manager</h3>
-            <p class="mt-2 text-gray-300 text-sm">Plan and track modifications from wishlist to installation with cost tracking.</p>
-        </div>
-        <div class="bg-gray-900/60 backdrop-blur-sm rounded-xl p-6 text-left border border-gray-700/50 shadow-lg">
-            <h3 class="text-lg font-bold text-white">Market Intelligence</h3>
-            <p class="mt-2 text-gray-300 text-sm">Real-time market valuation using web scraping to find comparable listings.</p>
-        </div>
-    </div>
-</div>
-{% endblock %}
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-6 py-12 space-y-16 fade-in">
+
+        <section class="text-center space-y-4">
+            <h2 class="text-luxury-text text-sm tracking-[0.3em] uppercase">Total Portfolio Valuation</h2>
+            <div class="flex items-center justify-center gap-4">
+                <h1 class="text-6xl md:text-8xl font-serif text-luxury-white">
+                    {% if user.is_authenticated %}
+                        ${{ total_garage_value|default:"0"|floatformat:0 }}
+                    {% else %}
+                        $---,---
+                    {% endif %}
+                </h1>
+            </div>
+            <div class="inline-flex items-center gap-2 px-4 py-1 rounded-full border border-green-900 bg-green-900/20 text-green-400 text-sm font-medium">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
+                    <path fill-rule="evenodd" d="M10 17a.75.75 0 01-.75-.75V5.612L5.29 9.77a.75.75 0 01-1.08-1.04l5.25-5.5a.75.75 0 011.08 0l5.25 5.5a.75.75 0 11-1.08 1.04l-3.96-4.158V16.25A.75.75 0 0110 17z" clip-rule="evenodd" />
+                </svg>
+                <span>12.4% vs last year</span>
+            </div>
+        </section>
+
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="group relative p-8 rounded-xl bg-luxury-card border border-white/5 hover:border-luxury-gold/50 transition-all duration-500 hover:shadow-[0_0_30px_-5px_rgba(212,175,55,0.15)]">
+                <div class="flex justify-between items-start mb-6">
+                    <h3 class="font-serif text-2xl text-luxury-white italic">Timepieces</h3>
+                    <span class="text-luxury-gold font-script text-2xl">5 items</span>
+                </div>
+                <div class="space-y-1">
+                    <p class="text-luxury-text text-xs uppercase tracking-widest">Category Value</p>
+                    <p class="text-2xl font-light font-sans text-luxury-white">$84,500</p>
+                </div>
+            </div>
+
+            <div class="group relative p-8 rounded-xl bg-luxury-card border border-white/5 hover:border-luxury-gold/50 transition-all duration-500 hover:shadow-[0_0_30px_-5px_rgba(212,175,55,0.15)]">
+                <div class="flex justify-between items-start mb-6">
+                    <h3 class="font-serif text-2xl text-luxury-white italic">Automobiles</h3>
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'my_garage:garage_view' %}" class="text-luxury-gold font-script text-2xl hover:text-white transition-colors cursor-pointer">
+                            {{ vehicles.count|default:"0" }} items &rarr;
+                        </a>
+                    {% else %}
+                        <span class="text-luxury-gold font-script text-2xl">-- items</span>
+                    {% endif %}
+                </div>
+                <div class="space-y-1">
+                    <p class="text-luxury-text text-xs uppercase tracking-widest">Category Value</p>
+                    <p class="text-2xl font-light font-sans text-luxury-white">
+                        {% if user.is_authenticated %}
+                            ${{ total_garage_value|default:"0"|floatformat:0 }}
+                        {% else %}
+                            $---,---
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+
+            <div class="group relative p-8 rounded-xl bg-luxury-card border border-white/5 hover:border-luxury-gold/50 transition-all duration-500 hover:shadow-[0_0_30px_-5px_rgba(212,175,55,0.15)]">
+                <div class="flex justify-between items-start mb-6">
+                    <h3 class="font-serif text-2xl text-luxury-white italic">Fine Art</h3>
+                    <span class="text-luxury-gold font-script text-2xl">10 items</span>
+                </div>
+                <div class="space-y-1">
+                    <p class="text-luxury-text text-xs uppercase tracking-widest">Category Value</p>
+                    <p class="text-2xl font-light font-sans text-luxury-white">$954,800</p>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <div class="flex justify-between items-end mb-8 border-b border-white/10 pb-4">
+                <h3 class="text-2xl font-serif italic text-luxury-gold">Recent Acquisitions</h3>
+                <a href="#" class="text-xs text-luxury-text hover:text-white uppercase tracking-widest transition-colors">View Full Gallery &rarr;</a>
+            </div>
+
+            <div class="flex gap-8 overflow-x-auto pb-8 snap-x">
+
+                <div class="min-w-[300px] md:min-w-[400px] snap-center cursor-pointer group">
+                    <div class="aspect-[4/3] overflow-hidden rounded-sm bg-gray-800 relative">
+                        <img src="https://images.unsplash.com/photo-1614164185128-e4899ea56a72?q=80&w=2670&auto=format&fit=crop"
+                             alt="Watch"
+                             class="w-full h-full object-cover opacity-80 group-hover:scale-105 group-hover:opacity-100 transition-all duration-700 ease-out">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+                        <div class="absolute bottom-4 left-4">
+                            <p class="text-luxury-gold font-sans text-xs uppercase tracking-wider mb-1">Acquired Oct 2024</p>
+                            <h4 class="text-white font-serif text-xl">Patek Philippe Nautilus</h4>
+                        </div>
+                    </div>
+                </div>
+
+                {% if user.is_authenticated and vehicles %}
+                    {% for vehicle in vehicles|slice:":3" %}
+                    <div class="min-w-[300px] md:min-w-[400px] snap-center cursor-pointer group">
+                        <div class="aspect-[4/3] overflow-hidden rounded-sm bg-gray-800 relative">
+                            {% if vehicle.photo %}
+                                <img src="{{ vehicle.photo.url }}"
+                                     alt="{{ vehicle }}"
+                                     class="w-full h-full object-cover opacity-80 group-hover:scale-105 group-hover:opacity-100 transition-all duration-700 ease-out">
+                            {% else %}
+                                <img src="https://images.unsplash.com/photo-1552519507-da3b142c6e3d?q=80&w=2670&auto=format&fit=crop"
+                                     alt="Car"
+                                     class="w-full h-full object-cover opacity-80 group-hover:scale-105 group-hover:opacity-100 transition-all duration-700 ease-out">
+                            {% endif %}
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+                            <div class="absolute bottom-4 left-4">
+                                <p class="text-luxury-gold font-sans text-xs uppercase tracking-wider mb-1">Acquired {{ vehicle.created_at|date:"M Y" }}</p>
+                                <h4 class="text-white font-serif text-xl">{{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}</h4>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% endif %}
+
+                <div class="min-w-[300px] md:min-w-[400px] snap-center cursor-pointer group">
+                    <div class="aspect-[4/3] overflow-hidden rounded-sm bg-gray-800 relative">
+                        <img src="https://images.unsplash.com/photo-1541963463532-d68292c34b19?q=80&w=2576&auto=format&fit=crop"
+                             alt="Book"
+                             class="w-full h-full object-cover opacity-80 group-hover:scale-105 group-hover:opacity-100 transition-all duration-700 ease-out">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+                        <div class="absolute bottom-4 left-4">
+                            <p class="text-luxury-gold font-sans text-xs uppercase tracking-wider mb-1">Acquired Aug 2024</p>
+                            <h4 class="text-white font-serif text-xl">First Edition: The Great Gatsby</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="border-t border-white/5 py-12 text-center text-luxury-text text-xs tracking-widest uppercase">
+        <p>&copy; 2025 The Collection. Private Vault.</p>
+    </footer>
+
+</body>
+</html>

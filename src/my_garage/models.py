@@ -23,6 +23,11 @@ class Vehicle(models.Model):
     # Metadata
     mileage = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
+    
+    # Enhanced Data (from VIN Decoder)
+    features = models.JSONField(default=dict, blank=True)  # Stores features like "Leather Seats", "Sunroof"
+    specs = models.JSONField(default=dict, blank=True)     # Stores technical specs like "Engine: V8", "HP: 400"
+    photo = models.ImageField(upload_to="vehicles/%Y/%m/", null=True, blank=True) # Main vehicle photo
 
     def __str__(self):
         return f"{self.year} {self.make} {self.model}"

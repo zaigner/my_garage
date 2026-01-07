@@ -7,6 +7,7 @@ from decimal import Decimal
 # Import the service layer logic
 from .api.services import (
     vehicle_update_market_valuation,
+    vehicle_enrich_from_vin,
     VehicleServiceError,
     service_record_process_ocr_data
 )
@@ -69,6 +70,31 @@ def task_update_market_valuation(self, vehicle_id: int):
     except VehicleServiceError as e:
         logger.warning(f"Valuation failed for vehicle {vehicle_id}: {e}")
         raise self.retry(exc=e)
+
+
+@celery_app.task(bind=True, name="my_garage.enrich_vehicle", **RETRY_KWARGS)
+def task_enrich_vehicle_data(self, vehicle_id: int):
+    """
+    Background task to look up vehicle features and photos using the VIN.
+    """
+    try:
+        vehicle = Vehicle.objects.get(pk=vehicle_id)
+        logger.info(f"Enriching data for {vehicle} (VIN: {vehicle.vin})...")
+
+        success = vehicle_enrich_from_vin(vehicle)
+        
+        if success:
+            logger.info(f"Successfully enriched data for {vehicle}")
+        else:
+            logger.warning(f"Failed to enrich data for {vehicle}")
+            
+        return success
+
+    except Vehicle.DoesNotExist:
+        logger.error(f"Vehicle {vehicle_id} not found.")
+    except Exception as exc:
+        logger.error(f"Error enriching vehicle {vehicle_id}: {exc}")
+        raise self.retry(exc=exc)
 
 
 @celery_app.task(name="my_garage.bulk_refresh")
