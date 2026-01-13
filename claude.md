@@ -4,7 +4,7 @@
 
 My Garage is an automotive asset management and valuation platform designed for car enthusiasts. It helps users track their vehicles as financial assets, manage service history, plan upgrades, and understand their car's market value through AI-powered tools and real-time market intelligence.
 
-**Current Status:** ✅ **Production-Ready Structure** - Fully restructured following django-kedro pattern, with working Django application, migrations applied, admin interface ready, **Celery tasks implemented**, **DRF API layer active**, and **UI/UX Refreshed**.
+**Current Status:** ✅ **FastAPI Services in Development** - Began development of the FastAPI microservices for VIN lookup and market valuation. Integrated with the NHTSA and Marketcheck APIs.
 
 ## Core Features
 
@@ -30,6 +30,8 @@ My Garage is an automotive asset management and valuation platform designed for 
 ### External Services
 - **FastAPI 0.104+** - Separate microservice for compute-intensive AI/OCR tasks
 - **Model Context Protocol (MCP)** - Web scraping for market data
+- **NHTSA vPIC API** - for VIN decoding
+- **Marketcheck API** - for market valuation
 
 ### Development Tools
 - **django-debug-toolbar** - Development debugging
@@ -77,7 +79,12 @@ my_garage/
 │   │
 │   └── fastapi_services/            # FastAPI Microservice
 │       ├── ocr/                     # OCR endpoints (to be implemented)
-│       └── mcp/                     # MCP endpoints (to be implemented)
+│       └── mcp/                     # MCP endpoints
+│           ├── tools/
+│           │   ├── vehicle_lookup.py
+│           │   └── market_valuation.py
+│           ├── config.py
+│           └── main.py
 │
 ├── templates/                       # Project-level templates
 ├── static/                          # Project-level static files
@@ -92,6 +99,27 @@ my_garage/
 ├── .env                             # Environment variables (not in git)
 └── db.sqlite3                       # Local database (not in git)
 ```
+
+## FastAPI Services Development
+
+### MCP (Model Context Protocol) Service
+The MCP service is responsible for handling complex, AI-driven tasks that are not suitable for the main Django application. It's designed to be a collection of "tools" that can be called upon to perform specific actions.
+
+#### Vehicle Lookup Tool
+- **File**: `src/fastapi_services/mcp/tools/vehicle_lookup.py`
+- **Purpose**: Decodes a Vehicle Identification Number (VIN) to retrieve detailed vehicle information.
+- **API**: Uses the free **NHTSA vPIC API**.
+- **Status**: ✅ Implemented
+
+#### Market Valuation Tool
+- **File**: `src/fastapi_services/mcp/tools/market_valuation.py`
+- **Purpose**: Searches for active market listings of similar vehicles to determine a market valuation.
+- **API**: Uses the **Marketcheck API**.
+- **Status**: ✅ Implemented (requires API key)
+
+### OCR (Optical Character Recognition) Service
+- **Purpose**: To process images of receipts and other documents, extracting relevant information.
+- **Status**: ⏳ To be implemented.
 
 ## Architecture Pattern: Service Layer in api/
 
@@ -286,9 +314,9 @@ pixi run fastapi
 - **Called by**: `service_record_process_ocr_data()` in api/services.py
 
 ### Model Context Protocol (MCP)
-- **Endpoint**: `{FASTAPI_BASE_URL}/mcp/execute` (to be implemented)
-- **Tool**: `search_market_listings`
-- **Purpose**: Web scraping for comparable vehicle listings
+- **Endpoint**: `{FASTAPI_BASE_URL}/mcp/execute`
+- **Tool**: `lookup_vehicle_details`, `search_market_listings`
+- **Purpose**: VIN decoding and market valuation
 - **Called by**: `vehicle_update_market_valuation()` in api/services.py
 
 ## Financial Calculations
@@ -375,6 +403,7 @@ CELERY_RESULT_BACKEND=redis://localhost:6379/0
 
 # FastAPI Service
 FASTAPI_BASE_URL=http://localhost:8001
+MARKETCHECK_API_KEY=your-api-key-here
 ```
 
 ## Security Considerations
@@ -439,10 +468,11 @@ task_update_market_valuation.delay(vehicle.id)
 - ✅ API endpoints with DRF
 - ✅ Pixi package management
 - ✅ `src/` directory layout
+- ✅ FastAPI MCP service for VIN lookup
+- ✅ FastAPI MCP service for market valuation
 
 ### Short-term (To Implement)
 - ⏳ FastAPI OCR service endpoints
-- ⏳ FastAPI MCP integration endpoints
 - ⏳ Dashboard templates and views
 
 ### Mid-term
@@ -484,6 +514,7 @@ task_update_market_valuation.delay(vehicle.id)
 - **Tasks:** `src/my_garage/tasks.py`
 - **Admin:** `src/my_garage/admin.py`
 - **URLs:** `src/my_garage/urls.py`
+- **FastAPI MCP Tools**: `src/fastapi_services/mcp/tools/`
 
 ### Important Commands
 ```bash
@@ -513,6 +544,6 @@ pixi run beat
 ---
 
 **Last Updated:** 2025-12-21
-**Project Status:** ✅ Production-Ready Structure with Async Tasks & API
+**Project Status:** ✅ FastAPI Services in Development
 **Django Version:** 5.2.9
 **Python Version:** 3.12+

@@ -34,7 +34,6 @@
 
     <style>
         /* 1. RACE DECK FLOOR PATTERN */
-        /* Creates a 50x50px grid pattern to look like tiles */
         .race-deck-floor {
             background-color: #050505;
             background-image:
@@ -66,10 +65,15 @@
 </head>
 <body class="h-screen w-screen overflow-hidden bg-black flex flex-col">
 
-    <nav class="absolute top-0 w-full z-50 p-6 flex justify-between items-center text-white/50">
-        <a href="{% url 'my_garage:dashboard' %}" class="hover:text-white transition-colors">&larr; Back to Vault</a>
-        <div class="text-3xl text-luxury-gold font-script">My Garage</div>
-        <div class="w-20"></div> </nav>
+    <nav class="absolute top-0 w-full z-50 p-6 grid grid-cols-3 items-center text-white/50">
+        <div class="text-left">
+            <a href="{% url 'my_garage:dashboard' %}" class="hover:text-white transition-colors">&larr; Back to Vault</a>
+        </div>
+        <div class="text-center text-3xl text-luxury-gold font-script">My Garage</div>
+        <div class="text-right">
+            <a href="{% url 'my_garage:vehicle_add' %}" class="hover:text-white transition-colors">Add Vehicle &rarr;</a>
+        </div>
+    </nav>
 
     <div class="relative w-full h-full flex flex-col">
 
@@ -96,9 +100,14 @@
                                  class="mx-auto h-[40vh] object-contain drop-shadow-2xl hover:scale-105 transition-transform duration-500"
                                  alt="{{ vehicle }}">
                         {% else %}
-                            <img src="https://images.unsplash.com/photo-1610899230873-67c4b4d6e992?q=80&w=2670&auto=format&fit=crop"
-                                 class="mx-auto h-[40vh] object-contain drop-shadow-2xl hover:scale-105 transition-transform duration-500"
-                                 alt="Default Car">
+                            <div class="mx-auto h-[40vh] w-full max-w-2xl bg-black/20 flex items-center justify-center border-2 border-dashed border-white/10 rounded-lg">
+                                <div class="text-center text-white/30">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                    <p class="mt-2 text-sm">No Photo Available</p>
+                                </div>
+                            </div>
                         {% endif %}
                     </a>
                     <div class="mt-4">
