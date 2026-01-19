@@ -32,6 +32,8 @@ dev = [
     "pytest-cov>=4.1,<5.0",
     "factory-boy>=3.3,<4.0",
     "faker>=19.0,<20.0",
+    "ruff>=0.1.0",
+    "pre-commit>=3.5.0",
 ]
 
 [tool.setuptools.packages.find]
@@ -47,3 +49,21 @@ migrate = "python manage.py migrate"
 server = "python manage.py runserver"
 worker = "celery -A config.celery_app worker -l info"
 fastapi = "uvicorn src.fastapi_services.main:app --host 0.0.0.0 --port 8001 --reload"
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "C",  # flake8-comprehensions
+    "B",  # flake8-bugbear
+]
+ignore = []
+
+[tool.ruff.lint.isort]
+known-first-party = ["config", "my_garage", "fastapi_services"]

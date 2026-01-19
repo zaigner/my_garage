@@ -22,14 +22,36 @@ My Garage is an automotive asset management and valuation platform designed for 
 - **Celery 5.3+** - Async task queue
 - **Redis 5.0+** - Celery broker and result backend
 
+### Quality Assurance & Tooling
+- **Ruff** - Extremely fast Python linter and formatter
+- **Pre-commit** - Git hook manager for code quality checks
+- **Pixi** - Package management and workflow automation
+
 ### External Services
 - **FastAPI 0.104+** - Microservice for AI/compute tasks.
 - **NHTSA vPIC API** - For VIN decoding.
 - **Marketcheck API** - For market valuation.
 
+## Development Log - Code Quality Integration
+
+Today's session focused on integrating code quality tools to ensure a clean and maintainable codebase.
+
+1.  **Linter & Formatter Integration**:
+    *   Added **Ruff** to the project dependencies in `pixi.toml` and `pyproject.toml`.
+    *   Configured Ruff in `pyproject.toml` to target Python 3.12, with a line length of 88 characters.
+    *   Enabled specific linting rules: `E` (pycodestyle errors), `W` (pycodestyle warnings), `F` (pyflakes), `I` (isort), `C` (flake8-comprehensions), and `B` (flake8-bugbear).
+
+2.  **Pre-commit Hooks**:
+    *   Created `.pre-commit-config.yaml` to manage Git hooks.
+    *   Configured hooks for `ruff` (linting with auto-fix) and `ruff-format` (code formatting).
+    *   Added a `pre-commit-install` task to `pixi.toml` for easy setup.
+
+3.  **Workflow Automation**:
+    *   Added `lint` and `format` tasks to `pixi.toml` so developers can run checks manually via `pixi run lint` or `pixi run format`.
+
 ## Development Log - VIN Enrichment
 
-Today's session focused on implementing and debugging the "Enrich from VIN" feature.
+Previous session focused on implementing and debugging the "Enrich from VIN" feature.
 
 1.  **Feature Implementation**:
     *   Added a button to the `vehicle_detail.html` page to manually trigger the VIN enrichment process.

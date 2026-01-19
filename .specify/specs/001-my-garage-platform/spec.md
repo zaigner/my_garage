@@ -98,6 +98,7 @@ Car enthusiasts lack professional-grade tools to manage their vehicles as financ
 **AI Services**: Separate FastAPI microservice
 **External Data**: NHTSA vPIC API, Marketcheck API
 **Package Manager**: Pixi
+**Code Quality**: Ruff (Linting/Formatting), Pre-commit hooks
 
 ### Data Model
 
@@ -270,6 +271,8 @@ task_bulk_valuation_refresh() -> str
 - Must have user authentication system (Django built-in)
 - Must have file upload capability (Django media files)
 - Must have task queue (Celery)
+- **Ruff**: Linter and Formatter
+- **Pre-commit**: Git hook manager
 
 ## Risks & Mitigations
 
