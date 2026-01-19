@@ -93,7 +93,7 @@ def task_enrich_vehicle_data(self, vehicle_id: int):
     except Vehicle.DoesNotExist:
         logger.error(f"Vehicle {vehicle_id} not found.")
     except Exception as exc:
-        logger.error(f"Error enriching vehicle {vehicle_id}: {exc}")
+        logger.error(f"Error enriching vehicle {vehicle_id}: {exc}", exc_info=True)
         raise self.retry(exc=exc)
 
 

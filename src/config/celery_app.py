@@ -6,7 +6,7 @@ from celery import Celery
 
 # Add src to python path
 BASE_DIR = Path(__file__).resolve().parent.parent
-sys.path.append(str(BASE_DIR / 'src'))
+sys.path.append(str(BASE_DIR))
 
 # Set default Django settings module
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings.local')
@@ -18,9 +18,3 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 
 # Auto-discover tasks in all installed apps
 app.autodiscover_tasks()
-
-
-@app.task(bind=True)
-def debug_task(self):
-    """Debug task to test Celery."""
-    print(f'Request: {self.request!r}')

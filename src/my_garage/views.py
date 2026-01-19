@@ -1,3 +1,4 @@
+import logging
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -10,6 +11,8 @@ from .forms import VehicleForm
 from .api.selectors import vehicle_get_build_summary, vehicle_list_wishlist_items
 from .api.services import service_record_create_from_ocr
 from .tasks import task_update_market_valuation, task_enrich_vehicle_data
+
+logger = logging.getLogger(__name__)
 
 
 @login_required
@@ -42,7 +45,7 @@ def vehicle_add(request: HttpRequest) -> HttpResponse:
     View to add a new vehicle to the garage.
     """
     if request.method == 'POST':
-        form = VehicleForm(request.POST)
+        form = VehicleForm(request.POST, request.FILES)
         if form.is_valid():
             vehicle = form.save(commit=False)
             vehicle.owner = request.user
@@ -65,18 +68,39 @@ def vehicle_add(request: HttpRequest) -> HttpResponse:
 @login_required
 def vehicle_detail(request: HttpRequest, vehicle_id: int) -> HttpResponse:
     """
-    Detailed view for a single vehicle using our selector for complex data.
+    Detailed view for a single vehicle, allowing updates.
     """
+    vehicle = get_object_or_404(Vehicle, pk=vehicle_id, owner=request.user)
+
+    if request.method == 'POST':
+        form = VehicleForm(request.POST, request.FILES, instance=vehicle)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"{vehicle} updated successfully.")
+            return redirect('my_garage:vehicle_detail', vehicle_id=vehicle.id)
+    else:
+        form = VehicleForm(instance=vehicle)
+
     # Use our selector to get a complete financial/condition summary
     summary = vehicle_get_build_summary(vehicle_id)
 
-    # Check ownership
-    if summary['vehicle'].owner != request.user:
-        return HttpResponse("Unauthorized", status=401)
+    financial_summary = {
+        'purchase_price': vehicle.purchase_price,
+        'total_investment': summary['total_investment'],
+        'equity': summary['equity'],
+    }
+
+    # Prepare display-friendly dictionaries for the template
+    display_specs = {key.replace('_', ' '): value for key, value in vehicle.specs.items()}
+    display_features = {key.replace('_', ' '): value for key, value in vehicle.features.items()}
 
     context = {
-        **summary,
+        'form': form,
+        'vehicle': vehicle,
+        'financial_summary': financial_summary,
         "wishlist": vehicle_list_wishlist_items(summary['vehicle']),
+        'display_specs': display_specs,
+        'display_features': display_features,
     }
     return render(request, "my_garage/vehicle_detail.html", context)
 
@@ -88,10 +112,30 @@ def trigger_valuation_refresh(request: HttpRequest, vehicle_id: int) -> HttpResp
     """
     vehicle = get_object_or_404(Vehicle, pk=vehicle_id, owner=request.user)
 
-    # Trigger the background Celery task
+    # This is a GET request, so we can call the task directly.
     task_update_market_valuation.delay(vehicle.id)
 
     messages.success(request, f"Valuation update for {vehicle} has been queued.")
+    return redirect("my_garage:vehicle_detail", vehicle_id=vehicle.id)
+
+
+@login_required
+def trigger_vin_enrichment(request: HttpRequest, vehicle_id: int) -> HttpResponse:
+    """
+    Action view to manually trigger the VIN enrichment task.
+    """
+    vehicle = get_object_or_404(Vehicle, pk=vehicle_id, owner=request.user)
+    logger.info(f"Triggering VIN enrichment for vehicle {vehicle.id}")
+
+    if not vehicle.vin:
+        messages.error(request, "This vehicle does not have a VIN to look up.")
+        return redirect("my_garage:vehicle_detail", vehicle_id=vehicle.id)
+
+    # This is a GET request, so we can call the task directly.
+    task_enrich_vehicle_data.delay(vehicle.id)
+    logger.info(f"Task for vehicle {vehicle.id} has been dispatched.")
+
+    messages.success(request, f"VIN enrichment for {vehicle} has been queued. The data will be updated shortly.")
     return redirect("my_garage:vehicle_detail", vehicle_id=vehicle.id)
 
 

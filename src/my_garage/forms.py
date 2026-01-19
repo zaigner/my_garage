@@ -8,7 +8,7 @@ class VehicleForm(forms.ModelForm):
 
     class Meta:
         model = Vehicle
-        fields = ['make', 'model', 'year', 'trim', 'vin', 'purchase_price', 'mileage']
+        fields = ['make', 'model', 'year', 'trim', 'vin', 'purchase_price', 'mileage', 'photo']
         widgets = {
             'year': forms.NumberInput(attrs={'min': 1900, 'max': 2100, 'class': 'form-control'}),
             'mileage': forms.NumberInput(attrs={'min': 0, 'class': 'form-control'}),
@@ -17,10 +17,12 @@ class VehicleForm(forms.ModelForm):
             'trim': forms.TextInput(attrs={'class': 'form-control'}),
             'vin': forms.TextInput(attrs={'class': 'form-control', 'maxlength': 17}),
             'purchase_price': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'photo': forms.FileInput(attrs={'class': 'form-control'}),
         }
         help_texts = {
             'vin': '17-character Vehicle Identification Number',
             'purchase_price': 'Original purchase price in USD',
+            'photo': 'Upload an image of the vehicle',
         }
 
 

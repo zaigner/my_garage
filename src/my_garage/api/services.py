@@ -3,6 +3,7 @@ from django.conf import settings
 from django.db import transaction
 from decimal import Decimal
 from typing import Dict, Any, Optional
+from django.core.files.base import ContentFile
 
 from my_garage.models import Vehicle, ServiceRecord, Upgrade, ConditionReport
 from ..utils.mongo import get_collection
@@ -28,8 +29,7 @@ def vehicle_update_market_valuation(vehicle: Vehicle) -> Decimal:
         "arguments": {
             "make": vehicle.make,
             "model": vehicle.model,
-            "year_min": vehicle.year - 1,
-            "year_max": vehicle.year + 1,
+            "year": vehicle.year,
             "trim": vehicle.trim
         }
     }
@@ -44,7 +44,10 @@ def vehicle_update_market_valuation(vehicle: Vehicle) -> Decimal:
             return vehicle.current_market_value
 
         # Logic: Calculate median price from listings
-        prices = [Decimal(str(l['price'])) for l in listings]
+        prices = [Decimal(str(l['price'])) for l in listings if l.get('price')]
+        if not prices:
+            return vehicle.current_market_value
+            
         median_price = sorted(prices)[len(prices) // 2]
 
         # Update and save the vehicle
@@ -59,8 +62,8 @@ def vehicle_update_market_valuation(vehicle: Vehicle) -> Decimal:
 
 def vehicle_enrich_from_vin(vehicle: Vehicle) -> bool:
     """
-    Uses the MCP agent to look up vehicle details and photos based on VIN.
-    Updates the vehicle record with features, specs, and a photo URL.
+    Uses the MCP agent to look up vehicle details based on VIN, including the model year.
+    Updates the vehicle record with all available specs.
     """
     if not vehicle.vin:
         return False
@@ -68,7 +71,8 @@ def vehicle_enrich_from_vin(vehicle: Vehicle) -> bool:
     payload = {
         "tool_name": "lookup_vehicle_details",
         "arguments": {
-            "vin": vehicle.vin
+            "vin": vehicle.vin,
+            "model_year": vehicle.year,
         }
     }
 
@@ -77,20 +81,16 @@ def vehicle_enrich_from_vin(vehicle: Vehicle) -> bool:
         response.raise_for_status()
         data = response.json()
 
-        # Assuming the MCP tool returns a structure like:
-        # { "features": {...}, "specs": {...}, "photo_url": "..." }
+        if "error" in data:
+            return False
+
+        # Overwrite the specs field with all the data returned from the API
+        vehicle.specs = data
         
-        if 'features' in data:
-            vehicle.features = data['features']
-        
-        if 'specs' in data:
-            vehicle.specs = data['specs']
-            
-        # If we got a photo URL, we might want to download it or just store the URL
-        # For now, let's assume we handle the photo separately or the model supports a URL field
-        # But since our model has an ImageField, we would typically download it here.
-        # For simplicity in this step, we'll just log it or skip if not implementing download logic yet.
-        # proper implementation would involve requests.get(url) and saving to vehicle.photo
+        # Also update the core fields from the new data, if available
+        vehicle.make = data.get("make", vehicle.make)
+        vehicle.model = data.get("model", vehicle.model)
+        vehicle.year = data.get("model_year", vehicle.year)
         
         vehicle.save()
         return True

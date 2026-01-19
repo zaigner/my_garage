@@ -1,0 +1,61 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}My Garage{% endblock %}</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pinyon+Script&family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'garage-wall': '#2C2C2C',     /* Concrete Gray */
+                        'garage-floor': '#0a0a0a',    /* Deep Black */
+                        'luxury-gold': '#D4AF37',
+                        'luxury-red': '#8B0000',      /* Deep Racing Red */
+                    },
+                    fontFamily: {
+                        'script': ['"Pinyon Script"', 'cursive'],
+                        'serif': ['"Playfair Display"', 'serif'],
+                        'sans': ['"Montserrat"', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-100 font-sans">
+
+    <nav class="bg-garage-wall text-white p-4">
+        <div class="container mx-auto flex justify-between items-center">
+            <a href="{% url 'my_garage:garage_view' %}" class="text-2xl font-script text-luxury-gold">My Garage</a>
+            <div>
+                <a href="{% url 'my_garage:dashboard' %}" class="mr-4 hover:text-luxury-gold">Dashboard</a>
+                <a href="{% url 'my_garage:garage_view' %}" class="hover:text-luxury-gold">The Collection</a>
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        {% if messages %}
+            <div class="container mx-auto mt-4">
+                {% for message in messages %}
+                    <div class="p-4 mb-4 text-sm text-white rounded-lg {% if message.tags == 'success' %}bg-green-500{% elif message.tags == 'error' %}bg-red-500{% else %}bg-blue-500{% endif %}" role="alert">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        {% block content %}{% endblock %}
+    </main>
+
+</body>
+</html>

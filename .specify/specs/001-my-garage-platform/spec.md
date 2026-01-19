@@ -3,10 +3,10 @@
 ## Overview
 
 **Feature ID**: 001-my-garage-platform
-**Status**: ✅ Phase 6 Complete - UI/UX Refresh & Refactoring
+**Status**: ✅ Phase 7 Complete - FastAPI Service Development
 **Owner**: Development Team
 **Created**: 2025-12-21
-**Last Updated**: 2025-12-21
+**Last Updated**: 2025-12-22
 
 ## Problem Statement
 
@@ -37,6 +37,7 @@ Car enthusiasts lack professional-grade tools to manage their vehicles as financ
 - ✅ Can edit and delete vehicles via admin interface
 - ✅ Can access vehicle data via REST API
 - ✅ Can add vehicles via a dedicated form in the UI
+- ✅ System can decode VINs to pre-fill vehicle details (FastAPI service implemented)
 
 ### Epic 2: Service History Tracking
 - **As a** car owner
@@ -69,8 +70,8 @@ Car enthusiasts lack professional-grade tools to manage their vehicles as financ
 - **So that** I can make informed decisions about selling or insuring
 
 **Acceptance Criteria:**
-- ⏳ System scrapes comparable listings from auction sites (MCP service pending)
-- ⏳ Calculates median market value automatically
+- ✅ System fetches comparable listings from an API (FastAPI service implemented)
+- ✅ Calculates median market value automatically
 - ✅ Updates valuation on demand or scheduled (Celery task implemented)
 - ✅ Displays equity (market value - total investment)
 - ✅ Shows whether vehicle is profitable
@@ -95,7 +96,7 @@ Car enthusiasts lack professional-grade tools to manage their vehicles as financ
 **Database**: SQLite (dev), PostgreSQL (prod)
 **Async Tasks**: Celery with Redis broker
 **AI Services**: Separate FastAPI microservice
-**External Data**: Model Context Protocol for web scraping
+**External Data**: NHTSA vPIC API, Marketcheck API
 **Package Manager**: Pixi
 
 ### Data Model
@@ -183,63 +184,38 @@ task_bulk_valuation_refresh() -> str
 
 ### External Integrations
 
+#### FastAPI Services (Implemented)
+- **VIN Lookup**:
+  - **Endpoint**: `POST /mcp/execute` with tool `lookup_vehicle_details`
+  - **Input**: VIN string
+  - **Output**: JSON with vehicle make, model, year, etc.
+  - **API Used**: NHTSA vPIC API
+- **Market Valuation**:
+  - **Endpoint**: `POST /mcp/execute` with tool `search_market_listings`
+  - **Input**: Make, model, year
+  - **Output**: List of comparable listings with prices
+  - **API Used**: Marketcheck API
+
 #### FastAPI OCR Service (To Implement)
 - **Endpoint**: `POST /ocr/process`
 - **Input**: Image file (receipt photo)
 - **Output**: JSON with extracted vendor, date, cost, line items
 - **Technology**: Tesseract OCR, OpenAI Vision API, or similar
 
-#### MCP Market Scraper (To Implement)
-- **Endpoint**: `POST /mcp/execute`
-- **Tool**: `search_market_listings`
-- **Input**: Make, model, year range, trim
-- **Output**: List of comparable listings with prices
-- **Sources**: Bring a Trailer, Cars & Bids, eBay Motors, Autotrader
-
 ## Implementation Status
 
-### ✅ Completed (Phase 1-6)
+### ✅ Completed (Phase 1-7)
 
-**Phase 1: Project Infrastructure**
-- ✅ Django project structure with config/
-- ✅ Multi-environment settings (base, local, production, test)
-- ✅ WSGI/ASGI entry points
-- ✅ Celery configuration
-- ✅ Environment variable management
+**Phase 1-6**: (See previous versions for details)
 
-**Phase 2: Application Code**
-- ✅ Moved code to django_apps/my_garage/
-- ✅ Service layer in api/ subdirectory
-- ✅ Created admin.py with full CRUD
-- ✅ Created forms.py for data entry
-- ✅ Fixed all import paths
-
-**Phase 3: Database**
-- ✅ Fixed model typo (on_backend → on_delete)
-- ✅ Created initial migration (0001_initial.py)
-- ✅ Applied all migrations successfully
-- ✅ SQLite configured for development
-
-**Phase 4: Testing & Running**
-- ✅ Updated pyproject.toml with dependencies
-- ✅ Wired up URL configuration
-- ✅ Created superuser (admin/admin)
-- ✅ Verified server startup
-- ✅ Admin interface fully functional
-
-**Phase 5: Async Tasks & API**
-- ✅ Implemented Celery tasks for OCR and Valuation
-- ✅ Configured Celery Beat for scheduled updates
-- ✅ Created DRF Serializers and ViewSets
-- ✅ Configured API Router
-- ✅ Integrated tasks with Service Layer
-
-**Phase 6: UI/UX & Refactoring**
-- ✅ Migrated to `src/` directory layout
-- ✅ Integrated Pixi for package management
-- ✅ Implemented "The Collection" luxury theme
-- ✅ Created Dashboard and Garage views
-- ✅ Added Vehicle Creation flow
+**Phase 7: FastAPI Service Development**
+- ✅ Created `fastapi_services` directory in `src/`
+- ✅ Structured MCP service with `main.py`, `config.py`, and `tools/`
+- ✅ Implemented `vehicle_lookup.py` tool using NHTSA vPIC API
+- ✅ Implemented `market_valuation.py` tool using Marketcheck API
+- ✅ Added `beautifulsoup4` for potential scraping tasks
+- ✅ Configured environment variables for API keys
+- ✅ Updated UI with "Add Vehicle" link and fixed visual bugs
 
 ### ⏳ Remaining Work
 
@@ -249,13 +225,6 @@ task_bulk_valuation_refresh() -> str
 - Parse extracted text into structured data
 - Return JSON with vendor, date, cost, line items
 
-**MCP Market Intelligence**
-- Implement web scraping with MCP protocol
-- Support multiple auction/listing sites
-- Extract prices and vehicle details
-- Calculate median market value
-- Handle rate limiting and errors
-
 **Dashboard Views**
 - Create homepage dashboard showing all vehicles
 - Create vehicle detail page with financial summary
@@ -264,7 +233,6 @@ task_bulk_valuation_refresh() -> str
 - Create condition report gallery
 
 **Additional Features**
-- VIN decoder integration
 - PDF export of vehicle history
 - Price tracking for wishlist parts
 - Email notifications for market changes
@@ -294,8 +262,9 @@ task_bulk_valuation_refresh() -> str
 - **PostgreSQL**: Production database (or SQLite for dev)
 - **Redis**: Celery broker and result backend
 - **FastAPI**: Separate AI/OCR service
+- **NHTSA vPIC API**: For VIN decoding
+- **Marketcheck API**: For market valuation
 - **OCR Service**: Tesseract, Google Cloud Vision, or similar
-- **Web Scraping**: MCP-compatible tools
 
 ### Internal
 - Must have user authentication system (Django built-in)
@@ -403,15 +372,13 @@ task_bulk_valuation_refresh() -> str
 - Pixi integration
 - UI/UX Refresh
 
-### Version 0.3.0 (Next)
+### Version 0.3.0 (Current) ✅
+- FastAPI service for VIN lookup and market valuation
+
+### Version 0.4.0 (Next)
 - FastAPI OCR service
 - Receipt upload and processing
 - Dashboard views
-
-### Version 0.4.0
-- MCP market intelligence
-- Automated valuation updates
-- Equity tracking
 
 ### Version 1.0.0
 - All core features implemented

@@ -1,0 +1,104 @@
+{% extends "my_garage/base.html" %}
+
+{% block title %}{{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-4">
+        <h1 class="text-3xl font-bold">{{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}</h1>
+        <div>
+            <a href="{% url 'my_garage:enrich_vin' vehicle.id %}" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">Enrich from VIN</a>
+            <a href="{% url 'my_garage:refresh_valuation' vehicle.id %}" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Refresh Valuation</a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="md:col-span-2">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="space-y-4">
+                    {{ form.as_p }}
+                </div>
+                <button type="submit" class="mt-4 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">Save Changes</button>
+            </form>
+        </div>
+        <div>
+            {% if vehicle.photo %}
+                <img src="{{ vehicle.photo.url }}" alt="{{ vehicle }}" class="rounded-lg shadow-lg">
+            {% else %}
+                <div class="bg-gray-200 rounded-lg p-8 text-center">
+                    <p class="text-gray-500">No photo available.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div>
+            <h2 class="text-2xl font-bold mb-4">Specifications</h2>
+            <div class="bg-white p-4 rounded-lg shadow">
+                <ul>
+                    {% for key, value in display_specs.items %}
+                        <li class="flex justify-between py-1 border-b">
+                            <span class="font-semibold capitalize">{{ key }}</span>
+                            <span>{{ value|default:"Not Available" }}</span>
+                        </li>
+                    {% empty %}
+                        <li>No specifications available.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        <div>
+            <h2 class="text-2xl font-bold mb-4">Features</h2>
+            <div class="bg-white p-4 rounded-lg shadow">
+                <ul>
+                    {% for key, value in display_features.items %}
+                        <li class="flex justify-between py-1 border-b">
+                            <span class="font-semibold capitalize">{{ key }}</span>
+                            <span>{{ value|default:"Not Available" }}</span>
+                        </li>
+                    {% empty %}
+                        <li>No features available.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-8">
+        <h2 class="text-2xl font-bold mb-4">Financial Summary</h2>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="bg-white p-4 rounded-lg shadow">
+                <p class="text-gray-600">Purchase Price</p>
+                <p class="text-2xl font-bold">${{ financial_summary.purchase_price|floatformat:2 }}</p>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow">
+                <p class="text-gray-600">Market Value</p>
+                <p class="text-2xl font-bold">${{ vehicle.current_market_value|floatformat:2 }}</p>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow">
+                <p class="text-gray-600">Total Investment</p>
+                <p class="text-2xl font-bold">${{ financial_summary.total_investment|floatformat:2 }}</p>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow">
+                <p class="text-gray-600">Equity</p>
+                <p class="text-2xl font-bold {% if financial_summary.equity > 0 %}text-green-500{% else %}text-red-500{% endif %}">
+                    ${{ financial_summary.equity|floatformat:2 }}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-8">
+        <h2 class="text-2xl font-bold mb-4">Wishlist</h2>
+        <ul>
+            {% for item in wishlist %}
+                <li class="mb-2">{{ item.part_name }} - ${{ item.cost|floatformat:2 }}</li>
+            {% empty %}
+                <li>No items in your wishlist for this vehicle.</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endblock %}

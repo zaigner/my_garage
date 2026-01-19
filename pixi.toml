@@ -20,7 +20,7 @@ worker = "celery -A config.celery_app worker -l info"
 beat = "celery -A config.celery_app beat -l info"
 
 # FastAPI Tasks
-fastapi = "uvicorn fastapi_services.main:app --reload --port 8001"
+fastapi = "uvicorn src.fastapi_services.main:app --reload --port 8001"
 
 [dependencies]
 python = ">=3.12"
@@ -38,6 +38,9 @@ celery = ">=5.3,<6.0"
 redis-py = ">=5.0,<6.0"
 pymongo = ">=4.0,<5.0"
 django-celery-beat = ">=2.5,<3.0"
+pytesseract = ">=0.3,<0.4"
+python-multipart = ">=0.0.7,<0.1.0"
+beautifulsoup4 = ">=4.12,<5.0"
 
 [feature.dev.dependencies]
 pytest = ">=7.4,<8.0"

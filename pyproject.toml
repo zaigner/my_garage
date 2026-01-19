@@ -21,6 +21,8 @@ dependencies = [
     "celery>=5.3,<6.0",
     "redis>=5.0,<6.0",
     "beautifulsoup4>=4.12,<5.0",
+    "pytesseract>=0.3,<0.4",
+    "python-multipart>=0.0.7,<0.1.0",
 ]
 
 [project.optional-dependencies]
@@ -44,3 +46,4 @@ platforms = ["linux-64", "win-64", "osx-64", "osx-arm64"]
 migrate = "python manage.py migrate"
 server = "python manage.py runserver"
 worker = "celery -A config.celery_app worker -l info"
+fastapi = "uvicorn src.fastapi_services.main:app --host 0.0.0.0 --port 8001 --reload"
