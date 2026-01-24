@@ -8,7 +8,11 @@ class VehicleForm(forms.ModelForm):
 
     class Meta:
         model = Vehicle
-        fields = ['make', 'model', 'year', 'trim', 'vin', 'purchase_price', 'mileage', 'photo']
+        fields = [
+            'make', 'model', 'year', 'trim', 'vin', 'license_plate',
+            'transmission', 'exterior_color', 'interior_color',
+            'purchase_price', 'purchase_date', 'mileage', 'notes', 'photo'
+        ]
         widgets = {
             'year': forms.NumberInput(attrs={'min': 1900, 'max': 2100, 'class': 'form-control'}),
             'mileage': forms.NumberInput(attrs={'min': 0, 'class': 'form-control'}),
@@ -16,7 +20,13 @@ class VehicleForm(forms.ModelForm):
             'model': forms.TextInput(attrs={'class': 'form-control'}),
             'trim': forms.TextInput(attrs={'class': 'form-control'}),
             'vin': forms.TextInput(attrs={'class': 'form-control', 'maxlength': 17}),
+            'license_plate': forms.TextInput(attrs={'class': 'form-control'}),
+            'transmission': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. 6-Speed Manual'}),
+            'exterior_color': forms.TextInput(attrs={'class': 'form-control'}),
+            'interior_color': forms.TextInput(attrs={'class': 'form-control'}),
             'purchase_price': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'purchase_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'notes': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
             'photo': forms.FileInput(attrs={'class': 'form-control'}),
         }
         help_texts = {

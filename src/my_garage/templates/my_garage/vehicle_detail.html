@@ -6,29 +6,113 @@
 <div class="container mx-auto px-4 py-8">
     <div class="flex justify-between items-center mb-4">
         <h1 class="text-3xl font-bold">{{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}</h1>
-        <div>
+        <div class="space-x-2">
             <a href="{% url 'my_garage:enrich_vin' vehicle.id %}" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">Enrich from VIN</a>
             <a href="{% url 'my_garage:refresh_valuation' vehicle.id %}" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Refresh Valuation</a>
+            <a href="{% url 'my_garage:add_service_record' vehicle.id %}" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Add Service</a>
+            <a href="{% url 'my_garage:add_upgrade_project' vehicle.id %}" class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700">Start Project</a>
         </div>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
         <div class="md:col-span-2">
-            <form method="post" enctype="multipart/form-data">
-                {% csrf_token %}
-                <div class="space-y-4">
-                    {{ form.as_p }}
-                </div>
-                <button type="submit" class="mt-4 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">Save Changes</button>
-            </form>
+            <div class="bg-white p-6 rounded-lg shadow mb-6">
+                <h2 class="text-xl font-bold mb-4">Vehicle Details</h2>
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Basic Info -->
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700">Year</label>
+                            {{ form.year }}
+                        </div>
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700">Make</label>
+                            {{ form.make }}
+                        </div>
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700">Model</label>
+                            {{ form.model }}
+                        </div>
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700">Trim</label>
+                            {{ form.trim }}
+                        </div>
+
+                        <!-- Collector Specs -->
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700">Transmission</label>
+                            {{ form.transmission }}
+                        </div>
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700">License Plate</label>
+                            {{ form.license_plate }}
+                        </div>
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700">Exterior Color</label>
+                            {{ form.exterior_color }}
+                        </div>
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700">Interior Color</label>
+                            {{ form.interior_color }}
+                        </div>
+
+                        <!-- Financials & Metadata -->
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700">VIN</label>
+                            {{ form.vin }}
+                        </div>
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700">Mileage</label>
+                            {{ form.mileage }}
+                        </div>
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700">Purchase Price</label>
+                            {{ form.purchase_price }}
+                        </div>
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700">Purchase Date</label>
+                            {{ form.purchase_date }}
+                        </div>
+                    </div>
+
+                    <div class="mt-4 space-y-2">
+                        <label class="block text-sm font-medium text-gray-700">Provenance / Notes</label>
+                        {{ form.notes }}
+                    </div>
+
+                    <div class="mt-4 space-y-2">
+                        <label class="block text-sm font-medium text-gray-700">Photo</label>
+                        {{ form.photo }}
+                    </div>
+
+                    <button type="submit" class="mt-6 w-full px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 font-semibold">Save Changes</button>
+                </form>
+            </div>
         </div>
         <div>
             {% if vehicle.photo %}
-                <img src="{{ vehicle.photo.url }}" alt="{{ vehicle }}" class="rounded-lg shadow-lg">
-            {% else %}
-                <div class="bg-gray-200 rounded-lg p-8 text-center">
-                    <p class="text-gray-500">No photo available.</p>
+                <div class="relative group">
+                    <img src="{{ vehicle.photo.url }}" alt="{{ vehicle }}" class="rounded-lg shadow-lg w-full h-auto object-cover">
+                    <div class="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
+                        {% if 'stock' in vehicle.photo.name %}Stock Image{% else %}My Vehicle{% endif %}
+                    </div>
                 </div>
+            {% else %}
+                <div class="bg-gray-200 rounded-lg p-8 text-center aspect-video flex flex-col justify-center items-center">
+                    <svg class="w-12 h-12 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                    <p class="text-gray-500">No photo available.</p>
+                    <p class="text-xs text-gray-400 mt-2">Enrich from VIN to fetch a stock photo.</p>
+                </div>
+            {% endif %}
+
+            {% if vehicle.notes %}
+            <div class="mt-6 bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
+                <h3 class="font-bold text-yellow-800 mb-2">Provenance</h3>
+                <p class="text-sm text-yellow-900 italic">{{ vehicle.notes }}</p>
+            </div>
             {% endif %}
         </div>
     </div>
@@ -68,10 +152,14 @@
 
     <div class="mt-8">
         <h2 class="text-2xl font-bold mb-4">Financial Summary</h2>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div class="bg-white p-4 rounded-lg shadow">
                 <p class="text-gray-600">Purchase Price</p>
                 <p class="text-2xl font-bold">${{ financial_summary.purchase_price|floatformat:2 }}</p>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow">
+                <p class="text-gray-600">Purchase Date</p>
+                <p class="text-xl font-bold mt-1">{{ vehicle.purchase_date|default:"--" }}</p>
             </div>
             <div class="bg-white p-4 rounded-lg shadow">
                 <p class="text-gray-600">Market Value</p>
@@ -90,15 +178,61 @@
         </div>
     </div>
 
-    <div class="mt-8">
-        <h2 class="text-2xl font-bold mb-4">Wishlist</h2>
-        <ul>
-            {% for item in wishlist %}
-                <li class="mb-2">{{ item.part_name }} - ${{ item.cost|floatformat:2 }}</li>
-            {% empty %}
-                <li>No items in your wishlist for this vehicle.</li>
-            {% endfor %}
-        </ul>
+    <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div>
+            <h2 class="text-2xl font-bold mb-4">Service History</h2>
+            <div class="bg-white p-4 rounded-lg shadow">
+                <ul>
+                    {% for record in service_records %}
+                        <li class="mb-4 border-b pb-2 last:border-0">
+                            <div class="flex justify-between">
+                                <span class="font-bold">{{ record.date }}</span>
+                                <span class="font-semibold">${{ record.total_cost|floatformat:2 }}</span>
+                            </div>
+                            <p class="text-sm text-gray-600">{{ record.vendor }} - {{ record.get_category_display }}</p>
+                            <p class="text-sm">{{ record.description|truncatechars:100 }}</p>
+                        </li>
+                    {% empty %}
+                        <li>No service records found.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+        <div>
+            <h2 class="text-2xl font-bold mb-4">Projects & Upgrades</h2>
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h3 class="font-semibold text-lg mb-2">Active Projects</h3>
+                <ul>
+                    {% for item in upgrades %}
+                        <li class="mb-2 border-b pb-2 last:border-0">
+                            <div class="flex justify-between">
+                                <span class="font-bold">{{ item.part_name }}</span>
+                                <span class="text-sm px-2 py-1 rounded {% if item.status == 'INSTALLED' %}bg-green-100 text-green-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">{{ item.get_status_display }}</span>
+                            </div>
+                            <p class="text-sm text-gray-600">{{ item.brand }} {{ item.part_number }}</p>
+                            {% if item.status == 'INSTALLED' %}
+                                <p class="text-sm">Installed: {{ item.installation_date }} - Cost: ${{ item.cost|floatformat:2 }}</p>
+                            {% endif %}
+                        </li>
+                    {% empty %}
+                        <li>No active projects.</li>
+                    {% endfor %}
+                </ul>
+
+                <h3 class="font-semibold text-lg mt-4 mb-2">Wishlist</h3>
+                <ul>
+                    {% for item in wishlist %}
+                        <li class="mb-2 flex justify-between">
+                            <span>{{ item.part_name }}</span>
+                            <span>${{ item.cost|floatformat:2 }}</span>
+                        </li>
+                    {% empty %}
+                        <li>No items in your wishlist.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}

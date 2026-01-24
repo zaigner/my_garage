@@ -1,7 +1,9 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import Dict, Any
-from .tools import vehicle_lookup, market_valuation
+from typing import Dict, Any, Optional
+
+# Import tools
+from .tools import vehicle_lookup, market_valuation, google_search, image_generation
 
 router = APIRouter()
 
@@ -12,14 +14,25 @@ class MCPRequest(BaseModel):
 @router.post("/execute")
 async def execute_mcp_tool(request: MCPRequest):
     """
-    Endpoint for MCP tool execution.
+    Executes a specific MCP tool based on the request.
     """
-    print(f"Received MCP request: {request}")
-    
-    if request.tool_name == "search_market_listings":
-        return market_valuation.search_market_listings(**request.arguments)
-    
-    elif request.tool_name == "lookup_vehicle_details":
-        return vehicle_lookup.lookup_vehicle_details(**request.arguments)
-        
-    return {"error": "Tool not found"}
+    try:
+        if request.tool_name == "lookup_vehicle_details":
+            # Validate arguments using Pydantic model
+            # In a real MCP server, this would be dynamic
+            return vehicle_lookup.lookup_vehicle_details(**request.arguments)
+            
+        elif request.tool_name == "search_market_listings":
+            return market_valuation.search_market_listings(**request.arguments)
+            
+        elif request.tool_name == "search_google_images":
+             return google_search.search_google_images(**request.arguments)
+             
+        elif request.tool_name == "generate_vehicle_image":
+            return image_generation.generate_vehicle_image(**request.arguments)
+
+        else:
+            raise HTTPException(status_code=404, detail=f"Tool '{request.tool_name}' not found.")
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

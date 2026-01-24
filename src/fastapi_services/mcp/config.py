@@ -4,6 +4,9 @@ from typing import Optional
 class Settings(BaseSettings):
     # The API key is now optional to allow the server to start without it.
     marketcheck_api_key: Optional[str] = None
+    
+    # Google Gemini configuration
+    google_api_key: Optional[str] = None
 
     class Config:
         env_file = ".env"

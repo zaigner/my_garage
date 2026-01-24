@@ -3,7 +3,7 @@
 ## Overview
 
 **Feature ID**: 001-my-garage-platform
-**Status**: ✅ Phase 7 Complete - FastAPI Service Development
+**Status**: ✅ Phase 9 Complete - Generative AI Integration
 **Owner**: Development Team
 **Created**: 2025-12-21
 **Last Updated**: 2025-12-22
@@ -21,6 +21,7 @@ Car enthusiasts lack professional-grade tools to manage their vehicles as financ
 3. No easy way to track total investment vs. current market value
 4. Difficulty proving maintenance history to potential buyers
 5. No automated market valuation updates
+6. Hard to visualize potential modifications before purchasing parts
 
 ## User Stories
 
@@ -38,6 +39,7 @@ Car enthusiasts lack professional-grade tools to manage their vehicles as financ
 - ✅ Can access vehicle data via REST API
 - ✅ Can add vehicles via a dedicated form in the UI
 - ✅ System can decode VINs to pre-fill vehicle details (FastAPI service implemented)
+- ✅ System automatically fetches stock photos for vehicles (Market Listings + Google Fallback)
 
 ### Epic 2: Service History Tracking
 - **As a** car owner
@@ -63,6 +65,7 @@ Car enthusiasts lack professional-grade tools to manage their vehicles as financ
 - ✅ Can track actual installation costs
 - ✅ Can view total upgrade investment
 - ✅ Can add notes for each modification
+- ✅ Can generate AI visualizations of potential modifications (FastAPI service implemented)
 
 ### Epic 4: Market Valuation
 - **As a** car owner
@@ -75,6 +78,7 @@ Car enthusiasts lack professional-grade tools to manage their vehicles as financ
 - ✅ Updates valuation on demand or scheduled (Celery task implemented)
 - ✅ Displays equity (market value - total investment)
 - ✅ Shows whether vehicle is profitable
+- ✅ Valuation considers trim, mileage, and color for accuracy
 
 ### Epic 5: Condition Assessment
 - **As a** car owner
@@ -96,7 +100,7 @@ Car enthusiasts lack professional-grade tools to manage their vehicles as financ
 **Database**: SQLite (dev), PostgreSQL (prod)
 **Async Tasks**: Celery with Redis broker
 **AI Services**: Separate FastAPI microservice
-**External Data**: NHTSA vPIC API, Marketcheck API
+**External Data**: NHTSA vPIC API, Marketcheck API, Google Search (Fallback), Google Gemini API
 **Package Manager**: Pixi
 **Code Quality**: Ruff (Linting/Formatting), Pre-commit hooks
 
@@ -111,10 +115,19 @@ class Vehicle(models.Model):
     year = PositiveIntegerField
     trim = CharField(max_length=100, blank=True)
     vin = CharField(max_length=17, unique=True, blank=True)
+    license_plate = CharField(max_length=20, blank=True)
+    
+    # Collector Specs
+    transmission = CharField(max_length=50, blank=True)
+    exterior_color = CharField(max_length=50, blank=True)
+    interior_color = CharField(max_length=50, blank=True)
+
     purchase_price = DecimalField(max_digits=12, decimal_places=2)
+    purchase_date = DateField(null=True, blank=True)
     current_market_value = DecimalField(max_digits=12, decimal_places=2)
     mileage = PositiveIntegerField(default=0)
     created_at = DateTimeField(auto_now_add=True)
+    notes = TextField(blank=True)
 ```
 
 #### ServiceRecord
@@ -193,9 +206,19 @@ task_bulk_valuation_refresh() -> str
   - **API Used**: NHTSA vPIC API
 - **Market Valuation**:
   - **Endpoint**: `POST /mcp/execute` with tool `search_market_listings`
-  - **Input**: Make, model, year
-  - **Output**: List of comparable listings with prices
+  - **Input**: Make, model, year, trim, mileage, color
+  - **Output**: List of comparable listings with prices and photos
   - **API Used**: Marketcheck API
+- **Image Search**:
+  - **Endpoint**: `POST /mcp/execute` with tool `search_google_images`
+  - **Input**: Search query string
+  - **Output**: List of image URLs
+  - **API Used**: Google Search (Scraping/API)
+- **Image Generation**:
+  - **Endpoint**: `POST /mcp/execute` with tool `generate_vehicle_image`
+  - **Input**: Prompt string, Negative Prompt string (optional)
+  - **Output**: Base64 encoded image
+  - **API Used**: Google Gemini 2.5 Flash Image
 
 #### FastAPI OCR Service (To Implement)
 - **Endpoint**: `POST /ocr/process`
@@ -205,7 +228,7 @@ task_bulk_valuation_refresh() -> str
 
 ## Implementation Status
 
-### ✅ Completed (Phase 1-7)
+### ✅ Completed (Phase 1-8)
 
 **Phase 1-6**: (See previous versions for details)
 
@@ -217,6 +240,18 @@ task_bulk_valuation_refresh() -> str
 - ✅ Added `beautifulsoup4` for potential scraping tasks
 - ✅ Configured environment variables for API keys
 - ✅ Updated UI with "Add Vehicle" link and fixed visual bugs
+
+**Phase 8: Photo Fetching & Enhanced Valuation**
+- ✅ Implemented `vehicle_fetch_stock_photo` service with multi-strategy fallback
+- ✅ Created `google_search.py` MCP tool for image fallback
+- ✅ Enhanced `market_valuation.py` to accept trim, mileage, and color
+- ✅ Updated `vehicle_update_market_valuation` to use detailed specs for better accuracy
+- ✅ Updated UI to display stock photos with indicators
+
+**Phase 9: Generative AI Integration**
+- ✅ Implemented `image_generation.py` MCP tool using Google Gemini
+- ✅ Configured API key handling for Google services
+- ✅ Registered new tool in FastAPI router
 
 ### ⏳ Remaining Work
 
@@ -265,6 +300,7 @@ task_bulk_valuation_refresh() -> str
 - **FastAPI**: Separate AI/OCR service
 - **NHTSA vPIC API**: For VIN decoding
 - **Marketcheck API**: For market valuation
+- **Google Gemini API**: For generative AI
 - **OCR Service**: Tesseract, Google Cloud Vision, or similar
 
 ### Internal
@@ -295,7 +331,7 @@ task_bulk_valuation_refresh() -> str
 - Cache results to reduce scraping frequency
 
 ### Risk 3: External API Costs
-**Risk**: Cloud OCR/vision APIs may be expensive at scale
+**Risk**: Cloud OCR/vision/GenAI APIs may be expensive at scale
 **Impact**: Medium - affects project viability
 **Mitigation**:
 - Use open-source Tesseract first
@@ -378,7 +414,11 @@ task_bulk_valuation_refresh() -> str
 ### Version 0.3.0 (Current) ✅
 - FastAPI service for VIN lookup and market valuation
 
-### Version 0.4.0 (Next)
+### Version 0.4.0 (Current) ✅
+- Generative AI integration
+- Enhanced photo fetching
+
+### Version 0.5.0 (Next)
 - FastAPI OCR service
 - Receipt upload and processing
 - Dashboard views

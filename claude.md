@@ -4,7 +4,7 @@
 
 My Garage is an automotive asset management and valuation platform designed for car enthusiasts. It helps users track their vehicles as financial assets, manage service history, plan upgrades, and understand their car's market value through AI-powered tools and real-time market intelligence.
 
-**Current Status:** ✅ **VIN Enrichment Feature Complete** - The full pipeline for enriching vehicle data from a VIN is now functional, from the UI trigger to the background task and external API call.
+**Current Status:** ✅ **Generative AI Integration** - Added capability to generate vehicle images using Google Gemini 2.5 Flash Image, expanding the platform's visual capabilities.
 
 ## Core Features
 
@@ -13,6 +13,7 @@ My Garage is an automotive asset management and valuation platform designed for 
 3. **Upgrade Project Manager**: Track modifications from wishlist to installation with cost tracking.
 4. **Market Intelligence Engine**: Real-time market valuation using Web MCP to browse comparable listings.
 5. **Visual Condition Grading**: AI-powered condition assessment with value impact analysis.
+6. **Generative Visuals**: AI-generated visualizations for project cars and modifications.
 
 ## Technology Stack
 
@@ -31,10 +32,25 @@ My Garage is an automotive asset management and valuation platform designed for 
 - **FastAPI 0.104+** - Microservice for AI/compute tasks.
 - **NHTSA vPIC API** - For VIN decoding.
 - **Marketcheck API** - For market valuation.
+- **Google Gemini API** - For generative AI image creation.
+
+## Development Log - Generative AI Integration
+
+Today's session focused on adding generative AI capabilities to the platform.
+
+1.  **Image Generation Tool**:
+    *   Created `src/fastapi_services/mcp/tools/image_generation.py` to interface with Google's Gemini 2.5 Flash Image model.
+    *   Implemented `generate_vehicle_image` function that accepts a prompt and negative prompt.
+    *   Configured the tool to return base64 encoded images for immediate display or storage.
+
+2.  **Configuration & Routing**:
+    *   Updated `src/fastapi_services/mcp/config.py` to support `google_api_key` (and `gemini_api_key` fallback).
+    *   Registered the new tool in `src/fastapi_services/mcp/main.py` under the `generate_vehicle_image` tool name.
+    *   Ensured the FastAPI service can gracefully handle missing API keys by making them optional.
 
 ## Development Log - Code Quality Integration
 
-Today's session focused on integrating code quality tools to ensure a clean and maintainable codebase.
+Previous session focused on integrating code quality tools to ensure a clean and maintainable codebase.
 
 1.  **Linter & Formatter Integration**:
     *   Added **Ruff** to the project dependencies in `pixi.toml` and `pyproject.toml`.
@@ -72,4 +88,4 @@ Previous session focused on implementing and debugging the "Enrich from VIN" fea
     *   **Improvement**: Modified the FastAPI tool to filter out a known list of ignored keys, ensuring only clean vehicle data is returned.
     *   **Accuracy Boost**: Updated the service to send the vehicle's `model_year` along with the VIN to the NHTSA API, improving the accuracy of the returned data.
 
-**Outcome**: The "Enrich from VIN" feature is now robust and functional. The debugging process has also hardened the Celery and FastAPI configurations, improving the overall stability of the project.
+**Outcome**: The platform now supports generative AI for vehicle visualization, alongside robust VIN enrichment and code quality standards.

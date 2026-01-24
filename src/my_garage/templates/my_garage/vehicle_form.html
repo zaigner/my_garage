@@ -85,8 +85,28 @@
                     </div>
                 </div>
 
+                <!-- Collector Specs -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-white/10 pt-6">
+                    <div>
+                        <label for="{{ form.transmission.id_for_label }}" class="block text-sm font-medium text-luxury-text uppercase tracking-wider mb-2">Transmission</label>
+                        {{ form.transmission }}
+                    </div>
+                    <div>
+                        <label for="{{ form.license_plate.id_for_label }}" class="block text-sm font-medium text-luxury-text uppercase tracking-wider mb-2">License Plate</label>
+                        {{ form.license_plate }}
+                    </div>
+                    <div>
+                        <label for="{{ form.exterior_color.id_for_label }}" class="block text-sm font-medium text-luxury-text uppercase tracking-wider mb-2">Exterior Color</label>
+                        {{ form.exterior_color }}
+                    </div>
+                    <div>
+                        <label for="{{ form.interior_color.id_for_label }}" class="block text-sm font-medium text-luxury-text uppercase tracking-wider mb-2">Interior Color</label>
+                        {{ form.interior_color }}
+                    </div>
+                </div>
+
                 <!-- VIN -->
-                <div>
+                <div class="border-t border-white/10 pt-6">
                     <label for="{{ form.vin.id_for_label }}" class="block text-sm font-medium text-luxury-text uppercase tracking-wider mb-2">VIN</label>
                     {{ form.vin }}
                     {% if form.vin.errors %}
@@ -102,11 +122,29 @@
                         {{ form.purchase_price }}
                     </div>
 
+                    <!-- Purchase Date -->
+                    <div>
+                        <label for="{{ form.purchase_date.id_for_label }}" class="block text-sm font-medium text-luxury-text uppercase tracking-wider mb-2">Purchase Date</label>
+                        {{ form.purchase_date }}
+                    </div>
+
                     <!-- Mileage -->
                     <div>
                         <label for="{{ form.mileage.id_for_label }}" class="block text-sm font-medium text-luxury-text uppercase tracking-wider mb-2">Mileage</label>
                         {{ form.mileage }}
                     </div>
+                </div>
+
+                <!-- Notes -->
+                <div>
+                    <label for="{{ form.notes.id_for_label }}" class="block text-sm font-medium text-luxury-text uppercase tracking-wider mb-2">Provenance / Notes</label>
+                    {{ form.notes }}
+                </div>
+
+                <!-- Photo -->
+                <div>
+                    <label for="{{ form.photo.id_for_label }}" class="block text-sm font-medium text-luxury-text uppercase tracking-wider mb-2">Photo</label>
+                    {{ form.photo }}
                 </div>
 
                 <div class="pt-6">
@@ -120,7 +158,7 @@
 
     <style>
         /* Override Django form widget styles */
-        input[type="text"], input[type="number"] {
+        input[type="text"], input[type="number"], input[type="date"], textarea, select {
             background-color: #0B1026;
             border: 1px solid rgba(255, 255, 255, 0.1);
             color: #F5F5F5;
@@ -129,10 +167,14 @@
             width: 100%;
             transition: border-color 0.2s;
         }
-        input:focus {
+        input:focus, textarea:focus, select:focus {
             outline: none;
             border-color: #D4AF37;
             ring: 1px solid #D4AF37;
+        }
+        /* Fix for date input icon color in some browsers */
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
         }
     </style>
 

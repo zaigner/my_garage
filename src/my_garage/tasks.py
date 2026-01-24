@@ -8,6 +8,7 @@ from decimal import Decimal
 from .api.services import (
     vehicle_update_market_valuation,
     vehicle_enrich_from_vin,
+    vehicle_fetch_stock_photo,
     VehicleServiceError,
     service_record_process_ocr_data
 )
@@ -94,6 +95,31 @@ def task_enrich_vehicle_data(self, vehicle_id: int):
         logger.error(f"Vehicle {vehicle_id} not found.")
     except Exception as exc:
         logger.error(f"Error enriching vehicle {vehicle_id}: {exc}", exc_info=True)
+        raise self.retry(exc=exc)
+
+
+@celery_app.task(bind=True, name="my_garage.refresh_photo", **RETRY_KWARGS)
+def task_refresh_vehicle_photo(self, vehicle_id: int):
+    """
+    Background task to force refresh the vehicle photo based on current specs/color.
+    """
+    try:
+        vehicle = Vehicle.objects.get(pk=vehicle_id)
+        logger.info(f"Refreshing photo for {vehicle}...")
+
+        success = vehicle_fetch_stock_photo(vehicle, force_refresh=True)
+        
+        if success:
+            logger.info(f"Successfully refreshed photo for {vehicle}")
+        else:
+            logger.warning(f"Failed to refresh photo for {vehicle}")
+            
+        return success
+
+    except Vehicle.DoesNotExist:
+        logger.error(f"Vehicle {vehicle_id} not found.")
+    except Exception as exc:
+        logger.error(f"Error refreshing photo for {vehicle_id}: {exc}", exc_info=True)
         raise self.retry(exc=exc)
 
 

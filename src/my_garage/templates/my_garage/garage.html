@@ -112,7 +112,16 @@
                     </a>
                     <div class="mt-4">
                         <h1 class="text-5xl md:text-7xl font-script text-white drop-shadow-lg">{{ vehicle.year }} {{ vehicle.make }}</h1>
-                        <p class="text-luxury-gold font-sans tracking-[0.2em] text-sm mt-2 uppercase">{{ vehicle.model }} {{ vehicle.trim }}</p>
+                        <p class="text-luxury-gold font-sans tracking-[0.2em] text-sm mt-2 uppercase">
+                            {{ vehicle.model }} {{ vehicle.trim }}
+                        </p>
+                        {% if vehicle.transmission or vehicle.exterior_color %}
+                        <p class="text-white/50 font-sans text-xs mt-1 uppercase tracking-widest">
+                            {% if vehicle.transmission %}{{ vehicle.transmission }}{% endif %}
+                            {% if vehicle.transmission and vehicle.exterior_color %} • {% endif %}
+                            {% if vehicle.exterior_color %}{{ vehicle.exterior_color }}{% endif %}
+                        </p>
+                        {% endif %}
                     </div>
                 </div>
                 {% empty %}

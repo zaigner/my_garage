@@ -1,0 +1,23 @@
+{% extends "my_garage/base.html" %}
+
+{% block title %}{{ title }} - {{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-6">{{ title }}</h1>
+    <h2 class="text-xl text-gray-600 mb-8">{{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}</h2>
+
+    <div class="bg-white p-6 rounded-lg shadow-lg max-w-2xl">
+        <form method="post">
+            {% csrf_token %}
+            <div class="space-y-4">
+                {{ form.as_p }}
+            </div>
+            <div class="mt-6 flex justify-end space-x-4">
+                <a href="{% url 'my_garage:vehicle_detail' vehicle.id %}" class="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400">Cancel</a>
+                <button type="submit" class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700">Start Project</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

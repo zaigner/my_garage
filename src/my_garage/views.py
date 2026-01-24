@@ -7,10 +7,15 @@ from django.db import transaction
 
 # Import our custom Application Layer components
 from my_garage.models import Vehicle
-from .forms import VehicleForm
-from .api.selectors import vehicle_get_build_summary, vehicle_list_wishlist_items
+from .forms import VehicleForm, ServiceRecordForm, UpgradeForm
+from .api.selectors import (
+    vehicle_get_build_summary, 
+    vehicle_list_wishlist_items, 
+    vehicle_list_service_records, 
+    vehicle_list_upgrades
+)
 from .api.services import service_record_create_from_ocr
-from .tasks import task_update_market_valuation, task_enrich_vehicle_data
+from .tasks import task_update_market_valuation, task_enrich_vehicle_data, task_refresh_vehicle_photo
 
 logger = logging.getLogger(__name__)
 
@@ -73,9 +78,22 @@ def vehicle_detail(request: HttpRequest, vehicle_id: int) -> HttpResponse:
     vehicle = get_object_or_404(Vehicle, pk=vehicle_id, owner=request.user)
 
     if request.method == 'POST':
+        # Capture old color to check for changes
+        old_color = vehicle.exterior_color
+        
         form = VehicleForm(request.POST, request.FILES, instance=vehicle)
         if form.is_valid():
-            form.save()
+            vehicle = form.save()
+            
+            # Check if color changed and user didn't upload a new photo manually
+            new_color = vehicle.exterior_color
+            photo_uploaded = 'photo' in request.FILES
+            
+            if new_color != old_color and new_color and not photo_uploaded:
+                logger.info(f"Color changed for {vehicle} from '{old_color}' to '{new_color}'. Triggering photo refresh.")
+                transaction.on_commit(lambda: task_refresh_vehicle_photo.delay(vehicle.id))
+                messages.info(request, f"Updating photo to match {new_color}...")
+
             messages.success(request, f"{vehicle} updated successfully.")
             return redirect('my_garage:vehicle_detail', vehicle_id=vehicle.id)
     else:
@@ -99,6 +117,8 @@ def vehicle_detail(request: HttpRequest, vehicle_id: int) -> HttpResponse:
         'vehicle': vehicle,
         'financial_summary': financial_summary,
         "wishlist": vehicle_list_wishlist_items(summary['vehicle']),
+        "service_records": vehicle_list_service_records(summary['vehicle']),
+        "upgrades": vehicle_list_upgrades(summary['vehicle']),
         'display_specs': display_specs,
         'display_features': display_features,
     }
@@ -157,4 +177,49 @@ def upload_service_receipt(request: HttpRequest, vehicle_id: int) -> HttpRespons
         messages.info(request, "Receipt uploaded! AI is now extracting the details.")
         return redirect("my_garage:vehicle_detail", vehicle_id=vehicle.id)
 
-    return render(request, "my_garage/upload_receipt.html", {"vehicle": vehicle})
+    # If accessed via GET, redirect to the main Add Service page which now includes the upload form
+    return redirect("my_garage:add_service_record", vehicle_id=vehicle.id)
+
+
+@login_required
+def add_service_record(request: HttpRequest, vehicle_id: int) -> HttpResponse:
+    """
+    View to add a new service record manually.
+    """
+    vehicle = get_object_or_404(Vehicle, pk=vehicle_id, owner=request.user)
+
+    if request.method == 'POST':
+        form = ServiceRecordForm(request.POST, request.FILES)
+        if form.is_valid():
+            record = form.save(commit=False)
+            record.vehicle = vehicle
+            record.is_verified = True # Manually added records are verified by default
+            record.save()
+            
+            messages.success(request, "Service record added successfully.")
+            return redirect('my_garage:vehicle_detail', vehicle_id=vehicle.id)
+    else:
+        form = ServiceRecordForm()
+
+    return render(request, 'my_garage/service_record_form.html', {'form': form, 'vehicle': vehicle, 'title': 'Add Service Record'})
+
+
+@login_required
+def add_upgrade_project(request: HttpRequest, vehicle_id: int) -> HttpResponse:
+    """
+    View to add a new upgrade project.
+    """
+    vehicle = get_object_or_404(Vehicle, pk=vehicle_id, owner=request.user)
+
+    if request.method == 'POST':
+        form = UpgradeForm(request.POST)
+        if form.is_valid():
+            upgrade = form.save(commit=False)
+            upgrade.vehicle = vehicle
+            upgrade.save()
+            messages.success(request, "Upgrade project started!")
+            return redirect('my_garage:vehicle_detail', vehicle_id=vehicle.id)
+    else:
+        form = UpgradeForm()
+
+    return render(request, 'my_garage/upgrade_form.html', {'form': form, 'vehicle': vehicle, 'title': 'Start New Project'})

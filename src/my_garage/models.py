@@ -15,14 +15,22 @@ class Vehicle(models.Model):
     year = models.PositiveIntegerField()
     trim = models.CharField(max_length=100, blank=True)
     vin = models.CharField(max_length=17, unique=True, blank=True, null=True)
+    license_plate = models.CharField(max_length=20, blank=True)
+
+    # Collector Specs
+    transmission = models.CharField(max_length=50, blank=True, help_text="e.g. 6-Speed Manual, 8-Speed Auto")
+    exterior_color = models.CharField(max_length=50, blank=True, help_text="Specific paint name/code")
+    interior_color = models.CharField(max_length=50, blank=True)
 
     # Financials
     purchase_price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    purchase_date = models.DateField(null=True, blank=True)
     current_market_value = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
 
     # Metadata
     mileage = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
+    notes = models.TextField(blank=True, help_text="Provenance, history, and other details.")
     
     # Enhanced Data (from VIN Decoder)
     features = models.JSONField(default=dict, blank=True)  # Stores features like "Leather Seats", "Sunroof"

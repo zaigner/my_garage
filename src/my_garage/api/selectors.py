@@ -68,6 +68,20 @@ def vehicle_list_wishlist_items(vehicle: Vehicle) -> QuerySet[Upgrade]:
     return Upgrade.objects.filter(vehicle=vehicle, status='WISHLIST').order_by('part_name')
 
 
+def vehicle_list_service_records(vehicle: Vehicle) -> QuerySet[ServiceRecord]:
+    """
+    Returns all service records for the vehicle.
+    """
+    return ServiceRecord.objects.filter(vehicle=vehicle).order_by('-date')
+
+
+def vehicle_list_upgrades(vehicle: Vehicle) -> QuerySet[Upgrade]:
+    """
+    Returns all upgrades (projects) that are not in wishlist.
+    """
+    return Upgrade.objects.filter(vehicle=vehicle).exclude(status='WISHLIST').order_by('-installation_date', 'part_name')
+
+
 def vehicle_get_pending_service_count(vehicle: Vehicle) -> int:
     """
     Returns count of service records that haven't been verified by AI/User yet.

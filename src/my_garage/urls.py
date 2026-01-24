@@ -10,4 +10,6 @@ urlpatterns = [
     path("<int:vehicle_id>/refresh-valuation/", views.trigger_valuation_refresh, name="refresh_valuation"),
     path("<int:vehicle_id>/enrich-vin/", views.trigger_vin_enrichment, name="enrich_vin"),
     path("<int:vehicle_id>/upload-receipt/", views.upload_service_receipt, name="upload_receipt"),
+    path("<int:vehicle_id>/add-service/", views.add_service_record, name="add_service_record"),
+    path("<int:vehicle_id>/add-project/", views.add_upgrade_project, name="add_upgrade_project"),
 ]
