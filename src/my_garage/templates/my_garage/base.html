@@ -31,6 +31,7 @@
             }
         }
     </script>
+    {% block extra_head %}{% endblock %}
 </head>
 <body class="bg-gray-100 font-sans">
 
@@ -46,9 +47,9 @@
 
     <main>
         {% if messages %}
-            <div class="container mx-auto mt-4">
+            <div class="container mx-auto mt-4 px-4">
                 {% for message in messages %}
-                    <div class="p-4 mb-4 text-sm text-white rounded-lg {% if message.tags == 'success' %}bg-green-500{% elif message.tags == 'error' %}bg-red-500{% else %}bg-blue-500{% endif %}" role="alert">
+                    <div class="p-4 mb-4 text-sm text-white rounded-lg {% if message.tags == 'success' %}bg-green-600{% elif message.tags == 'error' %}bg-red-600{% else %}bg-blue-600{% endif %} shadow-lg" role="alert">
                         {{ message }}
                     </div>
                 {% endfor %}

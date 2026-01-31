@@ -2,235 +2,356 @@
 
 {% block title %}{{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}{% endblock %}
 
+{% block extra_head %}
+<link href="https://fonts.googleapis.com/css2?family=Michroma&display=swap" rel="stylesheet">
+<style>
+    .porsche-font {
+        font-family: 'Michroma', sans-serif;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    .race-deck-bg {
+        background-color: #111;
+        background-image:
+            linear-gradient(45deg, #1a1a1a 25%, transparent 25%, transparent 75%, #1a1a1a 75%, #1a1a1a),
+            linear-gradient(45deg, #1a1a1a 25%, transparent 25%, transparent 75%, #1a1a1a 75%, #1a1a1a);
+        background-position: 0 0, 10px 10px;
+        background-size: 20px 20px;
+    }
+    .cabinet-finish {
+        background: linear-gradient(180deg, #262626 0%, #171717 100%);
+        border: 1px solid #404040;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Clean Data Entry Styling */
+    .cabinet-finish input[type="text"],
+    .cabinet-finish input[type="number"],
+    .cabinet-finish input[type="date"],
+    .cabinet-finish input[type="email"],
+    .cabinet-finish select,
+    .cabinet-finish textarea {
+        background-color: #262626;
+        border: 1px solid #404040;
+        color: #e5e5e5;
+        padding: 0.5rem;
+        border-radius: 0.25rem;
+        width: 100%;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        transition: all 0.2s;
+    }
+
+    .cabinet-finish input:focus,
+    .cabinet-finish select:focus,
+    .cabinet-finish textarea:focus {
+        outline: none;
+        border-color: #dc2626;
+        box-shadow: 0 0 0 1px #dc2626;
+        background-color: #1f1f1f;
+    }
+
+    .cabinet-finish label {
+        color: #9ca3af; /* gray-400 */
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+        display: block;
+    }
+
+    /* Custom Scrollbar for dark theme */
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: #171717;
+        border-radius: 3px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #404040;
+        border-radius: 3px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #525252;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container mx-auto px-4 py-8">
-    <div class="flex justify-between items-center mb-4">
-        <h1 class="text-3xl font-bold">{{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}</h1>
-        <div class="space-x-2">
-            <a href="{% url 'my_garage:enrich_vin' vehicle.id %}" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">Enrich from VIN</a>
-            <a href="{% url 'my_garage:refresh_valuation' vehicle.id %}" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Refresh Valuation</a>
-            <a href="{% url 'my_garage:add_service_record' vehicle.id %}" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Add Service</a>
-            <a href="{% url 'my_garage:add_upgrade_project' vehicle.id %}" class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700">Start Project</a>
-        </div>
-    </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div class="md:col-span-2">
-            <div class="bg-white p-6 rounded-lg shadow mb-6">
-                <h2 class="text-xl font-bold mb-4">Vehicle Details</h2>
-                <form method="post" enctype="multipart/form-data">
-                    {% csrf_token %}
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <!-- Basic Info -->
-                        <div class="space-y-2">
-                            <label class="block text-sm font-medium text-gray-700">Year</label>
-                            {{ form.year }}
-                        </div>
-                        <div class="space-y-2">
-                            <label class="block text-sm font-medium text-gray-700">Make</label>
-                            {{ form.make }}
-                        </div>
-                        <div class="space-y-2">
-                            <label class="block text-sm font-medium text-gray-700">Model</label>
-                            {{ form.model }}
-                        </div>
-                        <div class="space-y-2">
-                            <label class="block text-sm font-medium text-gray-700">Trim</label>
-                            {{ form.trim }}
-                        </div>
-
-                        <!-- Collector Specs -->
-                        <div class="space-y-2">
-                            <label class="block text-sm font-medium text-gray-700">Transmission</label>
-                            {{ form.transmission }}
-                        </div>
-                        <div class="space-y-2">
-                            <label class="block text-sm font-medium text-gray-700">License Plate</label>
-                            {{ form.license_plate }}
-                        </div>
-                        <div class="space-y-2">
-                            <label class="block text-sm font-medium text-gray-700">Exterior Color</label>
-                            {{ form.exterior_color }}
-                        </div>
-                        <div class="space-y-2">
-                            <label class="block text-sm font-medium text-gray-700">Interior Color</label>
-                            {{ form.interior_color }}
-                        </div>
-
-                        <!-- Financials & Metadata -->
-                        <div class="space-y-2">
-                            <label class="block text-sm font-medium text-gray-700">VIN</label>
-                            {{ form.vin }}
-                        </div>
-                        <div class="space-y-2">
-                            <label class="block text-sm font-medium text-gray-700">Mileage</label>
-                            {{ form.mileage }}
-                        </div>
-                        <div class="space-y-2">
-                            <label class="block text-sm font-medium text-gray-700">Purchase Price</label>
-                            {{ form.purchase_price }}
-                        </div>
-                        <div class="space-y-2">
-                            <label class="block text-sm font-medium text-gray-700">Purchase Date</label>
-                            {{ form.purchase_date }}
-                        </div>
-                    </div>
-
-                    <div class="mt-4 space-y-2">
-                        <label class="block text-sm font-medium text-gray-700">Provenance / Notes</label>
-                        {{ form.notes }}
-                    </div>
-
-                    <div class="mt-4 space-y-2">
-                        <label class="block text-sm font-medium text-gray-700">Photo</label>
-                        {{ form.photo }}
-                    </div>
-
-                    <button type="submit" class="mt-6 w-full px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 font-semibold">Save Changes</button>
-                </form>
+<div class="race-deck-bg min-h-screen text-gray-200 font-sans">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header Section -->
+        <div class="flex flex-col md:flex-row justify-between items-center mb-8 border-b border-gray-700 pb-4">
+            <h1 class="text-3xl md:text-4xl font-bold porsche-font text-white mb-4 md:mb-0 tracking-wider">{{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}</h1>
+            <div class="flex flex-wrap gap-2">
+                <a href="{% url 'my_garage:enrich_vin' vehicle.id %}" class="px-4 py-2 bg-gray-800 text-gray-200 rounded hover:bg-gray-700 border border-gray-600 uppercase text-xs font-bold tracking-wider transition-colors shadow-md">Enrich VIN</a>
+                <a href="{% url 'my_garage:refresh_valuation' vehicle.id %}" class="px-4 py-2 bg-gray-800 text-blue-400 rounded hover:bg-gray-700 border border-gray-600 uppercase text-xs font-bold tracking-wider transition-colors shadow-md">Valuation</a>
+                <a href="{% url 'my_garage:add_service_record' vehicle.id %}" class="px-4 py-2 bg-red-700 text-white rounded hover:bg-red-600 border border-red-800 uppercase text-xs font-bold tracking-wider transition-colors shadow-md">Add Service</a>
+                <a href="{% url 'my_garage:add_upgrade_project' vehicle.id %}" class="px-4 py-2 bg-red-700 text-white rounded hover:bg-red-600 border border-red-800 uppercase text-xs font-bold tracking-wider transition-colors shadow-md">Start Project</a>
             </div>
         </div>
-        <div>
-            {% if vehicle.photo %}
-                <div class="relative group">
-                    <img src="{{ vehicle.photo.url }}" alt="{{ vehicle }}" class="rounded-lg shadow-lg w-full h-auto object-cover">
-                    <div class="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
-                        {% if 'stock' in vehicle.photo.name %}Stock Image{% else %}My Vehicle{% endif %}
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left Column: Details Form -->
+            <div class="lg:col-span-2">
+                <div class="cabinet-finish p-6 rounded-lg mb-6">
+                    <div class="flex items-center mb-6 border-b border-gray-700 pb-2">
+                        <div class="w-1 h-6 bg-red-600 mr-3"></div>
+                        <h2 class="text-xl font-bold porsche-font text-gray-100">Vehicle Data</h2>
                     </div>
+
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Basic Info -->
+                            <div class="space-y-1">
+                                <label>Year</label>
+                                {{ form.year }}
+                            </div>
+                            <div class="space-y-1">
+                                <label>Make</label>
+                                {{ form.make }}
+                            </div>
+                            <div class="space-y-1">
+                                <label>Model</label>
+                                {{ form.model }}
+                            </div>
+                            <div class="space-y-1">
+                                <label>Trim</label>
+                                {{ form.trim }}
+                            </div>
+
+                            <!-- Collector Specs -->
+                            <div class="space-y-1">
+                                <label>Transmission</label>
+                                {{ form.transmission }}
+                            </div>
+                            <div class="space-y-1">
+                                <label>License Plate</label>
+                                {{ form.license_plate }}
+                            </div>
+                            <div class="space-y-1">
+                                <label>Exterior Color</label>
+                                {{ form.exterior_color }}
+                            </div>
+                            <div class="space-y-1">
+                                <label>Interior Color</label>
+                                {{ form.interior_color }}
+                            </div>
+
+                            <!-- Financials & Metadata -->
+                            <div class="space-y-1">
+                                <label>VIN</label>
+                                {{ form.vin }}
+                            </div>
+                            <div class="space-y-1">
+                                <label>Mileage</label>
+                                {{ form.mileage }}
+                            </div>
+                            <div class="space-y-1">
+                                <label>Purchase Price</label>
+                                {{ form.purchase_price }}
+                            </div>
+                            <div class="space-y-1">
+                                <label>Purchase Date</label>
+                                {{ form.purchase_date }}
+                            </div>
+                        </div>
+
+                        <div class="mt-6 space-y-1">
+                            <label>Provenance / Notes</label>
+                            {{ form.notes }}
+                        </div>
+
+                        <div class="mt-6 space-y-1">
+                            <label>Photo</label>
+                            <div class="text-gray-400 text-sm bg-gray-800 p-2 rounded border border-gray-700">{{ form.photo }}</div>
+                        </div>
+
+                        <button type="submit" class="mt-8 w-full px-6 py-3 bg-red-700 text-white uppercase tracking-widest font-bold hover:bg-red-600 transition-colors border border-red-800 shadow-lg rounded">
+                            Save Configuration
+                        </button>
+                    </form>
                 </div>
-            {% else %}
-                <div class="bg-gray-200 rounded-lg p-8 text-center aspect-video flex flex-col justify-center items-center">
-                    <svg class="w-12 h-12 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                    </svg>
-                    <p class="text-gray-500">No photo available.</p>
-                    <p class="text-xs text-gray-400 mt-2">Enrich from VIN to fetch a stock photo.</p>
+            </div>
+
+            <!-- Right Column: Photo & Provenance -->
+            <div>
+                <div class="cabinet-finish p-2 rounded-lg mb-6 shadow-xl">
+                    {% if vehicle.photo %}
+                        <div class="relative group">
+                            <img src="{{ vehicle.photo.url }}" alt="{{ vehicle }}" class="rounded border border-gray-700 w-full h-auto object-cover">
+                            <div class="absolute bottom-2 right-2 bg-black/80 text-white text-[10px] uppercase tracking-wider px-2 py-1 rounded border border-gray-600">
+                                {% if 'stock' in vehicle.photo.name %}Stock Spec{% else %}Owner Spec{% endif %}
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="bg-gray-800 rounded border border-gray-700 p-8 text-center aspect-video flex flex-col justify-center items-center">
+                            <svg class="w-12 h-12 text-gray-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                            <p class="text-gray-500 porsche-font text-sm">No Visual</p>
+                        </div>
+                    {% endif %}
                 </div>
-            {% endif %}
 
-            {% if vehicle.notes %}
-            <div class="mt-6 bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
-                <h3 class="font-bold text-yellow-800 mb-2">Provenance</h3>
-                <p class="text-sm text-yellow-900 italic">{{ vehicle.notes }}</p>
-            </div>
-            {% endif %}
-        </div>
-    </div>
-
-    <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div>
-            <h2 class="text-2xl font-bold mb-4">Specifications</h2>
-            <div class="bg-white p-4 rounded-lg shadow">
-                <ul>
-                    {% for key, value in display_specs.items %}
-                        <li class="flex justify-between py-1 border-b">
-                            <span class="font-semibold capitalize">{{ key }}</span>
-                            <span>{{ value|default:"Not Available" }}</span>
-                        </li>
-                    {% empty %}
-                        <li>No specifications available.</li>
-                    {% endfor %}
-                </ul>
+                {% if vehicle.notes %}
+                <div class="cabinet-finish p-6 rounded-lg border-l-4 border-yellow-600">
+                    <h3 class="font-bold text-yellow-500 porsche-font text-sm mb-2">Provenance</h3>
+                    <p class="text-sm text-gray-300 italic font-serif leading-relaxed">{{ vehicle.notes }}</p>
+                </div>
+                {% endif %}
             </div>
         </div>
-        <div>
-            <h2 class="text-2xl font-bold mb-4">Features</h2>
-            <div class="bg-white p-4 rounded-lg shadow">
-                <ul>
-                    {% for key, value in display_features.items %}
-                        <li class="flex justify-between py-1 border-b">
-                            <span class="font-semibold capitalize">{{ key }}</span>
-                            <span>{{ value|default:"Not Available" }}</span>
-                        </li>
-                    {% empty %}
-                        <li>No features available.</li>
-                    {% endfor %}
-                </ul>
+
+        <!-- Specs & Features -->
+        <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="cabinet-finish p-6 rounded-lg">
+                <div class="flex items-center mb-4 border-b border-gray-700 pb-2">
+                    <div class="w-1 h-5 bg-gray-500 mr-3"></div>
+                    <h2 class="text-lg font-bold porsche-font text-gray-200">Specifications</h2>
+                </div>
+                <!-- Scrollable Container for Specs -->
+                <div class="max-h-[18rem] overflow-y-auto pr-2 custom-scrollbar">
+                    <ul class="space-y-2">
+                        {% for key, value in display_specs.items %}
+                            <li class="flex justify-between items-center py-1 border-b border-gray-800">
+                                <span class="text-gray-500 text-xs uppercase tracking-wide font-bold">{{ key }}</span>
+                                <span class="text-gray-200 font-mono text-sm">{{ value|default:"--" }}</span>
+                            </li>
+                        {% empty %}
+                            <li class="text-gray-500 italic">No specifications available.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            <div class="cabinet-finish p-6 rounded-lg">
+                <div class="flex items-center mb-4 border-b border-gray-700 pb-2">
+                    <div class="w-1 h-5 bg-gray-500 mr-3"></div>
+                    <h2 class="text-lg font-bold porsche-font text-gray-200">Features</h2>
+                </div>
+                <!-- Also applying scroll to features for consistency -->
+                <div class="max-h-[18rem] overflow-y-auto pr-2 custom-scrollbar">
+                    <ul class="space-y-2">
+                        {% for key, value in display_features.items %}
+                            <li class="flex justify-between items-center py-1 border-b border-gray-800">
+                                <span class="text-gray-500 text-xs uppercase tracking-wide font-bold">{{ key }}</span>
+                                <span class="text-gray-200 font-mono text-sm">{{ value|default:"--" }}</span>
+                            </li>
+                        {% empty %}
+                            <li class="text-gray-500 italic">No features available.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div class="mt-8">
-        <h2 class="text-2xl font-bold mb-4">Financial Summary</h2>
-        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <div class="bg-white p-4 rounded-lg shadow">
-                <p class="text-gray-600">Purchase Price</p>
-                <p class="text-2xl font-bold">${{ financial_summary.purchase_price|floatformat:2 }}</p>
+        <!-- Financial Summary -->
+        <div class="mt-8">
+            <div class="flex items-center mb-4">
+                <h2 class="text-2xl font-bold porsche-font text-white tracking-wide">Financial Telemetry</h2>
             </div>
-            <div class="bg-white p-4 rounded-lg shadow">
-                <p class="text-gray-600">Purchase Date</p>
-                <p class="text-xl font-bold mt-1">{{ vehicle.purchase_date|default:"--" }}</p>
-            </div>
-            <div class="bg-white p-4 rounded-lg shadow">
-                <p class="text-gray-600">Market Value</p>
-                <p class="text-2xl font-bold">${{ vehicle.current_market_value|floatformat:2 }}</p>
-            </div>
-            <div class="bg-white p-4 rounded-lg shadow">
-                <p class="text-gray-600">Total Investment</p>
-                <p class="text-2xl font-bold">${{ financial_summary.total_investment|floatformat:2 }}</p>
-            </div>
-            <div class="bg-white p-4 rounded-lg shadow">
-                <p class="text-gray-600">Equity</p>
-                <p class="text-2xl font-bold {% if financial_summary.equity > 0 %}text-green-500{% else %}text-red-500{% endif %}">
-                    ${{ financial_summary.equity|floatformat:2 }}
-                </p>
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                <div class="cabinet-finish p-4 rounded-lg text-center">
+                    <p class="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Acquisition</p>
+                    <p class="text-xl font-bold text-white font-mono">${{ financial_summary.purchase_price|floatformat:0 }}</p>
+                </div>
+                <div class="cabinet-finish p-4 rounded-lg text-center">
+                    <p class="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Date</p>
+                    <p class="text-lg font-bold text-white font-mono">{{ vehicle.purchase_date|default:"--" }}</p>
+                </div>
+                <div class="cabinet-finish p-4 rounded-lg text-center border-b-2 border-blue-500">
+                    <p class="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Market Value</p>
+                    <p class="text-xl font-bold text-blue-400 font-mono">${{ vehicle.current_market_value|floatformat:0 }}</p>
+                </div>
+                <div class="cabinet-finish p-4 rounded-lg text-center">
+                    <p class="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Total Invested</p>
+                    <p class="text-xl font-bold text-white font-mono">${{ financial_summary.total_investment|floatformat:0 }}</p>
+                </div>
+                <div class="cabinet-finish p-4 rounded-lg text-center border-b-2 {% if financial_summary.equity > 0 %}border-green-500{% else %}border-red-500{% endif %}">
+                    <p class="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Equity</p>
+                    <p class="text-xl font-bold font-mono {% if financial_summary.equity > 0 %}text-green-400{% else %}text-red-400{% endif %}">
+                        ${{ financial_summary.equity|floatformat:0 }}
+                    </p>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div>
-            <h2 class="text-2xl font-bold mb-4">Service History</h2>
-            <div class="bg-white p-4 rounded-lg shadow">
-                <ul>
+        <!-- Bottom Section: Service & Projects -->
+        <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- Service History -->
+            <div class="cabinet-finish p-6 rounded-lg">
+                <div class="flex justify-between items-center mb-6 border-b border-gray-700 pb-2">
+                    <h2 class="text-xl font-bold porsche-font text-white">Service Log</h2>
+                    <span class="text-xs bg-gray-800 border border-gray-600 text-gray-300 px-2 py-1 rounded font-mono">{{ service_records|length }} Records</span>
+                </div>
+                <div class="space-y-4">
                     {% for record in service_records %}
-                        <li class="mb-4 border-b pb-2 last:border-0">
-                            <div class="flex justify-between">
-                                <span class="font-bold">{{ record.date }}</span>
-                                <span class="font-semibold">${{ record.total_cost|floatformat:2 }}</span>
+                        <div class="bg-gray-800/50 p-4 rounded border-l-2 border-gray-600 hover:bg-gray-800 transition-colors">
+                            <div class="flex justify-between items-start mb-1">
+                                <span class="font-mono text-red-400 font-bold text-sm">{{ record.date }}</span>
+                                <span class="font-mono text-gray-300 font-bold">${{ record.total_cost|floatformat:2 }}</span>
                             </div>
-                            <p class="text-sm text-gray-600">{{ record.vendor }} - {{ record.get_category_display }}</p>
-                            <p class="text-sm">{{ record.description|truncatechars:100 }}</p>
-                        </li>
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-sm font-bold text-white">{{ record.vendor }}</span>
+                                <span class="text-[10px] uppercase tracking-wider text-gray-500">{{ record.get_category_display }}</span>
+                            </div>
+                            <p class="text-sm text-gray-400 line-clamp-2">{{ record.description }}</p>
+                        </div>
                     {% empty %}
-                        <li>No service records found.</li>
+                        <div class="text-center py-8 text-gray-500">
+                            <p>No service records logged.</p>
+                        </div>
                     {% endfor %}
-                </ul>
+                </div>
             </div>
-        </div>
 
-        <div>
-            <h2 class="text-2xl font-bold mb-4">Projects & Upgrades</h2>
-            <div class="bg-white p-4 rounded-lg shadow">
-                <h3 class="font-semibold text-lg mb-2">Active Projects</h3>
-                <ul>
-                    {% for item in upgrades %}
-                        <li class="mb-2 border-b pb-2 last:border-0">
-                            <div class="flex justify-between">
-                                <span class="font-bold">{{ item.part_name }}</span>
-                                <span class="text-sm px-2 py-1 rounded {% if item.status == 'INSTALLED' %}bg-green-100 text-green-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">{{ item.get_status_display }}</span>
+            <!-- Projects -->
+            <div class="cabinet-finish p-6 rounded-lg">
+                <div class="flex justify-between items-center mb-6 border-b border-gray-700 pb-2">
+                    <h2 class="text-xl font-bold porsche-font text-white">Build Sheet</h2>
+                </div>
+
+                <div class="mb-6">
+                    <h3 class="text-[10px] uppercase tracking-widest text-gray-500 mb-3 font-bold">Active Projects</h3>
+                    <div class="space-y-3">
+                        {% for item in upgrades %}
+                            <div class="bg-gray-800/50 p-3 rounded border border-gray-700 flex justify-between items-center">
+                                <div>
+                                    <p class="font-bold text-white text-sm">{{ item.part_name }}</p>
+                                    <p class="text-xs text-gray-500">{{ item.brand }} {{ item.part_number }}</p>
+                                </div>
+                                <div class="text-right">
+                                    <span class="block text-[10px] uppercase tracking-wider px-2 py-1 rounded mb-1 font-bold
+                                        {% if item.status == 'INSTALLED' %}bg-green-900/30 text-green-400 border border-green-800
+                                        {% else %}bg-yellow-900/30 text-yellow-400 border border-yellow-800{% endif %}">
+                                        {{ item.get_status_display }}
+                                    </span>
+                                    {% if item.status == 'INSTALLED' %}
+                                        <span class="text-xs font-mono text-gray-400">${{ item.cost|floatformat:0 }}</span>
+                                    {% endif %}
+                                </div>
                             </div>
-                            <p class="text-sm text-gray-600">{{ item.brand }} {{ item.part_number }}</p>
-                            {% if item.status == 'INSTALLED' %}
-                                <p class="text-sm">Installed: {{ item.installation_date }} - Cost: ${{ item.cost|floatformat:2 }}</p>
-                            {% endif %}
-                        </li>
-                    {% empty %}
-                        <li>No active projects.</li>
-                    {% endfor %}
-                </ul>
+                        {% empty %}
+                            <p class="text-sm text-gray-500 italic">No active projects.</p>
+                        {% endfor %}
+                    </div>
+                </div>
 
-                <h3 class="font-semibold text-lg mt-4 mb-2">Wishlist</h3>
-                <ul>
-                    {% for item in wishlist %}
-                        <li class="mb-2 flex justify-between">
-                            <span>{{ item.part_name }}</span>
-                            <span>${{ item.cost|floatformat:2 }}</span>
-                        </li>
-                    {% empty %}
-                        <li>No items in your wishlist.</li>
-                    {% endfor %}
-                </ul>
+                <div>
+                    <h3 class="text-[10px] uppercase tracking-widest text-gray-500 mb-3 font-bold">Wishlist</h3>
+                    <div class="space-y-2">
+                        {% for item in wishlist %}
+                            <div class="flex justify-between items-center py-2 border-b border-gray-800 border-dashed">
+                                <span class="text-sm text-gray-300">{{ item.part_name }}</span>
+                                <span class="text-sm font-mono text-gray-500">${{ item.cost|floatformat:0 }}</span>
+                            </div>
+                        {% empty %}
+                            <p class="text-sm text-gray-500 italic">Wishlist is empty.</p>
+                        {% endfor %}
+                    </div>
+                </div>
             </div>
         </div>
     </div>

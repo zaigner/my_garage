@@ -236,5 +236,5 @@ If the answer to any is "no", reconsider the approach.
 ---
 
 **Last Updated**: 2025-12-22
-**Version**: 1.3
+**Version**: 1.4
 **Status**: Living Document (update as project evolves)

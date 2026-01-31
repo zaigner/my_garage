@@ -4,7 +4,7 @@
 
 My Garage is an automotive asset management and valuation platform designed for car enthusiasts. It helps users track their vehicles as financial assets, manage service history, plan upgrades, and understand their car's market value through AI-powered tools and real-time market intelligence.
 
-**Current Status:** ✅ **Generative AI Integration** - Added capability to generate vehicle images using Google Gemini 2.5 Flash Image, expanding the platform's visual capabilities.
+**Current Status:** ✅ **UI/UX Overhaul Complete** - The platform has been redesigned with a "Professional Garage" aesthetic, featuring dark mode, race deck flooring, and dynamic manufacturer-specific typography.
 
 ## Core Features
 
@@ -14,6 +14,7 @@ My Garage is an automotive asset management and valuation platform designed for 
 4. **Market Intelligence Engine**: Real-time market valuation using Web MCP to browse comparable listings.
 5. **Visual Condition Grading**: AI-powered condition assessment with value impact analysis.
 6. **Generative Visuals**: AI-generated visualizations for project cars and modifications.
+7. **Immersive Garage Experience**: A high-fidelity UI that mimics a physical garage with dynamic lighting, flooring, and branding.
 
 ## Technology Stack
 
@@ -22,6 +23,11 @@ My Garage is an automotive asset management and valuation platform designed for 
 - **Django REST Framework 3.14+** - API framework
 - **Celery 5.3+** - Async task queue
 - **Redis 5.0+** - Celery broker and result backend
+
+### Frontend
+- **Tailwind CSS** - Utility-first CSS framework
+- **Google Fonts** - Dynamic typography (Michroma, Cinzel, Orbitron, etc.)
+- **CSS3 Animations** - For carousel and spotlight effects
 
 ### Quality Assurance & Tooling
 - **Ruff** - Extremely fast Python linter and formatter
@@ -34,9 +40,23 @@ My Garage is an automotive asset management and valuation platform designed for 
 - **Marketcheck API** - For market valuation.
 - **Google Gemini API** - For generative AI image creation.
 
+## Development Log - UI/UX Overhaul
+
+Today's session focused on transforming the user interface into a premium, immersive experience.
+
+1.  **Vehicle Detail Redesign**:
+    *   **Theme**: Implemented a "Dark Mode" aesthetic with a "Race Deck" floor pattern background.
+    *   **Typography**: Integrated `Michroma` (Porsche-style) font for headers and monospaced fonts for financial telemetry.
+    *   **Layout**: Created a driver-focused 3-column layout with "cabinet-style" containers for data entry.
+    *   **Usability**: Added scrollable containers for long lists of specifications and features to maintain layout integrity.
+
+2.  **Garage Carousel Enhancements**:
+    *   **Dynamic Typography**: Implemented JavaScript logic to automatically apply manufacturer-appropriate fonts (e.g., `Orbitron` for Toyota, `Michroma` for Porsche, `Racing Sans One` for Ford) based on the vehicle make.
+    *   **Visuals**: Enhanced the carousel with spotlight effects and 3D perspective flooring.
+
 ## Development Log - Generative AI Integration
 
-Today's session focused on adding generative AI capabilities to the platform.
+Previous session focused on adding generative AI capabilities to the platform.
 
 1.  **Image Generation Tool**:
     *   Created `src/fastapi_services/mcp/tools/image_generation.py` to interface with Google's Gemini 2.5 Flash Image model.
@@ -65,27 +85,4 @@ Previous session focused on integrating code quality tools to ensure a clean and
 3.  **Workflow Automation**:
     *   Added `lint` and `format` tasks to `pixi.toml` so developers can run checks manually via `pixi run lint` or `pixi run format`.
 
-## Development Log - VIN Enrichment
-
-Previous session focused on implementing and debugging the "Enrich from VIN" feature.
-
-1.  **Feature Implementation**:
-    *   Added a button to the `vehicle_detail.html` page to manually trigger the VIN enrichment process.
-    *   Created a new Django view (`trigger_vin_enrichment`) to handle the request.
-    *   Created a Celery task (`task_enrich_vehicle_data`) to perform the lookup in the background.
-
-2.  **Debugging the Celery Pipeline**:
-    *   **Initial Problem**: The Celery worker was not processing any tasks, appearing "idle" despite tasks being sent.
-    *   **Investigation**:
-        *   Corrected a path issue in `config/celery_app.py` that was preventing task discovery.
-        *   Diagnosed and fixed an incorrect use of `transaction.on_commit` for a `GET` request, which was preventing the task from being dispatched to the broker.
-        *   Resolved a `ModuleNotFoundError` for `pytesseract` by synchronizing `pixi.toml` with `pyproject.toml`.
-        *   Fixed a `pydantic` validation error in the FastAPI service by configuring it to ignore extra environment variables from the shared `.env` file.
-    *   **Resolution**: After these fixes, the end-to-end pipeline (Django View → Celery Task → FastAPI Service → NHTSA API) was confirmed to be working successfully.
-
-3.  **API Data Handling**:
-    *   **Initial Problem**: The API was returning metadata and warnings (e.g., `error_text`) that were cluttering the UI.
-    *   **Improvement**: Modified the FastAPI tool to filter out a known list of ignored keys, ensuring only clean vehicle data is returned.
-    *   **Accuracy Boost**: Updated the service to send the vehicle's `model_year` along with the VIN to the NHTSA API, improving the accuracy of the returned data.
-
-**Outcome**: The platform now supports generative AI for vehicle visualization, alongside robust VIN enrichment and code quality standards.
+**Outcome**: The platform now combines robust backend functionality with a high-end, enthusiast-focused user interface.

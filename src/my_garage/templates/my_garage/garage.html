@@ -8,7 +8,15 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Base Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Pinyon+Script&family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+
+    <!-- Manufacturer Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Michroma&display=swap" rel="stylesheet"> <!-- Porsche/Audi/Modern -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet"> <!-- Luxury/British -->
+    <link href="https://fonts.googleapis.com/css2?family=Racing+Sans+One&display=swap" rel="stylesheet"> <!-- Muscle/Sport -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet"> <!-- JDM/Tech -->
+    <link href="https://fonts.googleapis.com/css2?family=Rye&display=swap" rel="stylesheet"> <!-- Classic American -->
 
     <script src="https://cdn.tailwindcss.com"></script>
 
@@ -26,6 +34,11 @@
                         'script': ['"Pinyon Script"', 'cursive'],
                         'serif': ['"Playfair Display"', 'serif'],
                         'sans': ['"Montserrat"', 'sans-serif'],
+                        'porsche': ['"Michroma"', 'sans-serif'],
+                        'luxury': ['"Cinzel"', 'serif'],
+                        'muscle': ['"Racing Sans One"', 'cursive'],
+                        'tech': ['"Orbitron"', 'sans-serif'],
+                        'classic': ['"Rye"', 'serif'],
                     }
                 }
             }
@@ -111,7 +124,8 @@
                         {% endif %}
                     </a>
                     <div class="mt-4">
-                        <h1 class="text-5xl md:text-7xl font-script text-white drop-shadow-lg">{{ vehicle.year }} {{ vehicle.make }}</h1>
+                        <!-- Dynamic Font Application -->
+                        <h1 class="text-5xl md:text-7xl text-white drop-shadow-lg manufacturer-font" data-make="{{ vehicle.make|lower }}">{{ vehicle.year }} {{ vehicle.make }}</h1>
                         <p class="text-luxury-gold font-sans tracking-[0.2em] text-sm mt-2 uppercase">
                             {{ vehicle.model }} {{ vehicle.trim }}
                         </p>
@@ -158,6 +172,33 @@
         const slides = document.querySelectorAll('.slide');
         const valuationEl = document.getElementById('current-valuation');
 
+        // Font Mapping Logic
+        function applyManufacturerFonts() {
+            const headers = document.querySelectorAll('.manufacturer-font');
+            headers.forEach(header => {
+                const make = header.getAttribute('data-make');
+
+                // Default fallback
+                let fontClass = 'font-sans';
+
+                if (['porsche', 'audi', 'tesla', 'bmw', 'mercedes', 'volkswagen'].includes(make)) {
+                    fontClass = 'font-porsche'; // Michroma (Euro/Modern)
+                } else if (['ferrari', 'lamborghini', 'maserati', 'alfa romeo', 'bugatti'].includes(make)) {
+                    fontClass = 'font-muscle'; // Racing Sans One (Exotic/Sport) - placeholder, could use others
+                } else if (['ford', 'chevrolet', 'dodge', 'jeep', 'pontiac', 'plymouth'].includes(make)) {
+                    fontClass = 'font-muscle'; // Racing Sans One (Muscle)
+                } else if (['toyota', 'honda', 'nissan', 'mazda', 'subaru', 'mitsubishi', 'lexus', 'infiniti', 'acura'].includes(make)) {
+                    fontClass = 'font-tech'; // Orbitron (JDM/Tech)
+                } else if (['rolls-royce', 'bentley', 'aston martin', 'jaguar', 'land rover'].includes(make)) {
+                    fontClass = 'font-luxury'; // Cinzel (British Luxury)
+                } else if (['cadillac', 'lincoln', 'buick'].includes(make)) {
+                    fontClass = 'font-classic'; // Rye (Classic American Luxury) - or Cinzel
+                }
+
+                header.classList.add(fontClass);
+            });
+        }
+
         function updateInfo(index) {
             if (slides.length === 0) return;
             const slide = slides[index];
@@ -203,10 +244,13 @@
             if (e.key === 'ArrowLeft') prevSlide();
         });
 
-        // Initialize info
-        if (slides.length > 0) {
-            updateInfo(0);
-        }
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            applyManufacturerFonts();
+            if (slides.length > 0) {
+                updateInfo(0);
+            }
+        });
     </script>
 </body>
 </html>
