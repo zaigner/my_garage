@@ -1,7 +1,11 @@
 import requests
+import logging
 from pydantic import BaseModel, Field
 from typing import List, Dict, Any, Optional
 from ..config import settings
+
+# Configure logging for this module
+logger = logging.getLogger(__name__)
 
 class MarketValuationInput(BaseModel):
     make: str = Field(..., description="The make of the vehicle.")
@@ -32,15 +36,22 @@ def search_market_listings(
         return {"error": "Marketcheck API key not configured."}
 
     url = "https://api.marketcheck.com/v2/search/car/active"
+    
+    # Base parameters (Relaxed Strategy)
+    # We start with the most specific query, but if it fails, we might need to retry with fewer params.
+    # For now, let's log exactly what we are sending.
     params = {
         "api_key": api_key,
+        "year": str(year),
         "make": make,
         "model": model,
-        "year": year,
-        "rows": 50,  # Increased to 50 to maximize chance of finding one with a photo
-        "photo_links": "true", # Explicitly request photo links
+        "rows": "50",
+        "start": "0",
+        "stats": "price,miles",
+        "photo_links": "true",
     }
 
+    # Add optional specific parameters
     if trim:
         params["trim"] = trim
     
@@ -54,12 +65,48 @@ def search_market_listings(
     if mileage:
         params["miles_range"] = f"{max(0, mileage - 10000)}-{mileage + 10000}"
 
+    headers = {"Accept": "application/json"}
+
+    # --- DEBUG LOGGING ---
+    # Log the full request URL (masking API key for security)
+    debug_params = params.copy()
+    debug_params["api_key"] = "HIDDEN"
+    print(f"DEBUG: Marketcheck Request -> URL: {url} | Params: {debug_params}")
+    # ---------------------
+
     try:
-        response = requests.get(url, params=params)
+        response = requests.get(url, headers=headers, params=params)
         response.raise_for_status()
         
         data = response.json()
-        
+        num_found = data.get("num_found", 0)
+        print(f"DEBUG: Marketcheck Response -> Found: {num_found} listings")
+
+        # If no results found with specific params, try a fallback (Relaxed Search)
+        if num_found == 0 and (exterior_color or interior_color or mileage):
+            print("DEBUG: No results found. Retrying with relaxed parameters (Year/Make/Model/Trim)...")
+            
+            # Reset to base params + Trim (if available)
+            relaxed_params = {
+                "api_key": api_key,
+                "year": str(year),
+                "make": make,
+                "model": model,
+                "rows": "50",
+                "start": "0",
+                "stats": "price,miles",
+                "photo_links": "true",
+            }
+            
+            # Keep trim in the relaxed search if it was provided
+            if trim:
+                relaxed_params["trim"] = trim
+            
+            response = requests.get(url, headers=headers, params=relaxed_params)
+            response.raise_for_status()
+            data = response.json()
+            print(f"DEBUG: Relaxed Search Response -> Found: {data.get('num_found', 0)} listings")
+
         results = []
         for listing in data.get("listings", []):
             # Extract image URL if available
@@ -77,12 +124,15 @@ def search_market_listings(
                 "seller_name": listing.get("dealer", {}).get("name"),
                 "city": listing.get("dealer", {}).get("city"),
                 "state": listing.get("dealer", {}).get("state"),
-                "image_url": primary_photo, # Add image URL to results
+                "image_url": primary_photo,
             })
         
         return {"results": results}
 
     except requests.exceptions.RequestException as e:
+        print(f"ERROR: Marketcheck API Request Failed: {e}")
+        if hasattr(e, 'response') and e.response is not None:
+             print(f"ERROR RESPONSE: {e.response.text}")
         return {"error": f"API request failed: {e}"}
     except KeyError:
         return {"error": "Unexpected response format from API"}

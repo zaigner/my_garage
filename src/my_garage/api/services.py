@@ -7,8 +7,9 @@ from decimal import Decimal
 from typing import Dict, Any, Optional, List
 from django.core.files.base import ContentFile
 from django.utils import timezone
+from pymongo.errors import ServerSelectionTimeoutError
 
-from my_garage.models import Vehicle, ServiceRecord, Upgrade, ConditionReport
+from my_garage.models import Vehicle, ServiceRecord, Upgrade, ConditionReport, ValuationHistory
 from ..utils.mongo import get_collection
 
 logger = logging.getLogger(__name__)
@@ -112,6 +113,13 @@ def vehicle_update_market_valuation(vehicle: Vehicle) -> Decimal:
         # Update and save the vehicle
         vehicle.current_market_value = median_price
         vehicle.save(update_fields=['current_market_value'])
+        
+        # Save history record with raw data
+        ValuationHistory.objects.create(
+            vehicle=vehicle,
+            value=median_price,
+            raw_data=data
+        )
 
         return median_price
 
@@ -377,14 +385,22 @@ def service_record_process_ocr_data(record: ServiceRecord) -> bool:
 
         ocr_data = response.json()
 
-        mongo_doc = ocr_data.copy()
-        mongo_doc['service_record_id'] = record.id
-        mongo_doc['vehicle_id'] = record.vehicle_id
-        
-        collection = get_collection('ocr_documents')
-        result = collection.insert_one(mongo_doc)
+        # Always save the raw data to the JSONField for the UI preview
+        record.ocr_raw_data = ocr_data
 
-        record.ocr_raw_data = {"mongo_id": str(result.inserted_id)}
+        # Try to save to MongoDB as well (for long-term storage/analytics)
+        try:
+            mongo_doc = ocr_data.copy()
+            mongo_doc['service_record_id'] = record.id
+            mongo_doc['vehicle_id'] = record.vehicle_id
+            
+            collection = get_collection('ocr_documents')
+            result = collection.insert_one(mongo_doc)
+            # We can store the Mongo ID in the JSONField too if we want
+            record.ocr_raw_data["mongo_id"] = str(result.inserted_id)
+        except (ServerSelectionTimeoutError, Exception) as mongo_err:
+            logger.error(f"MongoDB connection failed: {mongo_err}. Proceeding with Postgres-only storage.")
+
         record.vendor = ocr_data.get('vendor', record.vendor)
         record.description = ocr_data.get('description', record.description)
         record.total_cost = Decimal(str(ocr_data.get('total_cost', record.total_cost)))
@@ -394,8 +410,6 @@ def service_record_process_ocr_data(record: ServiceRecord) -> bool:
         return True
 
     except (requests.RequestException, ValueError, KeyError) as e:
-        import logging
-        logger = logging.getLogger(__name__)
         logger.error(f"OCR processing failed for record {record.id}: {str(e)}")
         return False
 

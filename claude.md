@@ -15,6 +15,7 @@ My Garage is an automotive asset management and valuation platform designed for 
 5. **Visual Condition Grading**: AI-powered condition assessment with value impact analysis.
 6. **Generative Visuals**: AI-generated visualizations for project cars and modifications.
 7. **Immersive Garage Experience**: A high-fidelity UI that mimics a physical garage with dynamic lighting, flooring, and branding.
+8. **Interactive 360° Viewer**: Exploratory vehicle detail pages allowing users to rotate and inspect vehicles from all angles (Imagin.Studio integration).
 
 ## Technology Stack
 
@@ -38,6 +39,7 @@ My Garage is an automotive asset management and valuation platform designed for 
 - **FastAPI 0.104+** - Microservice for AI/compute tasks.
 - **NHTSA vPIC API** - For VIN decoding.
 - **Marketcheck API** - For market valuation.
+- **Imagin.Studio API** - For 360° vehicle imagery.
 - **Google Gemini API** - For generative AI image creation.
 
 ## Development Log - UI/UX Overhaul
@@ -84,5 +86,19 @@ Previous session focused on integrating code quality tools to ensure a clean and
 
 3.  **Workflow Automation**:
     *   Added `lint` and `format` tasks to `pixi.toml` so developers can run checks manually via `pixi run lint` or `pixi run format`.
+
+## Development Log - Market Intelligence & Fixes
+
+Today's session focused on expanding market data capabilities and fixing the generative AI pipeline.
+
+1.  **Sales Statistics Integration**:
+    *   Created `src/fastapi_services/mcp/tools/sales_stats.py` to interface with Marketcheck's Sales Stats and History endpoints.
+    *   Implemented `get_sales_stats` to retrieve mean/median sold prices and days-on-market.
+    *   Implemented `get_sales_history_by_vin` to track specific vehicle transaction history.
+    *   Registered new tools in `src/fastapi_services/mcp/main.py`.
+
+2.  **Gemini API Refactor**:
+    *   Refactored `image_generation.py` to remove the deprecated Banana.dev dependency.
+    *   Updated the tool to use Google's `generativelanguage.googleapis.com` REST endpoint directly for the Gemini 2.5 Flash Image model (Nano Banana).
 
 **Outcome**: The platform now combines robust backend functionality with a high-end, enthusiast-focused user interface.

@@ -2,46 +2,161 @@
 
 {% block title %}{{ title }} - {{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}{% endblock %}
 
-{% block content %}
-<div class="container mx-auto px-4 py-8">
-    <h1 class="text-3xl font-bold mb-6">{{ title }}</h1>
-    <h2 class="text-xl text-gray-600 mb-8">{{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}</h2>
+{% block extra_head %}
+<link href="https://fonts.googleapis.com/css2?family=Michroma&display=swap" rel="stylesheet">
+<style>
+    .porsche-font {
+        font-family: 'Michroma', sans-serif;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    .race-deck-bg {
+        background-color: #111;
+        background-image:
+            linear-gradient(45deg, #1a1a1a 25%, transparent 25%, transparent 75%, #1a1a1a 75%, #1a1a1a),
+            linear-gradient(45deg, #1a1a1a 25%, transparent 25%, transparent 75%, #1a1a1a 75%, #1a1a1a);
+        background-position: 0 0, 10px 10px;
+        background-size: 20px 20px;
+    }
+    .cabinet-finish {
+        background: linear-gradient(180deg, #262626 0%, #171717 100%);
+        border: 1px solid #404040;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+    }
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <!-- Manual Entry Form -->
-        <div class="bg-white p-6 rounded-lg shadow-lg">
-            <h3 class="text-lg font-semibold mb-4">Manual Entry</h3>
-            <form method="post" enctype="multipart/form-data">
-                {% csrf_token %}
-                <div class="space-y-4">
-                    {{ form.as_p }}
-                </div>
-                <div class="mt-6 flex justify-end space-x-4">
-                    <a href="{% url 'my_garage:vehicle_detail' vehicle.id %}" class="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400">Cancel</a>
-                    <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Save Record</button>
-                </div>
-            </form>
+    /* Clean Data Entry Styling */
+    .cabinet-finish input[type="text"],
+    .cabinet-finish input[type="number"],
+    .cabinet-finish input[type="date"],
+    .cabinet-finish input[type="email"],
+    .cabinet-finish select,
+    .cabinet-finish textarea {
+        background-color: #262626;
+        border: 1px solid #404040;
+        color: #e5e5e5;
+        padding: 0.5rem;
+        border-radius: 0.25rem;
+        width: 100%;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        transition: all 0.2s;
+    }
+
+    .cabinet-finish input:focus,
+    .cabinet-finish select:focus,
+    .cabinet-finish textarea:focus {
+        outline: none;
+        border-color: #dc2626;
+        box-shadow: 0 0 0 1px #dc2626;
+        background-color: #1f1f1f;
+    }
+
+    .cabinet-finish label {
+        color: #9ca3af; /* gray-400 */
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+        display: block;
+    }
+
+    /* Hide default file input */
+    input[type="file"] {
+        display: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="race-deck-bg min-h-screen text-gray-200 font-sans">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row justify-between items-center mb-8 border-b border-gray-700 pb-4">
+            <div>
+                <h1 class="text-3xl font-bold porsche-font text-white tracking-wider mb-1">{{ title }}</h1>
+                <h2 class="text-sm text-gray-400 uppercase tracking-widest">{{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}</h2>
+            </div>
+            <a href="{% url 'my_garage:vehicle_detail' vehicle.id %}" class="px-4 py-2 bg-gray-800 text-gray-300 rounded hover:bg-gray-700 border border-gray-600 uppercase text-xs font-bold tracking-wider transition-colors">
+                &larr; Back to Garage
+            </a>
         </div>
 
-        <!-- AI OCR Upload -->
-        <div class="bg-white p-6 rounded-lg shadow-lg h-fit">
-            <h3 class="text-lg font-semibold mb-4">Scan Receipt with AI</h3>
-            <p class="text-gray-600 mb-4">Upload a photo of your service receipt or invoice. Our AI will automatically extract the vendor, date, cost, and description for you.</p>
-
-            <form action="{% url 'my_garage:upload_receipt' vehicle.id %}" method="post" enctype="multipart/form-data" class="space-y-4">
-                {% csrf_token %}
-                <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:bg-gray-50 transition-colors">
-                    <input type="file" name="receipt" id="receipt_upload" class="hidden" accept="image/*" onchange="this.form.submit()">
-                    <label for="receipt_upload" class="cursor-pointer flex flex-col items-center">
-                        <svg class="w-12 h-12 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                        </svg>
-                        <span class="text-blue-600 font-medium">Click to Upload Receipt</span>
-                        <span class="text-xs text-gray-500 mt-1">JPG, PNG supported</span>
-                    </label>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Manual Entry Form -->
+            <div class="cabinet-finish p-6 rounded-lg">
+                <div class="flex items-center mb-6 border-b border-gray-700 pb-2">
+                    <div class="w-1 h-6 bg-red-600 mr-3"></div>
+                    <h3 class="text-xl font-bold porsche-font text-gray-100">Manual Entry</h3>
                 </div>
-            </form>
+
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="space-y-4">
+                        <!-- Render fields manually to apply styles -->
+                        <div class="space-y-1">
+                            <label for="{{ form.date.id_for_label }}">Date</label>
+                            {{ form.date }}
+                        </div>
+                        <div class="space-y-1">
+                            <label for="{{ form.vendor.id_for_label }}">Vendor</label>
+                            {{ form.vendor }}
+                        </div>
+                        <div class="space-y-1">
+                            <label for="{{ form.category.id_for_label }}">Category</label>
+                            {{ form.category }}
+                        </div>
+                        <div class="space-y-1">
+                            <label for="{{ form.total_cost.id_for_label }}">Total Cost</label>
+                            {{ form.total_cost }}
+                        </div>
+                        <div class="space-y-1">
+                            <label for="{{ form.description.id_for_label }}">Description</label>
+                            {{ form.description }}
+                        </div>
+                        <div class="space-y-1">
+                            <label for="{{ form.receipt_image.id_for_label }}">Receipt Image</label>
+                            <div class="text-gray-400 text-sm bg-gray-800 p-2 rounded border border-gray-700">
+                                {{ form.receipt_image }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-8 flex justify-end space-x-4">
+                        <button type="submit" class="w-full px-6 py-3 bg-red-700 text-white uppercase tracking-widest font-bold hover:bg-red-600 transition-colors border border-red-800 shadow-lg rounded">
+                            Save Record
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- AI OCR Upload -->
+            {% if not is_edit %}
+            <div class="cabinet-finish p-6 rounded-lg h-fit">
+                <div class="flex items-center mb-6 border-b border-gray-700 pb-2">
+                    <div class="w-1 h-6 bg-blue-500 mr-3"></div>
+                    <h3 class="text-xl font-bold porsche-font text-gray-100">Document Scan</h3>
+                </div>
+
+                <p class="text-gray-400 text-sm mb-6 leading-relaxed">
+                    Upload a photo of your service receipt or invoice. Automatically extract the vendor, date, cost, and description for you.
+                </p>
+
+                <form action="{% url 'my_garage:upload_receipt' vehicle.id %}" method="post" enctype="multipart/form-data" class="space-y-4">
+                    {% csrf_token %}
+                    <div class="border-2 border-dashed border-gray-600 rounded-lg p-10 text-center hover:bg-gray-800/50 hover:border-blue-500 transition-all cursor-pointer group">
+                        <input type="file" name="receipt" id="receipt_upload" accept="image/*" onchange="this.form.submit()">
+                        <label for="receipt_upload" class="cursor-pointer flex flex-col items-center w-full h-full">
+                            <svg class="w-16 h-16 text-gray-500 group-hover:text-blue-400 mb-4 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
+                            <span class="text-blue-400 font-bold uppercase tracking-wider text-sm group-hover:text-blue-300">Upload Receipt</span>
+                            <span class="text-xs text-gray-600 mt-2 uppercase tracking-wide">JPG, PNG supported</span>
+                        </label>
+                    </div>
+                </form>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>

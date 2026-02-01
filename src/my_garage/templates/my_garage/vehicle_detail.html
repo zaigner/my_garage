@@ -261,9 +261,18 @@
                     <p class="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Date</p>
                     <p class="text-lg font-bold text-white font-mono">{{ vehicle.purchase_date|default:"--" }}</p>
                 </div>
-                <div class="cabinet-finish p-4 rounded-lg text-center border-b-2 border-blue-500">
+                <div class="cabinet-finish p-4 rounded-lg text-center border-b-2 border-blue-500 relative group">
                     <p class="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Market Value</p>
                     <p class="text-xl font-bold text-blue-400 font-mono">${{ vehicle.current_market_value|floatformat:0 }}</p>
+
+                    <!-- Debug Button (Visible on Hover if history exists) -->
+                    {% if latest_valuation %}
+                    <a href="{% url 'my_garage:view_valuation_debug' latest_valuation.id %}" class="absolute top-1 right-1 hidden group-hover:block text-blue-500 hover:text-blue-300" title="View API Data">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                        </svg>
+                    </a>
+                    {% endif %}
                 </div>
                 <div class="cabinet-finish p-4 rounded-lg text-center">
                     <p class="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Total Invested</p>
@@ -288,7 +297,7 @@
                 </div>
                 <div class="space-y-4">
                     {% for record in service_records %}
-                        <div class="bg-gray-800/50 p-4 rounded border-l-2 border-gray-600 hover:bg-gray-800 transition-colors">
+                        <div class="bg-gray-800/50 p-4 rounded border-l-2 border-gray-600 hover:bg-gray-800 transition-colors group relative">
                             <div class="flex justify-between items-start mb-1">
                                 <span class="font-mono text-red-400 font-bold text-sm">{{ record.date }}</span>
                                 <span class="font-mono text-gray-300 font-bold">${{ record.total_cost|floatformat:2 }}</span>
@@ -298,6 +307,28 @@
                                 <span class="text-[10px] uppercase tracking-wider text-gray-500">{{ record.get_category_display }}</span>
                             </div>
                             <p class="text-sm text-gray-400 line-clamp-2">{{ record.description }}</p>
+
+                            <!-- Edit/Delete Actions (Visible on Hover) -->
+                            <div class="absolute top-2 right-2 hidden group-hover:flex space-x-2 bg-gray-900/80 p-1 rounded">
+                                <!-- Debug Button -->
+                                {% if record.ocr_raw_data %}
+                                <a href="{% url 'my_garage:view_ocr_debug' record.id %}" class="text-green-400 hover:text-green-300 p-1" title="OCR Debug">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                                    </svg>
+                                </a>
+                                {% endif %}
+                                <a href="{% url 'my_garage:edit_service_record' record.id %}" class="text-blue-400 hover:text-blue-300 p-1" title="Edit">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                </a>
+                                <a href="{% url 'my_garage:delete_service_record' record.id %}" class="text-red-400 hover:text-red-300 p-1" title="Delete">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </a>
+                            </div>
                         </div>
                     {% empty %}
                         <div class="text-center py-8 text-gray-500">

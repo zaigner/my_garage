@@ -22,6 +22,11 @@ beat = "celery -A config.celery_app beat -l info"
 # FastAPI Tasks
 fastapi = "uvicorn src.fastapi_services.main:app --reload --port 8001"
 
+# Infrastructure Tasks
+# Ensure directory exists before starting mongo
+mongo = "mkdir -p .mongo_data && mongod --dbpath .mongo_data --logpath logs/mongo.log --fork"
+mongo-stop = "mongod --shutdown --dbpath .mongo_data"
+
 # Linting & Formatting
 lint = "ruff check ."
 format = "ruff format ."
@@ -46,6 +51,8 @@ django-celery-beat = ">=2.5,<3.0"
 pytesseract = ">=0.3,<0.4"
 python-multipart = ">=0.0.7,<0.1.0"
 beautifulsoup4 = ">=4.12,<5.0"
+# Relaxed MongoDB version constraint for cross-platform compatibility (especially osx-arm64)
+mongodb = ">=4.4"
 
 [feature.dev.dependencies]
 pytest = ">=7.4,<8.0"
@@ -62,8 +69,4 @@ default = ["dev"]
 prod = []
 
 [activation]
-# Pixi activation scripts must be actual files or inline shell commands depending on OS
-# For cross-platform compatibility, it's better to rely on manage.py setting sys.path
-# or use environment variables in the tasks themselves.
-# Removing the problematic script line.
 env = { PYTHONPATH = "src" }

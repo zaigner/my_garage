@@ -210,3 +210,6 @@ __marimo__/
 /staticfiles/
 /media/
 logs/*.log
+
+# MongoDB Data
+.mongo_data/

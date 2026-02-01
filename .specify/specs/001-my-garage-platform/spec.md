@@ -3,10 +3,10 @@
 ## Overview
 
 **Feature ID**: 001-my-garage-platform
-**Status**: ✅ Phase 10 Complete - UI/UX Overhaul
+**Status**: ✅ Phase 11 Complete - Market Intelligence & Fixes
 **Owner**: Development Team
 **Created**: 2025-12-21
-**Last Updated**: 2025-12-22
+**Last Updated**: 2026-02-01
 
 ## Problem Statement
 
@@ -93,6 +93,17 @@ Car enthusiasts lack professional-grade tools to manage their vehicles as financ
 - ⏳ System provides feedback on visible issues
 - ⏳ Calculates value impact based on condition
 - ✅ Tracks condition changes over time
+
+### Epic 6: Interactive Exploration
+- **As a** car enthusiast
+- **I want to** rotate and inspect my car in 3D/360°
+- **So that** I can appreciate the aesthetics and visualize changes dynamically
+
+**Acceptance Criteria:**
+- ⏳ Vehicle detail page features an interactive 360° spin viewer
+- ⏳ Viewer dynamically loads images based on Make, Model, Year, and Paint Color
+- ⏳ Users can drag to rotate the vehicle
+- ⏳ Integration with Imagin.Studio or similar automotive imagery API
 
 ## Technical Specification
 
@@ -221,6 +232,11 @@ task_bulk_valuation_refresh() -> str
   - **Input**: Prompt string, Negative Prompt string (optional)
   - **Output**: Base64 encoded image
   - **API Used**: Google Gemini 2.5 Flash Image
+- **Sales Statistics**:
+  - **Endpoint**: `POST /mcp/execute` with tool `get_sales_stats` or `get_sales_history_by_vin`
+  - **Input**: Year, Make, Model, Zip (for stats) OR VIN (for history)
+  - **Output**: JSON with sales metrics (mean/median price, DOM) or transaction history
+  - **API Used**: Marketcheck API
 
 #### FastAPI OCR Service (To Implement)
 - **Endpoint**: `POST /ocr/process`
@@ -261,6 +277,11 @@ task_bulk_valuation_refresh() -> str
 - ✅ Added scrollable containers for specs and features
 - ✅ Enhanced `base.html` with global font libraries and Tailwind config
 
+**Phase 11: Market Intelligence & Fixes**
+- ✅ Implemented `sales_stats.py` MCP tool for sold data analysis
+- ✅ Implemented `get_sales_history_by_vin` for provenance tracking
+- ✅ Refactored `image_generation.py` to use native Google Gemini API (fixing Banana.dev deprecation)
+
 ### ⏳ Remaining Work
 
 **FastAPI OCR Service**
@@ -275,6 +296,7 @@ task_bulk_valuation_refresh() -> str
 - Create service history timeline view
 - Create upgrade tracker with status indicators
 - Create condition report gallery
+- Implement 360° Spin Viewer (Epic 6)
 
 **Additional Features**
 - PDF export of vehicle history

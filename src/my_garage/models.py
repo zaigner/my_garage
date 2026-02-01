@@ -41,6 +41,19 @@ class Vehicle(models.Model):
         return f"{self.year} {self.make} {self.model}"
 
 
+class ValuationHistory(models.Model):
+    """Stores the history of market valuations for a vehicle."""
+    vehicle = models.ForeignKey(Vehicle, on_delete=models.CASCADE, related_name="valuation_history")
+    date = models.DateTimeField(auto_now_add=True)
+    value = models.DecimalField(max_digits=12, decimal_places=2)
+    
+    # Store the full raw response from the API for debugging/audit
+    raw_data = models.JSONField(null=True, blank=True)
+    
+    class Meta:
+        ordering = ['-date']
+
+
 class ServiceRecord(models.Model):
     """Stores service history and digitized documents."""
     CATEGORY_CHOICES = [

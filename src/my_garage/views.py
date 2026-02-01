@@ -6,7 +6,7 @@ from django.http import HttpRequest, HttpResponse
 from django.db import transaction
 
 # Import our custom Application Layer components
-from my_garage.models import Vehicle
+from my_garage.models import Vehicle, ServiceRecord, ValuationHistory
 from .forms import VehicleForm, ServiceRecordForm, UpgradeForm
 from .api.selectors import (
     vehicle_get_build_summary, 
@@ -111,6 +111,9 @@ def vehicle_detail(request: HttpRequest, vehicle_id: int) -> HttpResponse:
     # Prepare display-friendly dictionaries for the template
     display_specs = {key.replace('_', ' '): value for key, value in vehicle.specs.items()}
     display_features = {key.replace('_', ' '): value for key, value in vehicle.features.items()}
+    
+    # Get latest valuation history
+    latest_valuation = vehicle.valuation_history.first()
 
     context = {
         'form': form,
@@ -121,6 +124,7 @@ def vehicle_detail(request: HttpRequest, vehicle_id: int) -> HttpResponse:
         "upgrades": vehicle_list_upgrades(summary['vehicle']),
         'display_specs': display_specs,
         'display_features': display_features,
+        'latest_valuation': latest_valuation,
     }
     return render(request, "my_garage/vehicle_detail.html", context)
 
@@ -205,6 +209,53 @@ def add_service_record(request: HttpRequest, vehicle_id: int) -> HttpResponse:
 
 
 @login_required
+def edit_service_record(request: HttpRequest, record_id: int) -> HttpResponse:
+    """
+    View to edit an existing service record.
+    """
+    record = get_object_or_404(ServiceRecord, pk=record_id, vehicle__owner=request.user)
+    vehicle = record.vehicle
+
+    if request.method == 'POST':
+        form = ServiceRecordForm(request.POST, request.FILES, instance=record)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Service record updated.")
+            return redirect('my_garage:vehicle_detail', vehicle_id=vehicle.id)
+    else:
+        form = ServiceRecordForm(instance=record)
+
+    return render(request, 'my_garage/service_record_form.html', {
+        'form': form, 
+        'vehicle': vehicle, 
+        'title': 'Edit Service Record',
+        'is_edit': True,
+        'record': record
+    })
+
+
+@login_required
+def delete_service_record(request: HttpRequest, record_id: int) -> HttpResponse:
+    """
+    View to delete a service record.
+    """
+    record = get_object_or_404(ServiceRecord, pk=record_id, vehicle__owner=request.user)
+    vehicle_id = record.vehicle.id
+    
+    if request.method == 'POST':
+        record.delete()
+        messages.success(request, "Service record deleted.")
+        return redirect('my_garage:vehicle_detail', vehicle_id=vehicle_id)
+    
+    # If GET, show confirmation page (or just redirect if you prefer no confirmation page)
+    return render(request, 'my_garage/confirm_delete.html', {
+        'object': record,
+        'type': 'Service Record',
+        'cancel_url': f"/garage/{vehicle_id}/"
+    })
+
+
+@login_required
 def add_upgrade_project(request: HttpRequest, vehicle_id: int) -> HttpResponse:
     """
     View to add a new upgrade project.
@@ -223,3 +274,41 @@ def add_upgrade_project(request: HttpRequest, vehicle_id: int) -> HttpResponse:
         form = UpgradeForm()
 
     return render(request, 'my_garage/upgrade_form.html', {'form': form, 'vehicle': vehicle, 'title': 'Start New Project'})
+
+
+@login_required
+def view_ocr_debug(request: HttpRequest, record_id: int) -> HttpResponse:
+    """
+    View to inspect the raw OCR data for a service record.
+    """
+    record = get_object_or_404(ServiceRecord, pk=record_id, vehicle__owner=request.user)
+    
+    # Extract raw text and other metadata
+    raw_data = record.ocr_raw_data or {}
+    raw_text = raw_data.get("raw_text", "No raw text available.")
+    
+    # Try to parse lines for display
+    lines = [line.strip() for line in raw_text.split('\n') if line.strip()]
+    
+    context = {
+        "record": record,
+        "raw_text": raw_text,
+        "lines": lines,
+        "raw_data": raw_data,
+    }
+    return render(request, "my_garage/ocr_debug.html", context)
+
+
+@login_required
+def view_valuation_debug(request: HttpRequest, history_id: int) -> HttpResponse:
+    """
+    View to inspect the raw API response for a valuation update.
+    """
+    history = get_object_or_404(ValuationHistory, pk=history_id, vehicle__owner=request.user)
+    
+    context = {
+        "history": history,
+        "vehicle": history.vehicle,
+        "raw_data": history.raw_data,
+    }
+    return render(request, "my_garage/valuation_debug.html", context)

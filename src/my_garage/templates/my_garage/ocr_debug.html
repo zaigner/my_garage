@@ -1,0 +1,141 @@
+{% extends "my_garage/base.html" %}
+
+{% block title %}OCR Debug - {{ record.vendor }}{% endblock %}
+
+{% block extra_head %}
+<link href="https://fonts.googleapis.com/css2?family=Michroma&display=swap" rel="stylesheet">
+<style>
+    .porsche-font {
+        font-family: 'Michroma', sans-serif;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    .race-deck-bg {
+        background-color: #111;
+        background-image:
+            linear-gradient(45deg, #1a1a1a 25%, transparent 25%, transparent 75%, #1a1a1a 75%, #1a1a1a),
+            linear-gradient(45deg, #1a1a1a 25%, transparent 25%, transparent 75%, #1a1a1a 75%, #1a1a1a);
+        background-position: 0 0, 10px 10px;
+        background-size: 20px 20px;
+    }
+    .cabinet-finish {
+        background: linear-gradient(180deg, #262626 0%, #171717 100%);
+        border: 1px solid #404040;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+    }
+    .debug-terminal {
+        background-color: #0a0a0a;
+        color: #00ff00;
+        font-family: 'Courier New', Courier, monospace;
+        padding: 1.5rem;
+        border-radius: 0.25rem;
+        border: 1px solid #333;
+        box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
+    }
+    .line-number {
+        color: #444;
+        margin-right: 1rem;
+        user-select: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="race-deck-bg min-h-screen text-gray-200 font-sans">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row justify-between items-center mb-8 border-b border-gray-700 pb-4">
+            <div>
+                <h1 class="text-3xl font-bold porsche-font text-white tracking-wider mb-1">OCR Analysis</h1>
+                <h2 class="text-sm text-gray-400 uppercase tracking-widest">Record #{{ record.id }} - {{ record.vendor }}</h2>
+            </div>
+            <a href="{% url 'my_garage:vehicle_detail' record.vehicle.id %}" class="px-4 py-2 bg-gray-800 text-gray-300 rounded hover:bg-gray-700 border border-gray-600 uppercase text-xs font-bold tracking-wider transition-colors">
+                &larr; Back to Vehicle
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Left: Raw Text Analysis -->
+            <div class="cabinet-finish p-6 rounded-lg">
+                <div class="flex items-center mb-4 border-b border-gray-700 pb-2">
+                    <div class="w-1 h-6 bg-green-500 mr-3"></div>
+                    <h2 class="text-xl font-bold porsche-font text-gray-100">Extracted Text Stream</h2>
+                </div>
+                <div class="debug-terminal h-[600px] overflow-y-auto custom-scrollbar text-xs md:text-sm">
+                    {% for line in lines %}
+                        <div class="hover:bg-gray-900 transition-colors">
+                            <span class="line-number">{{ forloop.counter }}</span>
+                            {{ line }}
+                        </div>
+                    {% empty %}
+                        <p class="text-gray-500 italic">No text extracted.</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Right: Structured Data & Image -->
+            <div class="space-y-8">
+                <!-- Extracted Fields -->
+                <div class="cabinet-finish p-6 rounded-lg">
+                    <div class="flex items-center mb-4 border-b border-gray-700 pb-2">
+                        <div class="w-1 h-6 bg-blue-500 mr-3"></div>
+                        <h2 class="text-xl font-bold porsche-font text-gray-100">Mapped Fields</h2>
+                    </div>
+                    <div class="space-y-3 text-sm">
+                        <div class="flex justify-between items-center border-b border-gray-800 pb-2">
+                            <span class="text-gray-500 uppercase tracking-wider font-bold text-xs">Vendor</span>
+                            <span class="font-mono font-bold text-blue-400">{{ raw_data.vendor|default:"--" }}</span>
+                        </div>
+                        <div class="flex justify-between items-center border-b border-gray-800 pb-2">
+                            <span class="text-gray-500 uppercase tracking-wider font-bold text-xs">Date</span>
+                            <span class="font-mono font-bold text-yellow-500">{{ raw_data.date|default:"--" }}</span>
+                        </div>
+                        <div class="flex justify-between items-center border-b border-gray-800 pb-2">
+                            <span class="text-gray-500 uppercase tracking-wider font-bold text-xs">Total Cost</span>
+                            <span class="font-mono font-bold text-green-500 text-lg">${{ raw_data.total_cost|default:"0.00" }}</span>
+                        </div>
+                        <div class="flex justify-between items-center pt-2">
+                            <span class="text-gray-500 uppercase tracking-wider font-bold text-xs">Description</span>
+                            <span class="font-mono text-xs text-right text-gray-300">{{ raw_data.description|default:"--" }}</span>
+                        </div>
+                    </div>
+
+                    {% if raw_data.line_items %}
+                    <div class="mt-6">
+                        <h3 class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Detected Line Items</h3>
+                        <ul class="space-y-2">
+                            {% for item in raw_data.line_items %}
+                                <li class="flex justify-between items-center bg-gray-800/50 p-2 rounded border border-gray-700">
+                                    <span class="text-gray-300 text-xs">{{ item.item }}</span>
+                                    <span class="font-mono text-green-400 text-xs">${{ item.price }}</span>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Original Image -->
+                <div class="cabinet-finish p-6 rounded-lg">
+                    <div class="flex items-center mb-4 border-b border-gray-700 pb-2">
+                        <div class="w-1 h-6 bg-purple-500 mr-3"></div>
+                        <h2 class="text-xl font-bold porsche-font text-gray-100">Source Image</h2>
+                    </div>
+                    {% if record.receipt_image %}
+                        <a href="{{ record.receipt_image.url }}" target="_blank" class="block relative group">
+                            <img src="{{ record.receipt_image.url }}" alt="Receipt" class="w-full rounded border border-gray-700 group-hover:opacity-75 transition-opacity">
+                            <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                <span class="bg-black/80 text-white px-3 py-1 rounded text-xs uppercase tracking-wider">View Full Size</span>
+                            </div>
+                        </a>
+                    {% else %}
+                        <div class="bg-gray-800 h-48 flex items-center justify-center text-gray-500 border border-gray-700 rounded">
+                            <span class="uppercase tracking-widest text-xs">No Image Available</span>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
