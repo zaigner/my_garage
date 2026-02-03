@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from typing import Dict, Any, Optional
 
 # Import tools
-from .tools import vehicle_lookup, market_valuation, google_search, image_generation, sales_stats
+from .tools import vehicle_lookup, market_valuation, google_search, image_generation, sales_stats, watch_valuation
 
 router = APIRouter()
 
@@ -36,6 +36,9 @@ async def execute_mcp_tool(request: MCPRequest):
 
         elif request.tool_name == "get_sales_history_by_vin":
             return sales_stats.get_sales_history_by_vin(**request.arguments)
+
+        elif request.tool_name == "get_watch_valuation":
+            return watch_valuation.get_watch_valuation(**request.arguments)
 
         else:
             raise HTTPException(status_code=404, detail=f"Tool '{request.tool_name}' not found.")

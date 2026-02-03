@@ -1,0 +1,107 @@
+{% extends "my_garage/base.html" %}
+
+{% block title %}Horology Salon | The Collection{% endblock %}
+
+{% block extra_head %}
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+<style>
+    .salon-font {
+        font-family: 'Cinzel', serif;
+    }
+    .salon-bg {
+        background-color: #0B1026;
+        background-image: radial-gradient(circle at 50% 0%, #1a2342 0%, #0B1026 70%);
+    }
+    .watch-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .watch-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="salon-bg min-h-screen text-gray-200 font-sans">
+    <div class="container mx-auto px-4 py-12">
+
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row justify-between items-center mb-12 border-b border-white/10 pb-6">
+            <div>
+                <h1 class="text-4xl md:text-5xl font-bold salon-font text-luxury-gold mb-2">Horology Salon</h1>
+                <p class="text-gray-400 text-sm uppercase tracking-widest">Fine Timepieces & Complications</p>
+            </div>
+            <div class="mt-6 md:mt-0 flex gap-4">
+                <a href="{% url 'home' %}" class="px-6 py-2 border border-white/20 text-white/70 hover:text-white hover:border-white/50 rounded-sm uppercase text-xs tracking-widest transition-colors">
+                    Back to Vault
+                </a>
+                <!-- Placeholder for Add Timepiece -->
+                <button class="px-6 py-2 bg-luxury-gold text-black font-bold rounded-sm uppercase text-xs tracking-widest hover:bg-yellow-600 transition-colors">
+                    Add Timepiece
+                </button>
+            </div>
+        </div>
+
+        <!-- Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {% for watch in timepieces %}
+            <a href="{% url 'my_garage:timepiece_detail' watch.id %}" class="block group">
+                <div class="watch-card bg-[#151b33] border border-white/5 rounded-lg overflow-hidden relative">
+                    <!-- Image Container -->
+                    <div class="aspect-[4/5] overflow-hidden bg-gray-900 relative">
+                        {% if watch.photo %}
+                            <img src="{{ watch.photo.url }}" alt="{{ watch }}" class="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700">
+                        {% else %}
+                            <div class="w-full h-full flex items-center justify-center text-white/20">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                        {% endif %}
+
+                        <!-- Overlay Gradient -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-[#151b33] via-transparent to-transparent opacity-80"></div>
+
+                        <!-- Status Badge -->
+                        <div class="absolute top-4 right-4">
+                            <span class="px-2 py-1 bg-black/50 backdrop-blur-sm border border-white/10 text-[10px] uppercase tracking-widest text-luxury-gold rounded">
+                                {{ watch.condition_grade|default:"Collection" }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Details -->
+                    <div class="p-6 relative -mt-12 z-10">
+                        <h3 class="text-2xl salon-font text-white mb-1">{{ watch.brand }}</h3>
+                        <p class="text-luxury-gold text-sm uppercase tracking-wider mb-4">{{ watch.model }}</p>
+
+                        <div class="grid grid-cols-2 gap-4 text-xs text-gray-400 border-t border-white/10 pt-4">
+                            <div>
+                                <span class="block uppercase tracking-widest text-[10px] text-gray-600 mb-1">Reference</span>
+                                <span class="font-mono text-gray-300">{{ watch.reference_number }}</span>
+                            </div>
+                            <div class="text-right">
+                                <span class="block uppercase tracking-widest text-[10px] text-gray-600 mb-1">Value</span>
+                                <span class="font-mono text-white">${{ watch.current_market_value|floatformat:0 }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </a>
+            {% empty %}
+            <div class="col-span-full py-24 text-center border border-dashed border-white/10 rounded-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <h3 class="text-xl salon-font text-gray-400 mb-2">The Salon is Empty</h3>
+                <p class="text-gray-600 text-sm mb-6">Start your horological journey by adding your first timepiece.</p>
+                <button class="px-6 py-2 bg-luxury-gold text-black font-bold rounded-sm uppercase text-xs tracking-widest hover:bg-yellow-600 transition-colors">
+                    Add First Timepiece
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

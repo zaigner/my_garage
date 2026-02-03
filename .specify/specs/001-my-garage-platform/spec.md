@@ -3,10 +3,10 @@
 ## Overview
 
 **Feature ID**: 001-my-garage-platform
-**Status**: ✅ Phase 11 Complete - Market Intelligence & Fixes
+**Status**: ✅ Phase 12 Complete - Timepieces & Navigation
 **Owner**: Development Team
 **Created**: 2025-12-21
-**Last Updated**: 2026-02-01
+**Last Updated**: 2026-02-03
 
 ## Problem Statement
 
@@ -23,6 +23,7 @@ Car enthusiasts lack professional-grade tools to manage their vehicles as financ
 5. No automated market valuation updates
 6. Hard to visualize potential modifications before purchasing parts
 7. Generic, boring interfaces that don't reflect the passion of car ownership
+8. Lack of support for other luxury assets like watches, which often overlap with car collecting
 
 ## User Stories
 
@@ -105,6 +106,18 @@ Car enthusiasts lack professional-grade tools to manage their vehicles as financ
 - ⏳ Users can drag to rotate the vehicle
 - ⏳ Integration with Imagin.Studio or similar automotive imagery API
 
+### Epic 7: Timepiece Management
+- **As a** collector
+- **I want to** track my fine watches alongside my cars
+- **So that** I can manage my entire luxury portfolio in one place
+
+**Acceptance Criteria:**
+- ✅ Can add timepieces with brand, model, reference number
+- ✅ Can track movement type, case material, and complications
+- ✅ Can upload photos of the watch
+- ✅ Can track purchase price and current market value
+- ✅ Dedicated "Horology Salon" view with appropriate aesthetic
+
 ## Technical Specification
 
 ### Architecture
@@ -141,6 +154,30 @@ class Vehicle(models.Model):
     mileage = PositiveIntegerField(default=0)
     created_at = DateTimeField(auto_now_add=True)
     notes = TextField(blank=True)
+```
+
+#### Timepiece
+```python
+class Timepiece(models.Model):
+    owner = ForeignKey(User, on_delete=CASCADE)
+    brand = CharField(max_length=100)
+    model = CharField(max_length=100)
+    reference_number = CharField(max_length=100)
+    serial_number = CharField(max_length=100, blank=True)
+    year = PositiveIntegerField(null=True)
+    
+    movement_type = CharField(choices=MOVEMENT_CHOICES)
+    case_material = CharField(max_length=50)
+    dial_color = CharField(max_length=50)
+    complications = JSONField(default=list)
+    
+    has_box = BooleanField(default=False)
+    has_papers = BooleanField(default=False)
+    condition_grade = CharField(max_length=20)
+    
+    purchase_price = DecimalField(max_digits=12, decimal_places=2)
+    current_market_value = DecimalField(max_digits=12, decimal_places=2)
+    photo = ImageField(upload_to="timepieces/%Y/%m/")
 ```
 
 #### ServiceRecord
@@ -246,7 +283,7 @@ task_bulk_valuation_refresh() -> str
 
 ## Implementation Status
 
-### ✅ Completed (Phase 1-8)
+### ✅ Completed (Phase 1-11)
 
 **Phase 1-6**: (See previous versions for details)
 
@@ -282,6 +319,14 @@ task_bulk_valuation_refresh() -> str
 - ✅ Implemented `get_sales_history_by_vin` for provenance tracking
 - ✅ Refactored `image_generation.py` to use native Google Gemini API (fixing Banana.dev deprecation)
 
+**Phase 12: Timepieces & Navigation**
+- ✅ Implemented `Timepiece` model and views
+- ✅ Created "Horology Salon" templates (`timepiece_list.html`, `timepiece_detail.html`)
+- ✅ Updated `home.html` to serve as central dashboard
+- ✅ Fixed navigation links to point to Home instead of Garage
+- ✅ Updated `vehicle_form.html` to match Race Deck theme
+- ✅ Created `start_app.sh` for unified service startup
+
 ### ⏳ Remaining Work
 
 **FastAPI OCR Service**
@@ -291,8 +336,6 @@ task_bulk_valuation_refresh() -> str
 - Return JSON with vendor, date, cost, line items
 
 **Dashboard Views**
-- Create homepage dashboard showing all vehicles
-- Create vehicle detail page with financial summary
 - Create service history timeline view
 - Create upgrade tracker with status indicators
 - Create condition report gallery
@@ -451,7 +494,12 @@ task_bulk_valuation_refresh() -> str
 ### Version 0.5.0 (Current) ✅
 - UI/UX Overhaul (Dark Mode, Dynamic Fonts)
 
-### Version 0.6.0 (Next)
+### Version 0.6.0 (Current) ✅
+- Timepiece Management
+- Navigation Restructuring
+- Unified Startup Script
+
+### Version 0.7.0 (Next)
 - FastAPI OCR service
 - Receipt upload and processing
 - Dashboard views

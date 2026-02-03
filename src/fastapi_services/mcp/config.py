@@ -8,6 +8,9 @@ class Settings(BaseSettings):
     # Google Gemini configuration
     google_api_key: Optional[str] = None
 
+    # WatchCharts Configuration
+    watchcharts_api_key: Optional[str] = None
+
     class Config:
         env_file = ".env"
         env_file_encoding = 'utf-8'

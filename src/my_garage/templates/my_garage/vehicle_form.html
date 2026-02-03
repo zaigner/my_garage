@@ -1,182 +1,184 @@
-{% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add Vehicle | The Collection</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Pinyon+Script&family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'luxury-black': '#0B1026',
-                        'luxury-card': '#151b33',
-                        'luxury-gold': '#D4AF37',
-                        'luxury-white': '#F5F5F5',
-                        'luxury-text': '#A3A3A3',
-                    },
-                    fontFamily: {
-                        'script': ['"Pinyon Script"', 'cursive'],
-                        'serif': ['"Playfair Display"', 'serif'],
-                        'sans': ['"Montserrat"', 'sans-serif'],
-                    }
-                }
-            }
-        }
-    </script>
-</head>
-<body class="bg-luxury-black text-luxury-white font-sans min-h-screen flex flex-col">
+{% extends "my_garage/base.html" %}
 
-    <nav class="border-b border-white/10 bg-luxury-black/95 backdrop-blur-md sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-6 py-6 flex justify-between items-center">
-            <a href="{% url 'my_garage:garage_view' %}" class="text-luxury-white hover:text-luxury-gold transition-colors">&larr; Back to Garage</a>
-            <div class="text-3xl text-luxury-gold font-script">Add New Acquisition</div>
-            <div class="w-20"></div>
+{% block title %}Add Vehicle | The Collection{% endblock %}
+
+{% block extra_head %}
+<link href="https://fonts.googleapis.com/css2?family=Michroma&display=swap" rel="stylesheet">
+<style>
+    .porsche-font {
+        font-family: 'Michroma', sans-serif;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    .race-deck-bg {
+        background-color: #111;
+        background-image:
+            linear-gradient(45deg, #1a1a1a 25%, transparent 25%, transparent 75%, #1a1a1a 75%, #1a1a1a),
+            linear-gradient(45deg, #1a1a1a 25%, transparent 25%, transparent 75%, #1a1a1a 75%, #1a1a1a);
+        background-position: 0 0, 10px 10px;
+        background-size: 20px 20px;
+    }
+    .cabinet-finish {
+        background: linear-gradient(180deg, #262626 0%, #171717 100%);
+        border: 1px solid #404040;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Clean Data Entry Styling */
+    .cabinet-finish input[type="text"],
+    .cabinet-finish input[type="number"],
+    .cabinet-finish input[type="date"],
+    .cabinet-finish input[type="email"],
+    .cabinet-finish select,
+    .cabinet-finish textarea {
+        background-color: #262626;
+        border: 1px solid #404040;
+        color: #e5e5e5;
+        padding: 0.5rem;
+        border-radius: 0.25rem;
+        width: 100%;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        transition: all 0.2s;
+    }
+
+    .cabinet-finish input:focus,
+    .cabinet-finish select:focus,
+    .cabinet-finish textarea:focus {
+        outline: none;
+        border-color: #dc2626;
+        box-shadow: 0 0 0 1px #dc2626;
+        background-color: #1f1f1f;
+    }
+
+    .cabinet-finish label {
+        color: #9ca3af; /* gray-400 */
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+        display: block;
+    }
+
+    /* Fix for date input icon color in some browsers */
+    input[type="date"]::-webkit-calendar-picker-indicator {
+        filter: invert(1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="race-deck-bg min-h-screen text-gray-200 font-sans">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header Section -->
+        <div class="flex flex-col md:flex-row justify-between items-center mb-8 border-b border-gray-700 pb-4">
+            <h1 class="text-3xl md:text-4xl font-bold porsche-font text-white mb-4 md:mb-0 tracking-wider">Add New Acquisition</h1>
+            <a href="{% url 'home' %}" class="px-4 py-2 bg-gray-800 text-gray-200 rounded hover:bg-gray-700 border border-gray-600 uppercase text-xs font-bold tracking-wider transition-colors shadow-md">
+                &larr; Back to Home
+            </a>
         </div>
-    </nav>
 
-    <main class="flex-grow flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div class="max-w-2xl w-full space-y-8 bg-luxury-card p-10 rounded-xl border border-white/5 shadow-2xl">
-
-            <form method="POST" enctype="multipart/form-data" class="space-y-6">
-                {% csrf_token %}
-
-                {% if form.non_field_errors %}
-                <div class="bg-red-900/20 border border-red-500 text-red-200 px-4 py-3 rounded relative" role="alert">
-                    {{ form.non_field_errors }}
-                </div>
-                {% endif %}
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Year -->
-                    <div>
-                        <label for="{{ form.year.id_for_label }}" class="block text-sm font-medium text-luxury-text uppercase tracking-wider mb-2">Year</label>
-                        {{ form.year }}
-                        {% if form.year.errors %}
-                            <p class="text-red-500 text-xs mt-1">{{ form.year.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-
-                    <!-- Make -->
-                    <div>
-                        <label for="{{ form.make.id_for_label }}" class="block text-sm font-medium text-luxury-text uppercase tracking-wider mb-2">Make</label>
-                        {{ form.make }}
-                        {% if form.make.errors %}
-                            <p class="text-red-500 text-xs mt-1">{{ form.make.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-
-                    <!-- Model -->
-                    <div>
-                        <label for="{{ form.model.id_for_label }}" class="block text-sm font-medium text-luxury-text uppercase tracking-wider mb-2">Model</label>
-                        {{ form.model }}
-                        {% if form.model.errors %}
-                            <p class="text-red-500 text-xs mt-1">{{ form.model.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-
-                    <!-- Trim -->
-                    <div>
-                        <label for="{{ form.trim.id_for_label }}" class="block text-sm font-medium text-luxury-text uppercase tracking-wider mb-2">Trim (Optional)</label>
-                        {{ form.trim }}
-                    </div>
+        <div class="max-w-4xl mx-auto">
+            <div class="cabinet-finish p-6 rounded-lg mb-6">
+                <div class="flex items-center mb-6 border-b border-gray-700 pb-2">
+                    <div class="w-1 h-6 bg-red-600 mr-3"></div>
+                    <h2 class="text-xl font-bold porsche-font text-gray-100">Vehicle Data</h2>
                 </div>
 
-                <!-- Collector Specs -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-white/10 pt-6">
-                    <div>
-                        <label for="{{ form.transmission.id_for_label }}" class="block text-sm font-medium text-luxury-text uppercase tracking-wider mb-2">Transmission</label>
-                        {{ form.transmission }}
-                    </div>
-                    <div>
-                        <label for="{{ form.license_plate.id_for_label }}" class="block text-sm font-medium text-luxury-text uppercase tracking-wider mb-2">License Plate</label>
-                        {{ form.license_plate }}
-                    </div>
-                    <div>
-                        <label for="{{ form.exterior_color.id_for_label }}" class="block text-sm font-medium text-luxury-text uppercase tracking-wider mb-2">Exterior Color</label>
-                        {{ form.exterior_color }}
-                    </div>
-                    <div>
-                        <label for="{{ form.interior_color.id_for_label }}" class="block text-sm font-medium text-luxury-text uppercase tracking-wider mb-2">Interior Color</label>
-                        {{ form.interior_color }}
-                    </div>
-                </div>
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
 
-                <!-- VIN -->
-                <div class="border-t border-white/10 pt-6">
-                    <label for="{{ form.vin.id_for_label }}" class="block text-sm font-medium text-luxury-text uppercase tracking-wider mb-2">VIN</label>
-                    {{ form.vin }}
-                    {% if form.vin.errors %}
-                        <p class="text-red-500 text-xs mt-1">{{ form.vin.errors.0 }}</p>
+                    {% if form.non_field_errors %}
+                    <div class="bg-red-900/20 border border-red-500 text-red-200 px-4 py-3 rounded relative mb-6" role="alert">
+                        {{ form.non_field_errors }}
+                    </div>
                     {% endif %}
-                    <p class="text-xs text-luxury-text mt-1">{{ form.vin.help_text }}</p>
-                </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Purchase Price -->
-                    <div>
-                        <label for="{{ form.purchase_price.id_for_label }}" class="block text-sm font-medium text-luxury-text uppercase tracking-wider mb-2">Purchase Price</label>
-                        {{ form.purchase_price }}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Basic Info -->
+                        <div class="space-y-1">
+                            <label for="{{ form.year.id_for_label }}">Year</label>
+                            {{ form.year }}
+                            {% if form.year.errors %}
+                                <p class="text-red-500 text-xs mt-1">{{ form.year.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="space-y-1">
+                            <label for="{{ form.make.id_for_label }}">Make</label>
+                            {{ form.make }}
+                            {% if form.make.errors %}
+                                <p class="text-red-500 text-xs mt-1">{{ form.make.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="space-y-1">
+                            <label for="{{ form.model.id_for_label }}">Model</label>
+                            {{ form.model }}
+                            {% if form.model.errors %}
+                                <p class="text-red-500 text-xs mt-1">{{ form.model.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="space-y-1">
+                            <label for="{{ form.trim.id_for_label }}">Trim</label>
+                            {{ form.trim }}
+                        </div>
+
+                        <!-- Collector Specs -->
+                        <div class="space-y-1">
+                            <label for="{{ form.transmission.id_for_label }}">Transmission</label>
+                            {{ form.transmission }}
+                        </div>
+                        <div class="space-y-1">
+                            <label for="{{ form.license_plate.id_for_label }}">License Plate</label>
+                            {{ form.license_plate }}
+                        </div>
+                        <div class="space-y-1">
+                            <label for="{{ form.exterior_color.id_for_label }}">Exterior Color</label>
+                            {{ form.exterior_color }}
+                        </div>
+                        <div class="space-y-1">
+                            <label for="{{ form.interior_color.id_for_label }}">Interior Color</label>
+                            {{ form.interior_color }}
+                        </div>
+
+                        <!-- Financials & Metadata -->
+                        <div class="space-y-1">
+                            <label for="{{ form.vin.id_for_label }}">VIN</label>
+                            {{ form.vin }}
+                            {% if form.vin.errors %}
+                                <p class="text-red-500 text-xs mt-1">{{ form.vin.errors.0 }}</p>
+                            {% endif %}
+                            <p class="text-xs text-gray-500 mt-1">{{ form.vin.help_text }}</p>
+                        </div>
+                        <div class="space-y-1">
+                            <label for="{{ form.mileage.id_for_label }}">Mileage</label>
+                            {{ form.mileage }}
+                        </div>
+                        <div class="space-y-1">
+                            <label for="{{ form.purchase_price.id_for_label }}">Purchase Price</label>
+                            {{ form.purchase_price }}
+                        </div>
+                        <div class="space-y-1">
+                            <label for="{{ form.purchase_date.id_for_label }}">Purchase Date</label>
+                            {{ form.purchase_date }}
+                        </div>
                     </div>
 
-                    <!-- Purchase Date -->
-                    <div>
-                        <label for="{{ form.purchase_date.id_for_label }}" class="block text-sm font-medium text-luxury-text uppercase tracking-wider mb-2">Purchase Date</label>
-                        {{ form.purchase_date }}
+                    <div class="mt-6 space-y-1">
+                        <label for="{{ form.notes.id_for_label }}">Provenance / Notes</label>
+                        {{ form.notes }}
                     </div>
 
-                    <!-- Mileage -->
-                    <div>
-                        <label for="{{ form.mileage.id_for_label }}" class="block text-sm font-medium text-luxury-text uppercase tracking-wider mb-2">Mileage</label>
-                        {{ form.mileage }}
+                    <div class="mt-6 space-y-1">
+                        <label for="{{ form.photo.id_for_label }}">Photo</label>
+                        <div class="text-gray-400 text-sm bg-gray-800 p-2 rounded border border-gray-700">{{ form.photo }}</div>
                     </div>
-                </div>
 
-                <!-- Notes -->
-                <div>
-                    <label for="{{ form.notes.id_for_label }}" class="block text-sm font-medium text-luxury-text uppercase tracking-wider mb-2">Provenance / Notes</label>
-                    {{ form.notes }}
-                </div>
-
-                <!-- Photo -->
-                <div>
-                    <label for="{{ form.photo.id_for_label }}" class="block text-sm font-medium text-luxury-text uppercase tracking-wider mb-2">Photo</label>
-                    {{ form.photo }}
-                </div>
-
-                <div class="pt-6">
-                    <button type="submit" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-black bg-luxury-gold hover:bg-yellow-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-luxury-gold transition-colors uppercase tracking-widest">
+                    <button type="submit" class="mt-8 w-full px-6 py-3 bg-red-700 text-white uppercase tracking-widest font-bold hover:bg-red-600 transition-colors border border-red-800 shadow-lg rounded">
                         Add to Collection
                     </button>
-                </div>
-            </form>
+                </form>
+            </div>
         </div>
-    </main>
-
-    <style>
-        /* Override Django form widget styles */
-        input[type="text"], input[type="number"], input[type="date"], textarea, select {
-            background-color: #0B1026;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #F5F5F5;
-            padding: 0.75rem;
-            border-radius: 0.375rem;
-            width: 100%;
-            transition: border-color 0.2s;
-        }
-        input:focus, textarea:focus, select:focus {
-            outline: none;
-            border-color: #D4AF37;
-            ring: 1px solid #D4AF37;
-        }
-        /* Fix for date input icon color in some browsers */
-        input[type="date"]::-webkit-calendar-picker-indicator {
-            filter: invert(1);
-        }
-    </style>
-
-</body>
-</html>
+    </div>
+</div>
+{% endblock %}

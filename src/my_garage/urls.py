@@ -20,4 +20,8 @@ urlpatterns = [
     
     # Valuation History
     path("valuation/<int:history_id>/debug/", views.view_valuation_debug, name="view_valuation_debug"),
+
+    # Timepieces
+    path("timepieces/", views.timepiece_list, name="timepiece_list"),
+    path("timepieces/<int:timepiece_id>/", views.timepiece_detail, name="timepiece_detail"),
 ]

@@ -6,7 +6,7 @@ from django.http import HttpRequest, HttpResponse
 from django.db import transaction
 
 # Import our custom Application Layer components
-from my_garage.models import Vehicle, ServiceRecord, ValuationHistory
+from my_garage.models import Vehicle, ServiceRecord, ValuationHistory, Timepiece
 from .forms import VehicleForm, ServiceRecordForm, UpgradeForm
 from .api.selectors import (
     vehicle_get_build_summary, 
@@ -35,10 +35,12 @@ def garage_dashboard(request: HttpRequest) -> HttpResponse:
     Primary dashboard showing all vehicles in the user's garage.
     """
     vehicles = request.user.vehicles.all()
+    timepieces = request.user.timepieces.all()
 
     # We could enhance this with a selector that summarizes the whole garage
     context = {
         "vehicles": vehicles,
+        "timepieces": timepieces,
         "total_garage_value": sum(v.current_market_value for v in vehicles),
     }
     return render(request, "my_garage/dashboard.html", context)
@@ -312,3 +314,21 @@ def view_valuation_debug(request: HttpRequest, history_id: int) -> HttpResponse:
         "raw_data": history.raw_data,
     }
     return render(request, "my_garage/valuation_debug.html", context)
+
+
+@login_required
+def timepiece_list(request: HttpRequest) -> HttpResponse:
+    """
+    The 'Horology Salon' gallery view.
+    """
+    timepieces = request.user.timepieces.all()
+    return render(request, "my_garage/timepiece_list.html", {"timepieces": timepieces})
+
+
+@login_required
+def timepiece_detail(request: HttpRequest, timepiece_id: int) -> HttpResponse:
+    """
+    Detailed view for a single timepiece.
+    """
+    timepiece = get_object_or_404(Timepiece, pk=timepiece_id, owner=request.user)
+    return render(request, "my_garage/timepiece_detail.html", {"timepiece": timepiece})

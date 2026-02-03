@@ -16,6 +16,7 @@ My Garage is an automotive asset management and valuation platform designed for 
 6. **Generative Visuals**: AI-generated visualizations for project cars and modifications.
 7. **Immersive Garage Experience**: A high-fidelity UI that mimics a physical garage with dynamic lighting, flooring, and branding.
 8. **Interactive 360° Viewer**: Exploratory vehicle detail pages allowing users to rotate and inspect vehicles from all angles (Imagin.Studio integration).
+9. **Horology Salon**: A dedicated section for tracking fine timepieces with specialized fields for movement, complications, and provenance.
 
 ## Technology Stack
 
@@ -42,9 +43,30 @@ My Garage is an automotive asset management and valuation platform designed for 
 - **Imagin.Studio API** - For 360° vehicle imagery.
 - **Google Gemini API** - For generative AI image creation.
 
+## Development Log - Timepiece & Navigation Updates
+
+Today's session focused on expanding the platform to support fine timepieces and improving navigation flow.
+
+1.  **Timepiece Module**:
+    *   **Data Model**: Implemented `Timepiece` model in `models.py` with fields for movement type, case material, complications, and financial tracking.
+    *   **Views**: Created `timepiece_list` and `timepiece_detail` views in `views.py`.
+    *   **Templates**:
+        *   Created `timepiece_list.html` with a "Horology Salon" aesthetic (dark blue/gold theme).
+        *   Created `timepiece_detail.html` for detailed inspection of watch assets.
+    *   **URLs**: Registered `timepieces/` and `timepieces/<id>/` endpoints in `urls.py`.
+
+2.  **Navigation & Dashboard**:
+    *   **Home Page**: Updated `home.html` to serve as the central hub, linking to Automobiles, Timepieces, and Art.
+    *   **Dashboard Logic**: Updated `config/views.py` to fetch and display timepiece counts on the home dashboard.
+    *   **Consistent Navigation**: Updated `garage.html` and `vehicle_form.html` to link back to the Home page (`home.html`) instead of the Garage dashboard, creating a more logical hierarchy.
+
+3.  **UI/UX Refinements**:
+    *   **Vehicle Form**: Updated `vehicle_form.html` to match the "Race Deck" theme of the details page, ensuring visual consistency across the automobile section.
+    *   **Start Script**: Created `start_app.sh` and added a `start-app` task to `pixi.toml` for one-command startup of all services (Django, Celery, FastAPI, Mongo).
+
 ## Development Log - UI/UX Overhaul
 
-Today's session focused on transforming the user interface into a premium, immersive experience.
+Previous session focused on transforming the user interface into a premium, immersive experience.
 
 1.  **Vehicle Detail Redesign**:
     *   **Theme**: Implemented a "Dark Mode" aesthetic with a "Race Deck" floor pattern background.
@@ -89,7 +111,7 @@ Previous session focused on integrating code quality tools to ensure a clean and
 
 ## Development Log - Market Intelligence & Fixes
 
-Today's session focused on expanding market data capabilities and fixing the generative AI pipeline.
+Previous session focused on expanding market data capabilities and fixing the generative AI pipeline.
 
 1.  **Sales Statistics Integration**:
     *   Created `src/fastapi_services/mcp/tools/sales_stats.py` to interface with Marketcheck's Sales Stats and History endpoints.

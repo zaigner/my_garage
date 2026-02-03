@@ -117,3 +117,52 @@ class ConditionReport(models.Model):
     value_adjustment = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
 
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class Timepiece(models.Model):
+    """
+    Represents a fine timepiece/watch asset.
+    Designed for the 'Vacheron' aesthetic gallery.
+    """
+    MOVEMENT_CHOICES = [
+        ('AUTOMATIC', 'Automatic'),
+        ('MANUAL', 'Manual Wind'),
+        ('QUARTZ', 'Quartz'),
+        ('SPRING_DRIVE', 'Spring Drive'),
+    ]
+
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="timepieces"
+    )
+    
+    # Core Identity
+    brand = models.CharField(max_length=100, help_text="e.g. Patek Philippe, Rolex")
+    model = models.CharField(max_length=100, help_text="e.g. Nautilus, Submariner")
+    reference_number = models.CharField(max_length=100, help_text="Crucial for valuation (e.g. 5711/1A)")
+    serial_number = models.CharField(max_length=100, blank=True, help_text="Private identifier")
+    year = models.PositiveIntegerField(null=True, blank=True)
+    
+    # Horological Details
+    movement_type = models.CharField(max_length=20, choices=MOVEMENT_CHOICES, blank=True)
+    case_material = models.CharField(max_length=50, blank=True, help_text="e.g. 18k Rose Gold, Stainless Steel")
+    dial_color = models.CharField(max_length=50, blank=True)
+    complications = models.JSONField(default=list, blank=True, help_text="List of features: Chronograph, Moonphase")
+    
+    # Asset Value Factors
+    has_box = models.BooleanField(default=False)
+    has_papers = models.BooleanField(default=False)
+    condition_grade = models.CharField(max_length=20, blank=True, help_text="e.g. Unworn, Mint, Good")
+    
+    # Financials
+    purchase_price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    purchase_date = models.DateField(null=True, blank=True)
+    current_market_value = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    
+    # Visuals
+    photo = models.ImageField(upload_to="timepieces/%Y/%m/", null=True, blank=True)
+    notes = models.TextField(blank=True)
+
+    def __str__(self):
+        return f"{self.brand} {self.model} ({self.reference_number})"

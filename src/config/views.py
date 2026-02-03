@@ -17,7 +17,10 @@ def home(request: HttpRequest) -> HttpResponse:
 
         # If we want to show actual data on the home page for logged in users:
         vehicles = request.user.vehicles.all()
+        timepieces = request.user.timepieces.all()
+        
         context["vehicles"] = vehicles
+        context["timepieces"] = timepieces
         context["total_garage_value"] = sum(v.current_market_value for v in vehicles)
 
     return render(request, "pages/home.html", context)

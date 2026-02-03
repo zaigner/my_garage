@@ -1,0 +1,153 @@
+{% extends "my_garage/base.html" %}
+
+{% block title %}{{ timepiece.brand }} {{ timepiece.model }} | The Collection{% endblock %}
+
+{% block extra_head %}
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+<style>
+    .salon-font {
+        font-family: 'Cinzel', serif;
+    }
+    .salon-bg {
+        background-color: #0B1026;
+        background-image: radial-gradient(circle at 50% 0%, #1a2342 0%, #0B1026 70%);
+    }
+    .detail-card {
+        background: rgba(21, 27, 51, 0.6);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="salon-bg min-h-screen text-gray-200 font-sans">
+    <div class="container mx-auto px-4 py-12">
+
+        <!-- Navigation -->
+        <div class="mb-8">
+            <a href="{% url 'my_garage:timepiece_list' %}" class="text-gray-400 hover:text-luxury-gold text-xs uppercase tracking-widest transition-colors">
+                &larr; Back to Salon
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+
+            <!-- Left Column: Visuals -->
+            <div class="space-y-8">
+                <div class="aspect-[4/5] rounded-lg overflow-hidden border border-white/10 shadow-2xl relative group">
+                    {% if timepiece.photo %}
+                        <img src="{{ timepiece.photo.url }}" alt="{{ timepiece }}" class="w-full h-full object-cover">
+                    {% else %}
+                        <div class="w-full h-full bg-[#151b33] flex items-center justify-center text-white/20">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-24 w-24" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                    {% endif %}
+
+                    <!-- Zoom hint -->
+                    <div class="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <span class="bg-black/50 backdrop-blur text-white text-xs px-2 py-1 rounded border border-white/10">
+                            High Res
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Provenance Note -->
+                {% if timepiece.notes %}
+                <div class="detail-card p-6 rounded-lg border-l-2 border-luxury-gold">
+                    <h3 class="text-luxury-gold text-xs uppercase tracking-widest mb-3 font-bold">Provenance & Notes</h3>
+                    <p class="text-gray-300 italic font-serif leading-relaxed text-sm">
+                        "{{ timepiece.notes }}"
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Right Column: Details -->
+            <div>
+                <div class="mb-10 border-b border-white/10 pb-8">
+                    <h2 class="text-luxury-gold text-sm uppercase tracking-[0.2em] mb-2">{{ timepiece.year|default:"Unknown Year" }}</h2>
+                    <h1 class="text-5xl md:text-6xl salon-font text-white mb-4">{{ timepiece.brand }}</h1>
+                    <p class="text-2xl text-gray-300 font-light">{{ timepiece.model }}</p>
+                    <p class="text-sm text-gray-500 font-mono mt-2">Ref. {{ timepiece.reference_number }}</p>
+                </div>
+
+                <!-- Key Specs Grid -->
+                <div class="grid grid-cols-2 gap-6 mb-10">
+                    <div class="detail-card p-4 rounded">
+                        <span class="block text-[10px] uppercase tracking-widest text-gray-500 mb-1">Movement</span>
+                        <span class="text-white font-medium">{{ timepiece.get_movement_type_display|default:"--" }}</span>
+                    </div>
+                    <div class="detail-card p-4 rounded">
+                        <span class="block text-[10px] uppercase tracking-widest text-gray-500 mb-1">Case Material</span>
+                        <span class="text-white font-medium">{{ timepiece.case_material|default:"--" }}</span>
+                    </div>
+                    <div class="detail-card p-4 rounded">
+                        <span class="block text-[10px] uppercase tracking-widest text-gray-500 mb-1">Dial</span>
+                        <span class="text-white font-medium">{{ timepiece.dial_color|default:"--" }}</span>
+                    </div>
+                    <div class="detail-card p-4 rounded">
+                        <span class="block text-[10px] uppercase tracking-widest text-gray-500 mb-1">Condition</span>
+                        <span class="text-luxury-gold font-medium">{{ timepiece.condition_grade|default:"--" }}</span>
+                    </div>
+                </div>
+
+                <!-- Complications -->
+                {% if timepiece.complications %}
+                <div class="mb-10">
+                    <h3 class="text-gray-400 text-xs uppercase tracking-widest mb-4">Complications</h3>
+                    <div class="flex flex-wrap gap-2">
+                        {% for comp in timepiece.complications %}
+                            <span class="px-3 py-1 border border-white/20 rounded-full text-xs text-gray-300">
+                                {{ comp }}
+                            </span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Financials -->
+                <div class="detail-card p-8 rounded-lg">
+                    <h3 class="text-white salon-font text-xl mb-6">Valuation Telemetry</h3>
+
+                    <div class="grid grid-cols-2 gap-8">
+                        <div>
+                            <span class="block text-[10px] uppercase tracking-widest text-gray-500 mb-1">Acquisition Cost</span>
+                            <span class="text-xl font-mono text-gray-300">${{ timepiece.purchase_price|floatformat:0 }}</span>
+                            <span class="block text-[10px] text-gray-600 mt-1">{{ timepiece.purchase_date|default:"--" }}</span>
+                        </div>
+                        <div class="relative">
+                            <span class="block text-[10px] uppercase tracking-widest text-gray-500 mb-1">Market Value</span>
+                            <span class="text-3xl font-mono text-luxury-gold">${{ timepiece.current_market_value|floatformat:0 }}</span>
+
+                            <!-- Simple indicator -->
+                            {% if timepiece.current_market_value > timepiece.purchase_price %}
+                                <span class="absolute top-0 right-0 text-green-500 text-xs">▲ Appreciation</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mt-6 pt-6 border-t border-white/10 flex justify-between items-center">
+                        <div class="flex gap-4">
+                            <div class="flex items-center gap-2">
+                                <div class="w-2 h-2 rounded-full {% if timepiece.has_box %}bg-green-500{% else %}bg-red-500{% endif %}"></div>
+                                <span class="text-xs text-gray-400">Box</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="w-2 h-2 rounded-full {% if timepiece.has_papers %}bg-green-500{% else %}bg-red-500{% endif %}"></div>
+                                <span class="text-xs text-gray-400">Papers</span>
+                            </div>
+                        </div>
+                        <button class="text-xs text-luxury-gold hover:text-white uppercase tracking-widest transition-colors">
+                            Update Valuation
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

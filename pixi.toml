@@ -32,6 +32,9 @@ lint = "ruff check ."
 format = "ruff format ."
 pre-commit-install = "pre-commit install"
 
+# Convenience Tasks
+start-app = "bash start_app.sh"
+
 [dependencies]
 python = ">=3.12"
 django = ">=5.2,<5.3"
