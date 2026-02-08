@@ -1,0 +1,64 @@
+{% extends "my_garage/base.html" %}
+
+{% block title %}My Collections{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="flex justify-between items-center mb-8">
+        <h1 class="text-3xl font-bold text-gray-900">My Collections</h1>
+        <a href="{% url 'collections:collection_type_create' %}"
+           class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">
+            + Create New Collection Type
+        </a>
+    </div>
+
+    {% if type_data %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for data in type_data %}
+                <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+                    <div class="flex items-center mb-4">
+                        <i class="{{ data.type.icon }} text-3xl text-indigo-600 mr-3"></i>
+                        <h2 class="text-xl font-semibold text-gray-900">{{ data.type.name }}</h2>
+                    </div>
+
+                    {% if data.type.description %}
+                        <p class="text-gray-600 text-sm mb-4">{{ data.type.description }}</p>
+                    {% endif %}
+
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <p class="text-sm text-gray-500">Items</p>
+                            <p class="text-2xl font-bold text-gray-900">{{ data.count }}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">Total Value</p>
+                            <p class="text-2xl font-bold text-green-600">${{ data.total_value|floatformat:2 }}</p>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-2">
+                        <a href="{% url 'collections:collection_list' data.type.slug %}"
+                           class="flex-1 bg-indigo-600 text-white text-center px-4 py-2 rounded-md hover:bg-indigo-700">
+                            View Items
+                        </a>
+                        <a href="{% url 'collections:collection_type_edit' data.type.slug %}"
+                           class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300">
+                            Edit
+                        </a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="bg-white rounded-lg shadow-md p-12 text-center">
+            <i class="fa fa-box text-6xl text-gray-300 mb-4"></i>
+            <h2 class="text-2xl font-semibold text-gray-700 mb-2">No Collections Yet</h2>
+            <p class="text-gray-600 mb-6">Create your first collection type to start tracking your assets.</p>
+            <a href="{% url 'collections:collection_type_create' %}"
+               class="inline-block bg-indigo-600 text-white px-6 py-3 rounded-md hover:bg-indigo-700">
+                Create Your First Collection
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

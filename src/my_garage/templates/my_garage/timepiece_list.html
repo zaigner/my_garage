@@ -36,17 +36,16 @@
                 <a href="{% url 'home' %}" class="px-6 py-2 border border-white/20 text-white/70 hover:text-white hover:border-white/50 rounded-sm uppercase text-xs tracking-widest transition-colors">
                     Back to Vault
                 </a>
-                <!-- Placeholder for Add Timepiece -->
-                <button class="px-6 py-2 bg-luxury-gold text-black font-bold rounded-sm uppercase text-xs tracking-widest hover:bg-yellow-600 transition-colors">
+                <a href="{% url 'timepieces:timepiece_add' %}" class="px-6 py-2 bg-luxury-gold text-black font-bold rounded-sm uppercase text-xs tracking-widest hover:bg-yellow-600 transition-colors">
                     Add Timepiece
-                </button>
+                </a>
             </div>
         </div>
 
         <!-- Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {% for watch in timepieces %}
-            <a href="{% url 'my_garage:timepiece_detail' watch.id %}" class="block group">
+            <a href="{% url 'timepieces:timepiece_detail' watch.id %}" class="block group">
                 <div class="watch-card bg-[#151b33] border border-white/5 rounded-lg overflow-hidden relative">
                     <!-- Image Container -->
                     <div class="aspect-[4/5] overflow-hidden bg-gray-900 relative">
@@ -96,9 +95,9 @@
                 </svg>
                 <h3 class="text-xl salon-font text-gray-400 mb-2">The Salon is Empty</h3>
                 <p class="text-gray-600 text-sm mb-6">Start your horological journey by adding your first timepiece.</p>
-                <button class="px-6 py-2 bg-luxury-gold text-black font-bold rounded-sm uppercase text-xs tracking-widest hover:bg-yellow-600 transition-colors">
+                <a href="{% url 'timepieces:timepiece_add' %}" class="px-6 py-2 bg-luxury-gold text-black font-bold rounded-sm uppercase text-xs tracking-widest hover:bg-yellow-600 transition-colors">
                     Add First Timepiece
-                </button>
+                </a>
             </div>
             {% endfor %}
         </div>

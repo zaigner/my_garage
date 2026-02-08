@@ -16,11 +16,25 @@ def home(request: HttpRequest) -> HttpResponse:
         # The template handles the logic of showing data vs placeholders.
 
         # If we want to show actual data on the home page for logged in users:
-        vehicles = request.user.vehicles.all()
-        timepieces = request.user.timepieces.all()
+        # We need to access the related managers on the user object.
+        # Assuming the user model has related names 'vehicles' and 'timepieces'
         
-        context["vehicles"] = vehicles
-        context["timepieces"] = timepieces
-        context["total_garage_value"] = sum(v.current_market_value for v in vehicles)
+        # Check if the user has the attributes before accessing them to avoid errors
+        # if the custom user model or related names are different.
+        vehicles = getattr(request.user, 'vehicles', None)
+        timepieces = getattr(request.user, 'timepieces', None)
+        
+        if vehicles:
+            vehicles = vehicles.all()
+            context["vehicles"] = vehicles
+            context["total_garage_value"] = sum(v.current_market_value for v in vehicles)
+        else:
+            context["vehicles"] = []
+            context["total_garage_value"] = 0
+
+        if timepieces:
+            context["timepieces"] = timepieces.all()
+        else:
+            context["timepieces"] = []
 
     return render(request, "pages/home.html", context)

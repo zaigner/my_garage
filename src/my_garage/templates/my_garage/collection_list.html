@@ -1,0 +1,95 @@
+{% extends "my_garage/base.html" %}
+{% load my_garage_extras %}
+
+{% block title %}{{ collection_type.name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <a href="{% url 'collections:collection_type_list' %}" class="text-indigo-600 hover:underline text-sm mb-2 inline-block">
+                ← Back to Collections
+            </a>
+            <h1 class="text-3xl font-bold text-gray-900">
+                <i class="{{ collection_type.icon }} mr-2"></i>
+                {{ collection_type.name }}
+            </h1>
+            {% if collection_type.description %}
+                <p class="text-gray-600 mt-2">{{ collection_type.description }}</p>
+            {% endif %}
+        </div>
+        <a href="{% url 'collections:collection_item_add' collection_type.slug %}"
+           class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">
+            + Add Item
+        </a>
+    </div>
+
+    {% if items %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for item in items %}
+                <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+                    {% if item.photo %}
+                        <img src="{{ item.photo.url }}" alt="{{ item.name }}"
+                             class="w-full h-48 object-cover">
+                    {% else %}
+                        <div class="w-full h-48 bg-gray-200 flex items-center justify-center">
+                            <i class="{{ collection_type.icon }} text-6xl text-gray-400"></i>
+                        </div>
+                    {% endif %}
+
+                    <div class="p-4">
+                        <h3 class="text-xl font-semibold text-gray-900 mb-2">{{ item.name }}</h3>
+
+                        <!-- Display custom fields -->
+                        {% for field_name in collection_type.list_display_fields %}
+                            {% with value=item.custom_fields|get_item:field_name %}
+                                {% if value %}
+                                    <p class="text-sm text-gray-600">
+                                        <strong>{{ field_name|title }}:</strong> {{ value }}
+                                    </p>
+                                {% endif %}
+                            {% endwith %}
+                        {% endfor %}
+
+                        <!-- Financial info -->
+                        <div class="mt-4 pt-4 border-t border-gray-200">
+                            {% if item.current_market_value %}
+                                <p class="text-lg font-bold text-green-600">
+                                    ${{ item.current_market_value|floatformat:2 }}
+                                </p>
+                            {% elif item.purchase_price %}
+                                <p class="text-lg font-bold text-gray-600">
+                                    ${{ item.purchase_price|floatformat:2 }}
+                                </p>
+                            {% endif %}
+                        </div>
+
+                        <div class="mt-4">
+                            <a href="{% url 'collections:collection_item_detail' collection_type.slug item.id %}"
+                               class="block text-center bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">
+                                View Details
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="bg-white rounded-lg shadow-md p-12 text-center">
+            <i class="{{ collection_type.icon }} text-6xl text-gray-300 mb-4"></i>
+            <h2 class="text-2xl font-semibold text-gray-700 mb-2">No Items Yet</h2>
+            <p class="text-gray-600 mb-6">Add your first item to this collection.</p>
+            <a href="{% url 'collections:collection_item_add' collection_type.slug %}"
+               class="inline-block bg-indigo-600 text-white px-6 py-3 rounded-md hover:bg-indigo-700">
+                Add First Item
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Custom filter to access dict values -->
+{% load static %}
+<script>
+    // Helper to get dict values in template (if needed client-side)
+</script>
+{% endblock %}

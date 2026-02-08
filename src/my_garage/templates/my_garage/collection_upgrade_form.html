@@ -1,0 +1,248 @@
+{% extends "my_garage/base.html" %}
+
+{% block title %}{{ title }} - {{ item.name }}{% endblock %}
+
+{% block extra_head %}
+<link href="https://fonts.googleapis.com/css2?family=Michroma&display=swap" rel="stylesheet">
+<style>
+    .porsche-font {
+        font-family: 'Michroma', sans-serif;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    .race-deck-bg {
+        background-color: #111;
+        background-image:
+            linear-gradient(45deg, #1a1a1a 25%, transparent 25%, transparent 75%, #1a1a1a 75%, #1a1a1a),
+            linear-gradient(45deg, #1a1a1a 25%, transparent 25%, transparent 75%, #1a1a1a 75%, #1a1a1a);
+        background-position: 0 0, 10px 10px;
+        background-size: 20px 20px;
+    }
+    .cabinet-finish {
+        background: linear-gradient(180deg, #262626 0%, #171717 100%);
+        border: 1px solid #404040;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+    }
+
+    .cabinet-finish input[type="text"],
+    .cabinet-finish input[type="number"],
+    .cabinet-finish input[type="date"],
+    .cabinet-finish select,
+    .cabinet-finish textarea {
+        background-color: #262626;
+        border: 1px solid #404040;
+        color: #e5e5e5;
+        padding: 0.5rem;
+        border-radius: 0.25rem;
+        width: 100%;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        transition: all 0.2s;
+    }
+
+    .cabinet-finish input:focus,
+    .cabinet-finish select:focus,
+    .cabinet-finish textarea:focus {
+        outline: none;
+        border-color: #7c3aed;
+        box-shadow: 0 0 0 1px #7c3aed;
+        background-color: #1f1f1f;
+    }
+
+    .cabinet-finish label {
+        color: #9ca3af;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+        display: block;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="race-deck-bg min-h-screen text-gray-200 font-sans">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row justify-between items-center mb-8 border-b border-gray-700 pb-4">
+            <div>
+                <h1 class="text-3xl font-bold porsche-font text-white tracking-wider mb-1">{{ title }}</h1>
+                <h2 class="text-sm text-gray-400 uppercase tracking-widest">
+                    <i class="{{ collection_type.icon }} mr-1"></i>
+                    {{ item.name }}
+                </h2>
+            </div>
+            <a href="{% url 'collections:collection_item_detail' collection_type.slug item.id %}"
+               class="px-4 py-2 bg-gray-800 text-gray-300 rounded hover:bg-gray-700 border border-gray-600 uppercase text-xs font-bold tracking-wider transition-colors">
+                &larr; Back to Item
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Project Form -->
+            <div class="cabinet-finish p-6 rounded-lg">
+                <div class="flex items-center mb-6 border-b border-gray-700 pb-2">
+                    <div class="w-1 h-6 bg-purple-600 mr-3"></div>
+                    <h3 class="text-xl font-bold porsche-font text-gray-100">Project Details</h3>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="space-y-4">
+                        <div class="space-y-1">
+                            <label for="{{ form.name.id_for_label }}">Project Name *</label>
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                                <p class="text-red-500 text-xs mt-1">{{ form.name.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="space-y-1">
+                                <label for="{{ form.brand.id_for_label }}">Brand</label>
+                                {{ form.brand }}
+                                {% if form.brand.errors %}
+                                    <p class="text-red-500 text-xs mt-1">{{ form.brand.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+                            <div class="space-y-1">
+                                <label for="{{ form.part_number.id_for_label }}">Part Number</label>
+                                {{ form.part_number }}
+                                {% if form.part_number.errors %}
+                                    <p class="text-red-500 text-xs mt-1">{{ form.part_number.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="space-y-1">
+                                <label for="{{ form.status.id_for_label }}">Status</label>
+                                {{ form.status }}
+                                {% if form.status.errors %}
+                                    <p class="text-red-500 text-xs mt-1">{{ form.status.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+                            <div class="space-y-1">
+                                <label for="{{ form.cost.id_for_label }}">Cost</label>
+                                {{ form.cost }}
+                                {% if form.cost.errors %}
+                                    <p class="text-red-500 text-xs mt-1">{{ form.cost.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="space-y-1">
+                                <label for="{{ form.ordered_date.id_for_label }}">Ordered Date</label>
+                                {{ form.ordered_date }}
+                                {% if form.ordered_date.errors %}
+                                    <p class="text-red-500 text-xs mt-1">{{ form.ordered_date.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+                            <div class="space-y-1">
+                                <label for="{{ form.completion_date.id_for_label }}">Completion Date</label>
+                                {{ form.completion_date }}
+                                {% if form.completion_date.errors %}
+                                    <p class="text-red-500 text-xs mt-1">{{ form.completion_date.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="space-y-1">
+                            <label for="{{ form.notes.id_for_label }}">Notes</label>
+                            {{ form.notes }}
+                            {% if form.notes.errors %}
+                                <p class="text-red-500 text-xs mt-1">{{ form.notes.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mt-8 flex justify-end space-x-4">
+                        <button type="submit" class="w-full px-6 py-3 bg-purple-700 text-white uppercase tracking-widest font-bold hover:bg-purple-600 transition-colors border border-purple-800 shadow-lg rounded">
+                            {% if is_edit %}Update Project{% else %}Start Project{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Project Management Info -->
+            <div class="cabinet-finish p-6 rounded-lg h-fit">
+                <div class="flex items-center mb-6 border-b border-gray-700 pb-2">
+                    <div class="w-1 h-6 bg-blue-500 mr-3"></div>
+                    <h3 class="text-xl font-bold porsche-font text-gray-100">Project Workflow</h3>
+                </div>
+
+                <div class="space-y-4 text-sm text-gray-400">
+                    <p class="leading-relaxed">
+                        Track upgrades, modifications, and improvements for your {{ collection_type.name }} items from idea to completion.
+                    </p>
+
+                    <div class="bg-gray-800/50 p-4 rounded border border-gray-700">
+                        <h4 class="text-gray-300 font-bold uppercase text-xs mb-3 tracking-wider">Status Workflow</h4>
+                        <div class="space-y-2 text-xs">
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 rounded-full bg-gray-500 mr-2"></div>
+                                <span class="text-gray-300">Wishlist</span>
+                                <span class="text-gray-600 ml-auto">→ Ideas</span>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 rounded-full bg-blue-500 mr-2"></div>
+                                <span class="text-gray-300">Ordered</span>
+                                <span class="text-gray-600 ml-auto">→ Parts acquired</span>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 rounded-full bg-yellow-500 mr-2"></div>
+                                <span class="text-gray-300">In Progress</span>
+                                <span class="text-gray-600 ml-auto">→ Active work</span>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
+                                <span class="text-gray-300">Completed</span>
+                                <span class="text-gray-600 ml-auto">→ Finished</span>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 rounded-full bg-red-500 mr-2"></div>
+                                <span class="text-gray-300">Cancelled</span>
+                                <span class="text-gray-600 ml-auto">→ Abandoned</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-purple-900/20 p-4 rounded border border-purple-700/50">
+                        <h4 class="text-purple-300 font-bold uppercase text-xs mb-2 tracking-wider">
+                            <i class="fas fa-columns mr-1"></i> Kanban Board
+                        </h4>
+                        <p class="text-xs text-purple-200 mb-2">
+                            Use the Kanban board to visualize and manage all projects for this collection.
+                        </p>
+                        <a href="{% url 'collections:collection_upgrades_kanban' collection_type.slug %}"
+                           class="inline-block text-xs text-purple-400 hover:text-purple-300 font-semibold">
+                            View Kanban Board →
+                        </a>
+                    </div>
+
+                    {% if item.upgrades.count > 0 %}
+                    <div class="bg-gray-800/50 p-4 rounded border border-gray-700">
+                        <h4 class="text-gray-300 font-bold uppercase text-xs mb-2 tracking-wider">Current Projects</h4>
+                        <div class="space-y-2">
+                            {% for upgrade in item.upgrades.all|slice:":3" %}
+                            <div class="text-xs border-b border-gray-700 pb-2">
+                                <p class="text-gray-300">{{ upgrade.name }}</p>
+                                <p class="text-gray-500">{{ upgrade.status|upper }} - ${{ upgrade.cost }}</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="pt-4 border-t border-gray-700">
+                        <p class="text-xs text-gray-500 italic">
+                            Track all modifications to understand total investment and document improvements.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

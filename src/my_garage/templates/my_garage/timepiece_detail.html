@@ -17,6 +17,10 @@
         backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.05);
     }
+    /* Hide file input but keep it functional */
+    #photo-upload {
+        display: none;
+    }
 </style>
 {% endblock %}
 
@@ -26,7 +30,7 @@
 
         <!-- Navigation -->
         <div class="mb-8">
-            <a href="{% url 'my_garage:timepiece_list' %}" class="text-gray-400 hover:text-luxury-gold text-xs uppercase tracking-widest transition-colors">
+            <a href="{% url 'timepieces:timepiece_list' %}" class="text-gray-400 hover:text-luxury-gold text-xs uppercase tracking-widest transition-colors">
                 &larr; Back to Salon
             </a>
         </div>
@@ -46,8 +50,19 @@
                         </div>
                     {% endif %}
 
-                    <!-- Zoom hint -->
-                    <div class="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <!-- Photo Update Overlay -->
+                    <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <form method="post" enctype="multipart/form-data" id="photo-form">
+                            {% csrf_token %}
+                            <label for="photo-upload" class="cursor-pointer px-6 py-3 border border-luxury-gold text-luxury-gold hover:bg-luxury-gold hover:text-black transition-colors uppercase text-xs tracking-widest font-bold rounded">
+                                Update Photo
+                            </label>
+                            <input type="file" name="photo" id="photo-upload" accept="image/*" onchange="document.getElementById('photo-form').submit();">
+                        </form>
+                    </div>
+
+                    <!-- Zoom hint (only visible when not hovering center) -->
+                    <div class="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                         <span class="bg-black/50 backdrop-blur text-white text-xs px-2 py-1 rounded border border-white/10">
                             High Res
                         </span>

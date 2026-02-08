@@ -3,7 +3,7 @@
 ## Overview
 
 **Feature ID**: 001-my-garage-platform
-**Status**: ✅ Phase 12 Complete - Timepieces & Navigation
+**Status**: ✅ Phase 13 Complete - Dynamic Collections & Timepieces
 **Owner**: Development Team
 **Created**: 2025-12-21
 **Last Updated**: 2026-02-03
@@ -117,6 +117,20 @@ Car enthusiasts lack professional-grade tools to manage their vehicles as financ
 - ✅ Can upload photos of the watch
 - ✅ Can track purchase price and current market value
 - ✅ Dedicated "Horology Salon" view with appropriate aesthetic
+- ✅ Dedicated URL structure (`/timepieces/`) separate from garage
+
+### Epic 8: Dynamic Collections
+- **As a** collector
+- **I want to** create custom collection types for any asset (Wine, Art, Books, etc.)
+- **So that** I can track my entire portfolio in one system
+
+**Acceptance Criteria:**
+- ✅ Can create custom collection types with user-defined schemas
+- ✅ Can add custom fields (text, number, date, file, relationship)
+- ✅ Can track items with standard + custom fields
+- ✅ Can track service records for any collection item
+- ✅ Can manage projects/upgrades with Kanban board
+- ✅ Dedicated URL structure (`/collections/`)
 
 ## Technical Specification
 
@@ -180,6 +194,28 @@ class Timepiece(models.Model):
     photo = ImageField(upload_to="timepieces/%Y/%m/")
 ```
 
+#### Dynamic Collections
+```python
+class CollectionType(models.Model):
+    owner = ForeignKey(User, on_delete=CASCADE)
+    name = CharField(max_length=100)
+    slug = SlugField(max_length=100)
+    icon = CharField(max_length=50)  # FontAwesome class
+    description = TextField(blank=True)
+    field_schema = JSONField(default=dict)  # {fields: [{name, type, label, required}]}
+    list_display_fields = JSONField(default=list)
+
+class DynamicCollectionItem(models.Model):
+    collection_type = ForeignKey(CollectionType, on_delete=CASCADE)
+    owner = ForeignKey(User, on_delete=CASCADE)
+    name = CharField(max_length=200)
+    photo = ImageField(upload_to="collections/%Y/%m/", blank=True)
+    purchase_price = DecimalField(max_digits=12, decimal_places=2, null=True)
+    purchase_date = DateField(null=True, blank=True)
+    current_market_value = DecimalField(max_digits=12, decimal_places=2, null=True)
+    custom_fields = JSONField(default=dict)  # Stores dynamic field values
+```
+
 #### ServiceRecord
 ```python
 class ServiceRecord(models.Model):
@@ -194,6 +230,13 @@ class ServiceRecord(models.Model):
     is_verified = BooleanField(default=False)
 ```
 
+#### GenericServiceRecord (Collections)
+```python
+class GenericServiceRecord(models.Model):
+    item = ForeignKey(DynamicCollectionItem, on_delete=CASCADE)
+    # Same fields as ServiceRecord...
+```
+
 #### Upgrade
 ```python
 class Upgrade(models.Model):
@@ -205,6 +248,13 @@ class Upgrade(models.Model):
     cost = DecimalField(max_digits=10, decimal_places=2)
     installation_date = DateField(null=True, blank=True)
     notes = TextField(blank=True)
+```
+
+#### GenericUpgrade (Collections)
+```python
+class GenericUpgrade(models.Model):
+    item = ForeignKey(DynamicCollectionItem, on_delete=CASCADE)
+    # Same fields as Upgrade plus Kanban support...
 ```
 
 #### ConditionReport
@@ -274,6 +324,11 @@ task_bulk_valuation_refresh() -> str
   - **Input**: Year, Make, Model, Zip (for stats) OR VIN (for history)
   - **Output**: JSON with sales metrics (mean/median price, DOM) or transaction history
   - **API Used**: Marketcheck API
+- **Watch Valuation**:
+  - **Endpoint**: `POST /mcp/execute` with tool `get_watch_valuation`
+  - **Input**: Brand, Model, Reference Number
+  - **Output**: JSON with estimated value
+  - **API Used**: Mock Service (Placeholder for Chrono24/WatchCharts)
 
 #### FastAPI OCR Service (To Implement)
 - **Endpoint**: `POST /ocr/process`
@@ -283,7 +338,7 @@ task_bulk_valuation_refresh() -> str
 
 ## Implementation Status
 
-### ✅ Completed (Phase 1-11)
+### ✅ Completed (Phase 1-13)
 
 **Phase 1-6**: (See previous versions for details)
 
@@ -326,6 +381,14 @@ task_bulk_valuation_refresh() -> str
 - ✅ Fixed navigation links to point to Home instead of Garage
 - ✅ Updated `vehicle_form.html` to match Race Deck theme
 - ✅ Created `start_app.sh` for unified service startup
+
+**Phase 13: Dynamic Collections & Restructuring**
+- ✅ Implemented `CollectionType` and `DynamicCollectionItem` models
+- ✅ Created schema builder for custom collection types
+- ✅ Implemented Kanban board for project management
+- ✅ Restructured URLs: `/garage/` (vehicles), `/timepieces/` (watches), `/collections/` (dynamic)
+- ✅ Implemented `watch_valuation` MCP tool (mock)
+- ✅ Updated all templates to use correct namespaces
 
 ### ⏳ Remaining Work
 
@@ -499,7 +562,12 @@ task_bulk_valuation_refresh() -> str
 - Navigation Restructuring
 - Unified Startup Script
 
-### Version 0.7.0 (Next)
+### Version 0.7.0 (Current) ✅
+- Dynamic Collections System
+- Kanban Board
+- URL Restructuring
+
+### Version 0.8.0 (Next)
 - FastAPI OCR service
 - Receipt upload and processing
 - Dashboard views

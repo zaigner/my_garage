@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Add Item to {{ collection_type.name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="mb-6">
+        <a href="{% url 'collections:collection_list' collection_type.slug %}"
+           class="text-indigo-600 hover:underline text-sm">
+            ← Back to {{ collection_type.name }}
+        </a>
+    </div>
+
+    <h1 class="text-3xl font-bold text-gray-900 mb-8">
+        Add Item to {{ collection_type.name }}
+    </h1>
+
+    <form method="post" enctype="multipart/form-data" class="bg-white rounded-lg shadow-md p-6">
+        {% csrf_token %}
+
+        <!-- Standard Fields -->
+        <div class="mb-6">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">Basic Information</h2>
+
+            {% for field in form %}
+                {% if not field.name|slice:":7" == "custom_" %}
+                    <div class="mb-4">
+                        <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                            {{ field.label }}{% if field.field.required %} *{% endif %}
+                        </label>
+                        {{ field }}
+                        {% if field.help_text %}
+                            <p class="text-gray-500 text-xs mt-1">{{ field.help_text }}</p>
+                        {% endif %}
+                        {% if field.errors %}
+                            <p class="text-red-600 text-sm mt-1">{{ field.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+
+        <!-- Custom Fields -->
+        {% if collection_type.field_schema.fields %}
+            <div class="mb-6 border-t pt-6">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">{{ collection_type.name }} Details</h2>
+
+                {% for field in form %}
+                    {% if field.name|slice:":7" == "custom_" %}
+                        <div class="mb-4">
+                            <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                                {{ field.label }}{% if field.field.required %} *{% endif %}
+                            </label>
+                            {{ field }}
+                            {% if field.help_text %}
+                                <p class="text-gray-500 text-xs mt-1">{{ field.help_text }}</p>
+                            {% endif %}
+                            {% if field.errors %}
+                                <p class="text-red-600 text-sm mt-1">{{ field.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <!-- Submit -->
+        <div class="flex gap-4 border-t pt-6">
+            <button type="submit"
+                    class="bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700">
+                Add Item
+            </button>
+            <a href="{% url 'collections:collection_list' collection_type.slug %}"
+               class="bg-gray-200 text-gray-700 px-6 py-2 rounded-md hover:bg-gray-300">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

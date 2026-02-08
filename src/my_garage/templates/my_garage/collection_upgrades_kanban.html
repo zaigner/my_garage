@@ -1,0 +1,298 @@
+{% extends "my_garage/base.html" %}
+
+{% block title %}Project Kanban - {{ collection_type.name }}{% endblock %}
+
+{% block content %}
+<style>
+    .kanban-column {
+        min-height: 400px;
+        transition: background-color 0.2s;
+    }
+    .kanban-column.drag-over {
+        background-color: rgba(99, 102, 241, 0.1);
+        border-color: #6366f1;
+    }
+    .kanban-card {
+        cursor: move;
+        transition: all 0.2s;
+    }
+    .kanban-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    .kanban-card.dragging {
+        opacity: 0.5;
+        transform: rotate(5deg);
+    }
+</style>
+
+<div class="min-h-screen bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex justify-between items-center mb-4">
+                <div>
+                    <a href="{% url 'collections:collection_list' collection_type.slug %}"
+                       class="text-indigo-600 hover:underline text-sm mb-2 inline-block">
+                        ← Back to {{ collection_type.name }}
+                    </a>
+                    <h1 class="text-3xl font-bold text-gray-900">
+                        <i class="fas fa-columns mr-2"></i>
+                        Project Kanban Board
+                    </h1>
+                    <p class="text-gray-600 mt-1">Drag and drop projects to update their status</p>
+                </div>
+                <div class="text-right">
+                    <div class="text-sm text-gray-600 mb-2">
+                        Total Projects: <span class="font-bold">{{ wishlist.count|add:ordered.count|add:in_progress.count|add:completed.count|add:cancelled.count }}</span>
+                    </div>
+                    <a href="{% url 'collections:all_upgrades' %}"
+                       class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">
+                        View All Upgrades →
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Kanban Board -->
+        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 overflow-x-auto pb-4">
+            <!-- Wishlist Column -->
+            <div class="kanban-column bg-gray-100 rounded-lg p-4 border-2 border-gray-300"
+                 data-status="WISHLIST"
+                 ondrop="drop(event)"
+                 ondragover="allowDrop(event)"
+                 ondragleave="dragLeave(event)">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-bold text-gray-700 uppercase text-sm flex items-center">
+                        <span class="w-3 h-3 rounded-full bg-gray-500 mr-2"></span>
+                        Wishlist
+                    </h3>
+                    <span class="bg-gray-500 text-white text-xs font-bold px-2 py-1 rounded-full">{{ wishlist.count }}</span>
+                </div>
+                <div class="space-y-3">
+                    {% for upgrade in wishlist %}
+                        {% include 'my_garage/partials/kanban_card.html' with upgrade=upgrade %}
+                    {% empty %}
+                        <p class="text-gray-400 text-sm text-center py-8 italic">No wishlist items</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Ordered Column -->
+            <div class="kanban-column bg-blue-50 rounded-lg p-4 border-2 border-blue-200"
+                 data-status="ORDERED"
+                 ondrop="drop(event)"
+                 ondragover="allowDrop(event)"
+                 ondragleave="dragLeave(event)">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-bold text-blue-700 uppercase text-sm flex items-center">
+                        <span class="w-3 h-3 rounded-full bg-blue-500 mr-2"></span>
+                        Ordered
+                    </h3>
+                    <span class="bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded-full">{{ ordered.count }}</span>
+                </div>
+                <div class="space-y-3">
+                    {% for upgrade in ordered %}
+                        {% include 'my_garage/partials/kanban_card.html' with upgrade=upgrade %}
+                    {% empty %}
+                        <p class="text-blue-300 text-sm text-center py-8 italic">No ordered items</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- In Progress Column -->
+            <div class="kanban-column bg-yellow-50 rounded-lg p-4 border-2 border-yellow-200"
+                 data-status="IN_PROGRESS"
+                 ondrop="drop(event)"
+                 ondragover="allowDrop(event)"
+                 ondragleave="dragLeave(event)">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-bold text-yellow-700 uppercase text-sm flex items-center">
+                        <span class="w-3 h-3 rounded-full bg-yellow-500 mr-2"></span>
+                        In Progress
+                    </h3>
+                    <span class="bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded-full">{{ in_progress.count }}</span>
+                </div>
+                <div class="space-y-3">
+                    {% for upgrade in in_progress %}
+                        {% include 'my_garage/partials/kanban_card.html' with upgrade=upgrade %}
+                    {% empty %}
+                        <p class="text-yellow-300 text-sm text-center py-8 italic">No active projects</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Completed Column -->
+            <div class="kanban-column bg-green-50 rounded-lg p-4 border-2 border-green-200"
+                 data-status="COMPLETED"
+                 ondrop="drop(event)"
+                 ondragover="allowDrop(event)"
+                 ondragleave="dragLeave(event)">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-bold text-green-700 uppercase text-sm flex items-center">
+                        <span class="w-3 h-3 rounded-full bg-green-500 mr-2"></span>
+                        Completed
+                    </h3>
+                    <span class="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">{{ completed.count }}</span>
+                </div>
+                <div class="space-y-3">
+                    {% for upgrade in completed %}
+                        {% include 'my_garage/partials/kanban_card.html' with upgrade=upgrade %}
+                    {% empty %}
+                        <p class="text-green-300 text-sm text-center py-8 italic">No completed projects</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Cancelled Column -->
+            <div class="kanban-column bg-red-50 rounded-lg p-4 border-2 border-red-200"
+                 data-status="CANCELLED"
+                 ondrop="drop(event)"
+                 ondragover="allowDrop(event)"
+                 ondragleave="dragLeave(event)">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-bold text-red-700 uppercase text-sm flex items-center">
+                        <span class="w-3 h-3 rounded-full bg-red-500 mr-2"></span>
+                        Cancelled
+                    </h3>
+                    <span class="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">{{ cancelled.count }}</span>
+                </div>
+                <div class="space-y-3">
+                    {% for upgrade in cancelled %}
+                        {% include 'my_garage/partials/kanban_card.html' with upgrade=upgrade %}
+                    {% empty %}
+                        <p class="text-red-300 text-sm text-center py-8 italic">No cancelled projects</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="mt-8 bg-white rounded-lg shadow-md p-6">
+            <h3 class="font-semibold text-gray-900 mb-4">How to Use</h3>
+            <ul class="space-y-2 text-sm text-gray-600">
+                <li><strong>Drag & Drop:</strong> Click and drag any card to a different column to update its status</li>
+                <li><strong>Click Card:</strong> Click on a card to view full details and edit the project</li>
+                <li><strong>Automatic Dates:</strong> Dates update automatically when moving to "Ordered" or "Completed"</li>
+                <li><strong>Color Coding:</strong> Each status has a unique color for quick visual tracking</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script>
+    let draggedElement = null;
+
+    function allowDrop(ev) {
+        ev.preventDefault();
+        ev.currentTarget.classList.add('drag-over');
+    }
+
+    function dragLeave(ev) {
+        ev.currentTarget.classList.remove('drag-over');
+    }
+
+    function drop(ev) {
+        ev.preventDefault();
+        const column = ev.currentTarget;
+        column.classList.remove('drag-over');
+
+        if (draggedElement) {
+            const upgradeId = draggedElement.dataset.upgradeId;
+            const newStatus = column.dataset.status;
+
+            // Update status via AJAX
+            updateUpgradeStatus(upgradeId, newStatus, draggedElement, column);
+        }
+    }
+
+    function updateUpgradeStatus(upgradeId, newStatus, cardElement, targetColumn) {
+        fetch(`/collections/api/upgrade/${upgradeId}/update-status/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({ status: newStatus })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Move the card to the new column
+                const cardContainer = targetColumn.querySelector('.space-y-3');
+                cardContainer.appendChild(cardElement);
+
+                // Update counts
+                updateColumnCounts();
+
+                // Show success message
+                showNotification('Project status updated!', 'success');
+            } else {
+                showNotification('Error updating status: ' + data.error, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Error updating status', 'error');
+        });
+    }
+
+    function updateColumnCounts() {
+        document.querySelectorAll('.kanban-column').forEach(column => {
+            const count = column.querySelectorAll('.kanban-card').length;
+            const badge = column.querySelector('.rounded-full');
+            if (badge) {
+                badge.textContent = count;
+            }
+        });
+    }
+
+    function showNotification(message, type) {
+        const div = document.createElement('div');
+        div.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 ${
+            type === 'success' ? 'bg-green-500' : 'bg-red-500'
+        } text-white font-medium`;
+        div.textContent = message;
+        document.body.appendChild(div);
+
+        setTimeout(() => {
+            div.remove();
+        }, 3000);
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // Make cards draggable
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.kanban-card').forEach(card => {
+            card.setAttribute('draggable', 'true');
+
+            card.addEventListener('dragstart', function(e) {
+                draggedElement = this;
+                this.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+            });
+
+            card.addEventListener('dragend', function(e) {
+                this.classList.remove('dragging');
+                document.querySelectorAll('.kanban-column').forEach(col => {
+                    col.classList.remove('drag-over');
+                });
+            });
+        });
+    });
+</script>
+{% endblock %}

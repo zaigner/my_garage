@@ -1,0 +1,201 @@
+{% extends "my_garage/base.html" %}
+
+{% block title %}{{ title }} - {{ item.name }}{% endblock %}
+
+{% block extra_head %}
+<link href="https://fonts.googleapis.com/css2?family=Michroma&display=swap" rel="stylesheet">
+<style>
+    .porsche-font {
+        font-family: 'Michroma', sans-serif;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    .race-deck-bg {
+        background-color: #111;
+        background-image:
+            linear-gradient(45deg, #1a1a1a 25%, transparent 25%, transparent 75%, #1a1a1a 75%, #1a1a1a),
+            linear-gradient(45deg, #1a1a1a 25%, transparent 25%, transparent 75%, #1a1a1a 75%, #1a1a1a);
+        background-position: 0 0, 10px 10px;
+        background-size: 20px 20px;
+    }
+    .cabinet-finish {
+        background: linear-gradient(180deg, #262626 0%, #171717 100%);
+        border: 1px solid #404040;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Clean Data Entry Styling */
+    .cabinet-finish input[type="text"],
+    .cabinet-finish input[type="number"],
+    .cabinet-finish input[type="date"],
+    .cabinet-finish input[type="email"],
+    .cabinet-finish select,
+    .cabinet-finish textarea {
+        background-color: #262626;
+        border: 1px solid #404040;
+        color: #e5e5e5;
+        padding: 0.5rem;
+        border-radius: 0.25rem;
+        width: 100%;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        transition: all 0.2s;
+    }
+
+    .cabinet-finish input:focus,
+    .cabinet-finish select:focus,
+    .cabinet-finish textarea:focus {
+        outline: none;
+        border-color: #dc2626;
+        box-shadow: 0 0 0 1px #dc2626;
+        background-color: #1f1f1f;
+    }
+
+    .cabinet-finish label {
+        color: #9ca3af;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+        display: block;
+    }
+
+    /* Hide default file input */
+    input[type="file"] {
+        display: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="race-deck-bg min-h-screen text-gray-200 font-sans">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row justify-between items-center mb-8 border-b border-gray-700 pb-4">
+            <div>
+                <h1 class="text-3xl font-bold porsche-font text-white tracking-wider mb-1">{{ title }}</h1>
+                <h2 class="text-sm text-gray-400 uppercase tracking-widest">
+                    <i class="{{ collection_type.icon }} mr-1"></i>
+                    {{ item.name }}
+                </h2>
+            </div>
+            <a href="{% url 'collections:collection_item_detail' collection_type.slug item.id %}"
+               class="px-4 py-2 bg-gray-800 text-gray-300 rounded hover:bg-gray-700 border border-gray-600 uppercase text-xs font-bold tracking-wider transition-colors">
+                &larr; Back to Item
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Manual Entry Form -->
+            <div class="cabinet-finish p-6 rounded-lg">
+                <div class="flex items-center mb-6 border-b border-gray-700 pb-2">
+                    <div class="w-1 h-6 bg-red-600 mr-3"></div>
+                    <h3 class="text-xl font-bold porsche-font text-gray-100">Manual Entry</h3>
+                </div>
+
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="space-y-4">
+                        <!-- Render fields manually to apply styles -->
+                        <div class="space-y-1">
+                            <label for="{{ form.date.id_for_label }}">Date</label>
+                            {{ form.date }}
+                            {% if form.date.errors %}
+                                <p class="text-red-500 text-xs mt-1">{{ form.date.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="space-y-1">
+                            <label for="{{ form.vendor.id_for_label }}">Vendor</label>
+                            {{ form.vendor }}
+                            {% if form.vendor.errors %}
+                                <p class="text-red-500 text-xs mt-1">{{ form.vendor.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="space-y-1">
+                            <label for="{{ form.category.id_for_label }}">Category</label>
+                            {{ form.category }}
+                            {% if form.category.errors %}
+                                <p class="text-red-500 text-xs mt-1">{{ form.category.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="space-y-1">
+                            <label for="{{ form.total_cost.id_for_label }}">Total Cost</label>
+                            {{ form.total_cost }}
+                            {% if form.total_cost.errors %}
+                                <p class="text-red-500 text-xs mt-1">{{ form.total_cost.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="space-y-1">
+                            <label for="{{ form.description.id_for_label }}">Description</label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                                <p class="text-red-500 text-xs mt-1">{{ form.description.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="space-y-1">
+                            <label for="{{ form.receipt_image.id_for_label }}">Receipt Image</label>
+                            <div class="text-gray-400 text-sm bg-gray-800 p-2 rounded border border-gray-700">
+                                {{ form.receipt_image }}
+                            </div>
+                            {% if form.receipt_image.errors %}
+                                <p class="text-red-500 text-xs mt-1">{{ form.receipt_image.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mt-8 flex justify-end space-x-4">
+                        <button type="submit" class="w-full px-6 py-3 bg-red-700 text-white uppercase tracking-widest font-bold hover:bg-red-600 transition-colors border border-red-800 shadow-lg rounded">
+                            Save Record
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Info Panel -->
+            <div class="cabinet-finish p-6 rounded-lg h-fit">
+                <div class="flex items-center mb-6 border-b border-gray-700 pb-2">
+                    <div class="w-1 h-6 bg-blue-500 mr-3"></div>
+                    <h3 class="text-xl font-bold porsche-font text-gray-100">Service History</h3>
+                </div>
+
+                <div class="space-y-4 text-sm text-gray-400">
+                    <p class="leading-relaxed">
+                        Track all maintenance, repairs, appraisals, and restorations for your {{ collection_type.name }} items.
+                    </p>
+
+                    <div class="bg-gray-800/50 p-4 rounded border border-gray-700">
+                        <h4 class="text-gray-300 font-bold uppercase text-xs mb-2 tracking-wider">Category Types</h4>
+                        <ul class="space-y-1 text-xs">
+                            <li><span class="text-blue-400">•</span> Maintenance - Regular upkeep</li>
+                            <li><span class="text-yellow-400">•</span> Repair - Fix issues</li>
+                            <li><span class="text-green-400">•</span> Upgrade - Improvements</li>
+                            <li><span class="text-purple-400">•</span> Restoration - Major work</li>
+                            <li><span class="text-pink-400">•</span> Appraisal - Value assessment</li>
+                        </ul>
+                    </div>
+
+                    {% if item.service_records.count > 0 %}
+                    <div class="bg-gray-800/50 p-4 rounded border border-gray-700">
+                        <h4 class="text-gray-300 font-bold uppercase text-xs mb-2 tracking-wider">Recent Records</h4>
+                        <div class="space-y-2">
+                            {% for record in item.service_records.all|slice:":3" %}
+                            <div class="text-xs border-b border-gray-700 pb-2">
+                                <p class="text-gray-300">{{ record.category|upper }}</p>
+                                <p class="text-gray-500">{{ record.date }} - ${{ record.total_cost }}</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="pt-4 border-t border-gray-700">
+                        <p class="text-xs text-gray-500 italic">
+                            All service records help track your total investment and can increase resale value.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

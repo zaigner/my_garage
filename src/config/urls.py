@@ -12,8 +12,14 @@ urlpatterns = [
     # API
     path('api/', include('config.api_router')),
 
-    # My Garage App
+    # Timepieces (moved out of garage)
+    path('timepieces/', include('my_garage.timepiece_urls', namespace='timepieces')),
+
+    # My Garage App (Vehicles)
     path('garage/', include('my_garage.urls', namespace='my_garage')),
+
+    # Dynamic Collections (separate mount point, shares 'my_garage' namespace)
+    path('collections/', include('my_garage.collection_urls')),
 
     # Home
     path('', views.home, name='home'),

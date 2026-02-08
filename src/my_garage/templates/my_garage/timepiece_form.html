@@ -1,0 +1,180 @@
+{% extends "my_garage/base.html" %}
+
+{% block title %}Add Timepiece | Horology Salon{% endblock %}
+
+{% block extra_head %}
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+<style>
+    .salon-font {
+        font-family: 'Cinzel', serif;
+    }
+    .salon-bg {
+        background-color: #0B1026;
+        background-image: radial-gradient(circle at 50% 0%, #1a2342 0%, #0B1026 70%);
+    }
+    .form-card {
+        background: rgba(21, 27, 51, 0.8);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    /* Custom Form Styling */
+    input[type="text"], input[type="number"], input[type="date"], select, textarea {
+        background-color: #0f1424;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #e5e5e5;
+        padding: 0.75rem;
+        border-radius: 0.25rem;
+        width: 100%;
+        font-family: sans-serif;
+        transition: all 0.2s;
+    }
+
+    input:focus, select:focus, textarea:focus {
+        outline: none;
+        border-color: #D4AF37;
+        box-shadow: 0 0 0 1px #D4AF37;
+        background-color: #151b33;
+    }
+
+    label {
+        color: #9ca3af;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+        display: block;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="salon-bg min-h-screen text-gray-200 font-sans">
+    <div class="container mx-auto px-4 py-12">
+
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row justify-between items-center mb-8 border-b border-white/10 pb-6">
+            <div>
+                <h1 class="text-3xl md:text-4xl font-bold salon-font text-luxury-gold mb-2">Add New Timepiece</h1>
+                <p class="text-gray-400 text-sm uppercase tracking-widest">Expand Your Collection</p>
+            </div>
+            <div class="mt-6 md:mt-0">
+                <a href="{% url 'timepieces:timepiece_list' %}" class="px-6 py-2 border border-white/20 text-white/70 hover:text-white hover:border-white/50 rounded-sm uppercase text-xs tracking-widest transition-colors">
+                    Cancel
+                </a>
+            </div>
+        </div>
+
+        <div class="max-w-4xl mx-auto">
+            <div class="form-card p-8 rounded-lg shadow-2xl">
+
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                    <div class="bg-red-900/20 border border-red-500 text-red-200 px-4 py-3 rounded relative mb-6">
+                        {{ form.non_field_errors }}
+                    </div>
+                    {% endif %}
+
+                    <!-- Core Identity -->
+                    <div class="mb-8">
+                        <h3 class="text-luxury-gold text-sm uppercase tracking-widest mb-4 border-b border-white/10 pb-2">Identity</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="space-y-1">
+                                <label for="{{ form.brand.id_for_label }}">Brand</label>
+                                {{ form.brand }}
+                            </div>
+                            <div class="space-y-1">
+                                <label for="{{ form.model.id_for_label }}">Model</label>
+                                {{ form.model }}
+                            </div>
+                            <div class="space-y-1">
+                                <label for="{{ form.reference_number.id_for_label }}">Reference Number</label>
+                                {{ form.reference_number }}
+                            </div>
+                            <div class="space-y-1">
+                                <label for="{{ form.serial_number.id_for_label }}">Serial Number</label>
+                                {{ form.serial_number }}
+                            </div>
+                            <div class="space-y-1">
+                                <label for="{{ form.year.id_for_label }}">Year</label>
+                                {{ form.year }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Specifications -->
+                    <div class="mb-8">
+                        <h3 class="text-luxury-gold text-sm uppercase tracking-widest mb-4 border-b border-white/10 pb-2">Specifications</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="space-y-1">
+                                <label for="{{ form.movement_type.id_for_label }}">Movement</label>
+                                {{ form.movement_type }}
+                            </div>
+                            <div class="space-y-1">
+                                <label for="{{ form.case_material.id_for_label }}">Case Material</label>
+                                {{ form.case_material }}
+                            </div>
+                            <div class="space-y-1">
+                                <label for="{{ form.dial_color.id_for_label }}">Dial Color</label>
+                                {{ form.dial_color }}
+                            </div>
+                            <div class="space-y-1">
+                                <label for="{{ form.condition_grade.id_for_label }}">Condition</label>
+                                {{ form.condition_grade }}
+                            </div>
+                        </div>
+
+                        <div class="mt-4 flex gap-8">
+                            <div class="flex items-center gap-2">
+                                {{ form.has_box }}
+                                <label for="{{ form.has_box.id_for_label }}" class="mb-0 cursor-pointer">Original Box</label>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                {{ form.has_papers }}
+                                <label for="{{ form.has_papers.id_for_label }}" class="mb-0 cursor-pointer">Original Papers</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Financials -->
+                    <div class="mb-8">
+                        <h3 class="text-luxury-gold text-sm uppercase tracking-widest mb-4 border-b border-white/10 pb-2">Acquisition</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="space-y-1">
+                                <label for="{{ form.purchase_price.id_for_label }}">Purchase Price</label>
+                                {{ form.purchase_price }}
+                            </div>
+                            <div class="space-y-1">
+                                <label for="{{ form.purchase_date.id_for_label }}">Purchase Date</label>
+                                {{ form.purchase_date }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notes & Photo -->
+                    <div class="mb-8">
+                        <div class="space-y-1 mb-6">
+                            <label for="{{ form.notes.id_for_label }}">Provenance / Notes</label>
+                            {{ form.notes }}
+                        </div>
+
+                        <div class="space-y-1">
+                            <label for="{{ form.photo.id_for_label }}">Photo</label>
+                            <div class="bg-[#0f1424] p-2 rounded border border-white/10">
+                                {{ form.photo }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full px-6 py-4 bg-luxury-gold text-black font-bold uppercase tracking-widest hover:bg-yellow-600 transition-colors rounded shadow-lg">
+                        Add to Collection
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
