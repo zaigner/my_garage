@@ -3,87 +3,82 @@
 {% block title %}{{ title }} - {{ item.name }}{% endblock %}
 
 {% block extra_head %}
-<link href="https://fonts.googleapis.com/css2?family=Michroma&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
 <style>
-    .porsche-font {
-        font-family: 'Michroma', sans-serif;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
+    .salon-font {
+        font-family: 'Cinzel', serif;
     }
-    .race-deck-bg {
-        background-color: #111;
-        background-image:
-            linear-gradient(45deg, #1a1a1a 25%, transparent 25%, transparent 75%, #1a1a1a 75%, #1a1a1a),
-            linear-gradient(45deg, #1a1a1a 25%, transparent 25%, transparent 75%, #1a1a1a 75%, #1a1a1a);
-        background-position: 0 0, 10px 10px;
-        background-size: 20px 20px;
+    .salon-bg {
+        background-color: #0B1026;
+        background-image: radial-gradient(circle at 50% 0%, #1a2342 0%, #0B1026 70%);
     }
-    .cabinet-finish {
-        background: linear-gradient(180deg, #262626 0%, #171717 100%);
-        border: 1px solid #404040;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+    .detail-card {
+        background-color: #151b33;
+        border: 1px solid rgba(255, 255, 255, 0.05);
     }
 
-    .cabinet-finish input[type="text"],
-    .cabinet-finish input[type="number"],
-    .cabinet-finish input[type="date"],
-    .cabinet-finish select,
-    .cabinet-finish textarea {
-        background-color: #262626;
-        border: 1px solid #404040;
-        color: #e5e5e5;
-        padding: 0.5rem;
+    .detail-card input[type="text"],
+    .detail-card input[type="number"],
+    .detail-card input[type="date"],
+    .detail-card select,
+    .detail-card textarea {
+        background-color: #0B1026;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #fff;
+        padding: 0.5rem 0.75rem;
         border-radius: 0.25rem;
         width: 100%;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
         transition: all 0.2s;
     }
 
-    .cabinet-finish input:focus,
-    .cabinet-finish select:focus,
-    .cabinet-finish textarea:focus {
+    .detail-card input:focus,
+    .detail-card select:focus,
+    .detail-card textarea:focus {
         outline: none;
-        border-color: #7c3aed;
-        box-shadow: 0 0 0 1px #7c3aed;
-        background-color: #1f1f1f;
+        border-color: #D4AF37;
+        box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.1);
     }
 
-    .cabinet-finish label {
+    .detail-card label {
         color: #9ca3af;
         font-size: 0.75rem;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
-        font-weight: 600;
-        margin-bottom: 0.25rem;
+        letter-spacing: 0.1em;
+        margin-bottom: 0.5rem;
         display: block;
+    }
+
+    .detail-card input::placeholder,
+    .detail-card textarea::placeholder {
+        color: rgba(255, 255, 255, 0.3);
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="race-deck-bg min-h-screen text-gray-200 font-sans">
-    <div class="container mx-auto px-4 py-8">
+<div class="salon-bg min-h-screen text-gray-200 font-sans">
+    <div class="container mx-auto px-4 py-12">
         <!-- Header -->
-        <div class="flex flex-col md:flex-row justify-between items-center mb-8 border-b border-gray-700 pb-4">
+        <div class="flex flex-col md:flex-row justify-between items-center mb-12 border-b border-white/10 pb-6">
             <div>
-                <h1 class="text-3xl font-bold porsche-font text-white tracking-wider mb-1">{{ title }}</h1>
+                <h1 class="text-3xl md:text-4xl salon-font text-luxury-gold tracking-wider mb-2">{{ title }}</h1>
                 <h2 class="text-sm text-gray-400 uppercase tracking-widest">
                     <i class="{{ collection_type.icon }} mr-1"></i>
                     {{ item.name }}
                 </h2>
             </div>
             <a href="{% url 'collections:collection_item_detail' collection_type.slug item.id %}"
-               class="px-4 py-2 bg-gray-800 text-gray-300 rounded hover:bg-gray-700 border border-gray-600 uppercase text-xs font-bold tracking-wider transition-colors">
+               class="px-6 py-2 border border-white/20 text-white/70 hover:text-white hover:border-white/50 rounded-sm uppercase text-xs tracking-widest transition-colors">
                 &larr; Back to Item
             </a>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <!-- Project Form -->
-            <div class="cabinet-finish p-6 rounded-lg">
-                <div class="flex items-center mb-6 border-b border-gray-700 pb-2">
-                    <div class="w-1 h-6 bg-purple-600 mr-3"></div>
-                    <h3 class="text-xl font-bold porsche-font text-gray-100">Project Details</h3>
+            <div class="detail-card p-6 md:p-8 rounded-lg">
+                <div class="flex items-center mb-6 border-b border-white/10 pb-3">
+                    <div class="w-1 h-6 bg-luxury-gold mr-3"></div>
+                    <h3 class="text-xl salon-font text-white">Project Details</h3>
                 </div>
 
                 <form method="post">
@@ -158,7 +153,7 @@
                     </div>
 
                     <div class="mt-8 flex justify-end space-x-4">
-                        <button type="submit" class="w-full px-6 py-3 bg-purple-700 text-white uppercase tracking-widest font-bold hover:bg-purple-600 transition-colors border border-purple-800 shadow-lg rounded">
+                        <button type="submit" class="w-full px-6 py-3 bg-luxury-gold text-black uppercase tracking-widest font-bold hover:bg-yellow-600 transition-colors shadow-lg rounded-sm">
                             {% if is_edit %}Update Project{% else %}Start Project{% endif %}
                         </button>
                     </div>
@@ -166,10 +161,10 @@
             </div>
 
             <!-- Project Management Info -->
-            <div class="cabinet-finish p-6 rounded-lg h-fit">
-                <div class="flex items-center mb-6 border-b border-gray-700 pb-2">
-                    <div class="w-1 h-6 bg-blue-500 mr-3"></div>
-                    <h3 class="text-xl font-bold porsche-font text-gray-100">Project Workflow</h3>
+            <div class="detail-card p-6 md:p-8 rounded-lg h-fit">
+                <div class="flex items-center mb-6 border-b border-white/10 pb-3">
+                    <div class="w-1 h-6 bg-luxury-gold mr-3"></div>
+                    <h3 class="text-xl salon-font text-white">Project Workflow</h3>
                 </div>
 
                 <div class="space-y-4 text-sm text-gray-400">
@@ -177,8 +172,8 @@
                         Track upgrades, modifications, and improvements for your {{ collection_type.name }} items from idea to completion.
                     </p>
 
-                    <div class="bg-gray-800/50 p-4 rounded border border-gray-700">
-                        <h4 class="text-gray-300 font-bold uppercase text-xs mb-3 tracking-wider">Status Workflow</h4>
+                    <div class="bg-black/30 p-4 rounded border border-white/10">
+                        <h4 class="text-luxury-gold font-bold uppercase text-xs mb-3 tracking-wider">Status Workflow</h4>
                         <div class="space-y-2 text-xs">
                             <div class="flex items-center">
                                 <div class="w-3 h-3 rounded-full bg-gray-500 mr-2"></div>
@@ -208,34 +203,34 @@
                         </div>
                     </div>
 
-                    <div class="bg-purple-900/20 p-4 rounded border border-purple-700/50">
-                        <h4 class="text-purple-300 font-bold uppercase text-xs mb-2 tracking-wider">
+                    <div class="bg-luxury-gold/10 p-4 rounded border border-luxury-gold/30">
+                        <h4 class="text-luxury-gold font-bold uppercase text-xs mb-2 tracking-wider">
                             <i class="fas fa-columns mr-1"></i> Kanban Board
                         </h4>
-                        <p class="text-xs text-purple-200 mb-2">
+                        <p class="text-xs text-gray-300 mb-2">
                             Use the Kanban board to visualize and manage all projects for this collection.
                         </p>
                         <a href="{% url 'collections:collection_upgrades_kanban' collection_type.slug %}"
-                           class="inline-block text-xs text-purple-400 hover:text-purple-300 font-semibold">
+                           class="inline-block text-xs text-luxury-gold hover:text-white font-semibold transition-colors">
                             View Kanban Board →
                         </a>
                     </div>
 
                     {% if item.upgrades.count > 0 %}
-                    <div class="bg-gray-800/50 p-4 rounded border border-gray-700">
-                        <h4 class="text-gray-300 font-bold uppercase text-xs mb-2 tracking-wider">Current Projects</h4>
+                    <div class="bg-black/30 p-4 rounded border border-white/10">
+                        <h4 class="text-luxury-gold font-bold uppercase text-xs mb-2 tracking-wider">Current Projects</h4>
                         <div class="space-y-2">
                             {% for upgrade in item.upgrades.all|slice:":3" %}
-                            <div class="text-xs border-b border-gray-700 pb-2">
+                            <div class="text-xs border-b border-white/10 pb-2 last:border-b-0">
                                 <p class="text-gray-300">{{ upgrade.name }}</p>
-                                <p class="text-gray-500">{{ upgrade.status|upper }} - ${{ upgrade.cost }}</p>
+                                <p class="text-gray-500">{{ upgrade.status|upper }} - <span class="text-luxury-gold font-mono">${{ upgrade.cost }}</span></p>
                             </div>
                             {% endfor %}
                         </div>
                     </div>
                     {% endif %}
 
-                    <div class="pt-4 border-t border-gray-700">
+                    <div class="pt-4 border-t border-white/10">
                         <p class="text-xs text-gray-500 italic">
                             Track all modifications to understand total investment and document improvements.
                         </p>

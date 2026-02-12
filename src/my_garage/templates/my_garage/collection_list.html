@@ -3,93 +3,118 @@
 
 {% block title %}{{ collection_type.name }}{% endblock %}
 
+{% block extra_head %}
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+<style>
+    .salon-font {
+        font-family: 'Cinzel', serif;
+    }
+    .salon-bg {
+        background-color: #0B1026;
+        background-image: radial-gradient(circle at 50% 0%, #1a2342 0%, #0B1026 70%);
+    }
+    .item-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .item-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <div class="flex justify-between items-center mb-8">
-        <div>
-            <a href="{% url 'collections:collection_type_list' %}" class="text-indigo-600 hover:underline text-sm mb-2 inline-block">
-                ← Back to Collections
-            </a>
-            <h1 class="text-3xl font-bold text-gray-900">
-                <i class="{{ collection_type.icon }} mr-2"></i>
-                {{ collection_type.name }}
-            </h1>
-            {% if collection_type.description %}
-                <p class="text-gray-600 mt-2">{{ collection_type.description }}</p>
-            {% endif %}
+<div class="salon-bg min-h-screen text-gray-200 font-sans">
+    <div class="container mx-auto px-4 py-12">
+
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row justify-between items-center mb-12 border-b border-white/10 pb-6">
+            <div>
+                <a href="{% url 'collections:collection_type_list' %}" class="text-gray-400 hover:text-luxury-gold text-xs uppercase tracking-widest transition-colors mb-4 inline-block">
+                    ← Back to Collections
+                </a>
+                <h1 class="text-4xl md:text-5xl font-bold salon-font text-luxury-gold mb-2">
+                    <i class="{{ collection_type.icon }} mr-3"></i>
+                    {{ collection_type.name }}
+                </h1>
+                {% if collection_type.description %}
+                    <p class="text-gray-400 text-sm uppercase tracking-widest">{{ collection_type.description }}</p>
+                {% endif %}
+            </div>
+            <div class="mt-6 md:mt-0 flex gap-4">
+                <a href="{% url 'collections:collection_type_list' %}" class="px-6 py-2 border border-white/20 text-white/70 hover:text-white hover:border-white/50 rounded-sm uppercase text-xs tracking-widest transition-colors">
+                    Back to All Collections
+                </a>
+                <a href="{% url 'collections:collection_item_add' collection_type.slug %}" class="px-6 py-2 bg-luxury-gold text-black font-bold rounded-sm uppercase text-xs tracking-widest hover:bg-yellow-600 transition-colors">
+                    + Add Item
+                </a>
+            </div>
         </div>
-        <a href="{% url 'collections:collection_item_add' collection_type.slug %}"
-           class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">
-            + Add Item
-        </a>
-    </div>
 
-    {% if items %}
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {% for item in items %}
-                <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-                    {% if item.photo %}
-                        <img src="{{ item.photo.url }}" alt="{{ item.name }}"
-                             class="w-full h-48 object-cover">
-                    {% else %}
-                        <div class="w-full h-48 bg-gray-200 flex items-center justify-center">
-                            <i class="{{ collection_type.icon }} text-6xl text-gray-400"></i>
-                        </div>
-                    {% endif %}
-
-                    <div class="p-4">
-                        <h3 class="text-xl font-semibold text-gray-900 mb-2">{{ item.name }}</h3>
-
-                        <!-- Display custom fields -->
-                        {% for field_name in collection_type.list_display_fields %}
-                            {% with value=item.custom_fields|get_item:field_name %}
-                                {% if value %}
-                                    <p class="text-sm text-gray-600">
-                                        <strong>{{ field_name|title }}:</strong> {{ value }}
-                                    </p>
+        {% if items %}
+            <!-- Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {% for item in items %}
+                    <a href="{% url 'collections:collection_item_detail' collection_type.slug item.id %}" class="block group">
+                        <div class="item-card bg-[#151b33] border border-white/5 rounded-lg overflow-hidden relative">
+                            <!-- Image Container -->
+                            <div class="aspect-[4/5] overflow-hidden bg-gray-900 relative">
+                                {% if item.photo %}
+                                    <img src="{{ item.photo.url }}" alt="{{ item.name }}" class="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700">
+                                {% else %}
+                                    <div class="w-full h-full flex items-center justify-center text-white/20">
+                                        <i class="{{ collection_type.icon }} text-6xl"></i>
+                                    </div>
                                 {% endif %}
-                            {% endwith %}
-                        {% endfor %}
 
-                        <!-- Financial info -->
-                        <div class="mt-4 pt-4 border-t border-gray-200">
-                            {% if item.current_market_value %}
-                                <p class="text-lg font-bold text-green-600">
-                                    ${{ item.current_market_value|floatformat:2 }}
-                                </p>
-                            {% elif item.purchase_price %}
-                                <p class="text-lg font-bold text-gray-600">
-                                    ${{ item.purchase_price|floatformat:2 }}
-                                </p>
-                            {% endif %}
-                        </div>
+                                <!-- Overlay Gradient -->
+                                <div class="absolute inset-0 bg-gradient-to-t from-[#151b33] via-transparent to-transparent opacity-80"></div>
+                            </div>
 
-                        <div class="mt-4">
-                            <a href="{% url 'collections:collection_item_detail' collection_type.slug item.id %}"
-                               class="block text-center bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">
-                                View Details
-                            </a>
+                            <!-- Details -->
+                            <div class="p-6 relative -mt-12 z-10">
+                                <h3 class="text-2xl salon-font text-white mb-4">{{ item.name }}</h3>
+
+                                <!-- Display custom fields -->
+                                <div class="space-y-2 mb-4">
+                                    {% for field_name in collection_type.list_display_fields %}
+                                        {% with value=item.custom_fields|get_item:field_name %}
+                                            {% if value %}
+                                                <p class="text-xs text-gray-400">
+                                                    <span class="uppercase tracking-widest text-[10px] text-gray-600">{{ field_name|title }}:</span>
+                                                    <span class="text-gray-300 ml-2">{{ value }}</span>
+                                                </p>
+                                            {% endif %}
+                                        {% endwith %}
+                                    {% endfor %}
+                                </div>
+
+                                <!-- Financial info -->
+                                <div class="border-t border-white/10 pt-4">
+                                    {% if item.current_market_value %}
+                                        <span class="block uppercase tracking-widest text-[10px] text-gray-600 mb-1">Current Value</span>
+                                        <span class="font-mono text-white text-xl">${{ item.current_market_value|floatformat:2 }}</span>
+                                    {% elif item.purchase_price %}
+                                        <span class="block uppercase tracking-widest text-[10px] text-gray-600 mb-1">Purchase Price</span>
+                                        <span class="font-mono text-gray-300 text-xl">${{ item.purchase_price|floatformat:2 }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
-            {% endfor %}
-        </div>
-    {% else %}
-        <div class="bg-white rounded-lg shadow-md p-12 text-center">
-            <i class="{{ collection_type.icon }} text-6xl text-gray-300 mb-4"></i>
-            <h2 class="text-2xl font-semibold text-gray-700 mb-2">No Items Yet</h2>
-            <p class="text-gray-600 mb-6">Add your first item to this collection.</p>
-            <a href="{% url 'collections:collection_item_add' collection_type.slug %}"
-               class="inline-block bg-indigo-600 text-white px-6 py-3 rounded-md hover:bg-indigo-700">
-                Add First Item
-            </a>
-        </div>
-    {% endif %}
+                    </a>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="col-span-full py-24 text-center border border-dashed border-white/10 rounded-lg bg-[#151b33]">
+                <i class="{{ collection_type.icon }} text-6xl text-gray-600 mb-4"></i>
+                <h3 class="text-xl salon-font text-gray-400 mb-2">No Items Yet</h3>
+                <p class="text-gray-600 text-sm mb-6">Add your first item to this collection.</p>
+                <a href="{% url 'collections:collection_item_add' collection_type.slug %}"
+                   class="px-6 py-2 bg-luxury-gold text-black font-bold rounded-sm uppercase text-xs tracking-widest hover:bg-yellow-600 transition-colors inline-block">
+                    Add First Item
+                </a>
+            </div>
+        {% endif %}
+    </div>
 </div>
-
-<!-- Custom filter to access dict values -->
-{% load static %}
-<script>
-    // Helper to get dict values in template (if needed client-side)
-</script>
 {% endblock %}

@@ -2,15 +2,25 @@
 
 {% block title %}Project Kanban - {{ collection_type.name }}{% endblock %}
 
-{% block content %}
+{% block extra_head %}
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
 <style>
+    .salon-font {
+        font-family: 'Cinzel', serif;
+    }
+    .salon-bg {
+        background-color: #0B1026;
+        background-image: radial-gradient(circle at 50% 0%, #1a2342 0%, #0B1026 70%);
+    }
     .kanban-column {
         min-height: 400px;
-        transition: background-color 0.2s;
+        transition: all 0.3s;
+        background-color: #151b33;
+        border: 2px solid rgba(255, 255, 255, 0.05);
     }
     .kanban-column.drag-over {
-        background-color: rgba(99, 102, 241, 0.1);
-        border-color: #6366f1;
+        background-color: rgba(212, 175, 55, 0.1);
+        border-color: #D4AF37;
     }
     .kanban-card {
         cursor: move;
@@ -18,36 +28,38 @@
     }
     .kanban-card:hover {
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
     }
     .kanban-card.dragging {
         opacity: 0.5;
         transform: rotate(5deg);
     }
 </style>
+{% endblock %}
 
-<div class="min-h-screen bg-gray-50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+{% block content %}
+<div class="salon-bg min-h-screen text-gray-200 font-sans">
+    <div class="container mx-auto px-4 py-12">
         <!-- Header -->
-        <div class="mb-8">
-            <div class="flex justify-between items-center mb-4">
+        <div class="mb-12">
+            <div class="flex flex-col md:flex-row justify-between items-center border-b border-white/10 pb-6">
                 <div>
                     <a href="{% url 'collections:collection_list' collection_type.slug %}"
-                       class="text-indigo-600 hover:underline text-sm mb-2 inline-block">
+                       class="text-gray-400 hover:text-luxury-gold text-xs uppercase tracking-widest transition-colors mb-4 inline-block">
                         ← Back to {{ collection_type.name }}
                     </a>
-                    <h1 class="text-3xl font-bold text-gray-900">
+                    <h1 class="text-3xl md:text-4xl salon-font text-luxury-gold mb-2">
                         <i class="fas fa-columns mr-2"></i>
                         Project Kanban Board
                     </h1>
-                    <p class="text-gray-600 mt-1">Drag and drop projects to update their status</p>
+                    <p class="text-gray-400 text-sm uppercase tracking-widest">Drag and drop projects to update their status</p>
                 </div>
-                <div class="text-right">
-                    <div class="text-sm text-gray-600 mb-2">
-                        Total Projects: <span class="font-bold">{{ wishlist.count|add:ordered.count|add:in_progress.count|add:completed.count|add:cancelled.count }}</span>
+                <div class="text-right mt-6 md:mt-0">
+                    <div class="text-sm text-gray-400 mb-2">
+                        Total Projects: <span class="font-bold text-luxury-gold">{{ wishlist.count|add:ordered.count|add:in_progress.count|add:completed.count|add:cancelled.count }}</span>
                     </div>
                     <a href="{% url 'collections:all_upgrades' %}"
-                       class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">
+                       class="text-luxury-gold hover:text-white text-xs font-medium uppercase tracking-widest transition-colors">
                         View All Upgrades →
                     </a>
                 </div>
@@ -57,124 +69,124 @@
         <!-- Kanban Board -->
         <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 overflow-x-auto pb-4">
             <!-- Wishlist Column -->
-            <div class="kanban-column bg-gray-100 rounded-lg p-4 border-2 border-gray-300"
+            <div class="kanban-column rounded-lg p-4"
                  data-status="WISHLIST"
                  ondrop="drop(event)"
                  ondragover="allowDrop(event)"
                  ondragleave="dragLeave(event)">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="font-bold text-gray-700 uppercase text-sm flex items-center">
+                <div class="flex items-center justify-between mb-4 border-b border-white/10 pb-3">
+                    <h3 class="font-bold text-gray-300 uppercase text-xs tracking-widest flex items-center">
                         <span class="w-3 h-3 rounded-full bg-gray-500 mr-2"></span>
                         Wishlist
                     </h3>
-                    <span class="bg-gray-500 text-white text-xs font-bold px-2 py-1 rounded-full">{{ wishlist.count }}</span>
+                    <span class="bg-gray-500/30 border border-gray-500/50 text-gray-300 text-xs font-bold px-2 py-1 rounded">{{ wishlist.count }}</span>
                 </div>
                 <div class="space-y-3">
                     {% for upgrade in wishlist %}
                         {% include 'my_garage/partials/kanban_card.html' with upgrade=upgrade %}
                     {% empty %}
-                        <p class="text-gray-400 text-sm text-center py-8 italic">No wishlist items</p>
+                        <p class="text-gray-600 text-sm text-center py-8 italic">No wishlist items</p>
                     {% endfor %}
                 </div>
             </div>
 
             <!-- Ordered Column -->
-            <div class="kanban-column bg-blue-50 rounded-lg p-4 border-2 border-blue-200"
+            <div class="kanban-column rounded-lg p-4"
                  data-status="ORDERED"
                  ondrop="drop(event)"
                  ondragover="allowDrop(event)"
                  ondragleave="dragLeave(event)">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="font-bold text-blue-700 uppercase text-sm flex items-center">
+                <div class="flex items-center justify-between mb-4 border-b border-white/10 pb-3">
+                    <h3 class="font-bold text-blue-300 uppercase text-xs tracking-widest flex items-center">
                         <span class="w-3 h-3 rounded-full bg-blue-500 mr-2"></span>
                         Ordered
                     </h3>
-                    <span class="bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded-full">{{ ordered.count }}</span>
+                    <span class="bg-blue-500/30 border border-blue-500/50 text-blue-300 text-xs font-bold px-2 py-1 rounded">{{ ordered.count }}</span>
                 </div>
                 <div class="space-y-3">
                     {% for upgrade in ordered %}
                         {% include 'my_garage/partials/kanban_card.html' with upgrade=upgrade %}
                     {% empty %}
-                        <p class="text-blue-300 text-sm text-center py-8 italic">No ordered items</p>
+                        <p class="text-gray-600 text-sm text-center py-8 italic">No ordered items</p>
                     {% endfor %}
                 </div>
             </div>
 
             <!-- In Progress Column -->
-            <div class="kanban-column bg-yellow-50 rounded-lg p-4 border-2 border-yellow-200"
+            <div class="kanban-column rounded-lg p-4"
                  data-status="IN_PROGRESS"
                  ondrop="drop(event)"
                  ondragover="allowDrop(event)"
                  ondragleave="dragLeave(event)">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="font-bold text-yellow-700 uppercase text-sm flex items-center">
+                <div class="flex items-center justify-between mb-4 border-b border-white/10 pb-3">
+                    <h3 class="font-bold text-yellow-300 uppercase text-xs tracking-widest flex items-center">
                         <span class="w-3 h-3 rounded-full bg-yellow-500 mr-2"></span>
                         In Progress
                     </h3>
-                    <span class="bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded-full">{{ in_progress.count }}</span>
+                    <span class="bg-yellow-500/30 border border-yellow-500/50 text-yellow-300 text-xs font-bold px-2 py-1 rounded">{{ in_progress.count }}</span>
                 </div>
                 <div class="space-y-3">
                     {% for upgrade in in_progress %}
                         {% include 'my_garage/partials/kanban_card.html' with upgrade=upgrade %}
                     {% empty %}
-                        <p class="text-yellow-300 text-sm text-center py-8 italic">No active projects</p>
+                        <p class="text-gray-600 text-sm text-center py-8 italic">No active projects</p>
                     {% endfor %}
                 </div>
             </div>
 
             <!-- Completed Column -->
-            <div class="kanban-column bg-green-50 rounded-lg p-4 border-2 border-green-200"
+            <div class="kanban-column rounded-lg p-4"
                  data-status="COMPLETED"
                  ondrop="drop(event)"
                  ondragover="allowDrop(event)"
                  ondragleave="dragLeave(event)">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="font-bold text-green-700 uppercase text-sm flex items-center">
+                <div class="flex items-center justify-between mb-4 border-b border-white/10 pb-3">
+                    <h3 class="font-bold text-green-300 uppercase text-xs tracking-widest flex items-center">
                         <span class="w-3 h-3 rounded-full bg-green-500 mr-2"></span>
                         Completed
                     </h3>
-                    <span class="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">{{ completed.count }}</span>
+                    <span class="bg-green-500/30 border border-green-500/50 text-green-300 text-xs font-bold px-2 py-1 rounded">{{ completed.count }}</span>
                 </div>
                 <div class="space-y-3">
                     {% for upgrade in completed %}
                         {% include 'my_garage/partials/kanban_card.html' with upgrade=upgrade %}
                     {% empty %}
-                        <p class="text-green-300 text-sm text-center py-8 italic">No completed projects</p>
+                        <p class="text-gray-600 text-sm text-center py-8 italic">No completed projects</p>
                     {% endfor %}
                 </div>
             </div>
 
             <!-- Cancelled Column -->
-            <div class="kanban-column bg-red-50 rounded-lg p-4 border-2 border-red-200"
+            <div class="kanban-column rounded-lg p-4"
                  data-status="CANCELLED"
                  ondrop="drop(event)"
                  ondragover="allowDrop(event)"
                  ondragleave="dragLeave(event)">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="font-bold text-red-700 uppercase text-sm flex items-center">
+                <div class="flex items-center justify-between mb-4 border-b border-white/10 pb-3">
+                    <h3 class="font-bold text-red-300 uppercase text-xs tracking-widest flex items-center">
                         <span class="w-3 h-3 rounded-full bg-red-500 mr-2"></span>
                         Cancelled
                     </h3>
-                    <span class="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">{{ cancelled.count }}</span>
+                    <span class="bg-red-500/30 border border-red-500/50 text-red-300 text-xs font-bold px-2 py-1 rounded">{{ cancelled.count }}</span>
                 </div>
                 <div class="space-y-3">
                     {% for upgrade in cancelled %}
                         {% include 'my_garage/partials/kanban_card.html' with upgrade=upgrade %}
                     {% empty %}
-                        <p class="text-red-300 text-sm text-center py-8 italic">No cancelled projects</p>
+                        <p class="text-gray-600 text-sm text-center py-8 italic">No cancelled projects</p>
                     {% endfor %}
                 </div>
             </div>
         </div>
 
         <!-- Legend -->
-        <div class="mt-8 bg-white rounded-lg shadow-md p-6">
-            <h3 class="font-semibold text-gray-900 mb-4">How to Use</h3>
-            <ul class="space-y-2 text-sm text-gray-600">
-                <li><strong>Drag & Drop:</strong> Click and drag any card to a different column to update its status</li>
-                <li><strong>Click Card:</strong> Click on a card to view full details and edit the project</li>
-                <li><strong>Automatic Dates:</strong> Dates update automatically when moving to "Ordered" or "Completed"</li>
-                <li><strong>Color Coding:</strong> Each status has a unique color for quick visual tracking</li>
+        <div class="mt-8 bg-[#151b33] border border-white/5 rounded-lg p-6">
+            <h3 class="salon-font text-luxury-gold mb-4 text-lg">How to Use</h3>
+            <ul class="space-y-2 text-sm text-gray-400">
+                <li><strong class="text-gray-300">Drag & Drop:</strong> Click and drag any card to a different column to update its status</li>
+                <li><strong class="text-gray-300">Click Card:</strong> Click on a card to view full details and edit the project</li>
+                <li><strong class="text-gray-300">Automatic Dates:</strong> Dates update automatically when moving to "Ordered" or "Completed"</li>
+                <li><strong class="text-gray-300">Color Coding:</strong> Each status has a unique color for quick visual tracking</li>
             </ul>
         </div>
     </div>

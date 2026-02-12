@@ -1,80 +1,129 @@
-{% extends "base.html" %}
+{% extends "my_garage/base.html" %}
 
 {% block title %}Add Item to {{ collection_type.name }}{% endblock %}
 
+{% block extra_head %}
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+<style>
+    .salon-font {
+        font-family: 'Cinzel', serif;
+    }
+    .salon-bg {
+        background-color: #0B1026;
+        background-image: radial-gradient(circle at 50% 0%, #1a2342 0%, #0B1026 70%);
+    }
+    .detail-card {
+        background-color: #151b33;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    /* Style form inputs for dark theme */
+    input[type="text"],
+    input[type="number"],
+    input[type="email"],
+    input[type="date"],
+    input[type="file"],
+    textarea,
+    select {
+        background-color: #0B1026;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #fff;
+        padding: 0.5rem 0.75rem;
+        border-radius: 0.25rem;
+        width: 100%;
+    }
+    input[type="text"]:focus,
+    input[type="number"]:focus,
+    input[type="email"]:focus,
+    input[type="date"]:focus,
+    input[type="file"]:focus,
+    textarea:focus,
+    select:focus {
+        outline: none;
+        border-color: #D4AF37;
+        box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.1);
+    }
+    input::placeholder,
+    textarea::placeholder {
+        color: rgba(255, 255, 255, 0.3);
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <div class="mb-6">
-        <a href="{% url 'collections:collection_list' collection_type.slug %}"
-           class="text-indigo-600 hover:underline text-sm">
-            ← Back to {{ collection_type.name }}
-        </a>
-    </div>
-
-    <h1 class="text-3xl font-bold text-gray-900 mb-8">
-        Add Item to {{ collection_type.name }}
-    </h1>
-
-    <form method="post" enctype="multipart/form-data" class="bg-white rounded-lg shadow-md p-6">
-        {% csrf_token %}
-
-        <!-- Standard Fields -->
+<div class="salon-bg min-h-screen text-gray-200 font-sans">
+    <div class="container mx-auto px-4 py-12 max-w-3xl">
         <div class="mb-6">
-            <h2 class="text-xl font-semibold text-gray-900 mb-4">Basic Information</h2>
-
-            {% for field in form %}
-                {% if not field.name|slice:":7" == "custom_" %}
-                    <div class="mb-4">
-                        <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
-                            {{ field.label }}{% if field.field.required %} *{% endif %}
-                        </label>
-                        {{ field }}
-                        {% if field.help_text %}
-                            <p class="text-gray-500 text-xs mt-1">{{ field.help_text }}</p>
-                        {% endif %}
-                        {% if field.errors %}
-                            <p class="text-red-600 text-sm mt-1">{{ field.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-                {% endif %}
-            {% endfor %}
+            <a href="{% url 'collections:collection_list' collection_type.slug %}"
+               class="text-gray-400 hover:text-luxury-gold text-xs uppercase tracking-widest transition-colors">
+                ← Back to {{ collection_type.name }}
+            </a>
         </div>
 
-        <!-- Custom Fields -->
-        {% if collection_type.field_schema.fields %}
-            <div class="mb-6 border-t pt-6">
-                <h2 class="text-xl font-semibold text-gray-900 mb-4">{{ collection_type.name }} Details</h2>
+        <h1 class="text-3xl md:text-4xl salon-font text-luxury-gold mb-8">
+            Add Item to {{ collection_type.name }}
+        </h1>
+
+        <form method="post" enctype="multipart/form-data" class="detail-card rounded-lg p-6 md:p-8">
+            {% csrf_token %}
+
+            <!-- Standard Fields -->
+            <div class="mb-6">
+                <h2 class="text-luxury-gold text-sm uppercase tracking-widest mb-4 border-b border-white/10 pb-2">Basic Information</h2>
 
                 {% for field in form %}
-                    {% if field.name|slice:":7" == "custom_" %}
+                    {% if not field.name|slice:":7" == "custom_" %}
                         <div class="mb-4">
-                            <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
-                                {{ field.label }}{% if field.field.required %} *{% endif %}
+                            <label for="{{ field.id_for_label }}" class="block text-xs uppercase tracking-widest text-gray-400 mb-2">
+                                {{ field.label }}{% if field.field.required %} <span class="text-luxury-gold">*</span>{% endif %}
                             </label>
                             {{ field }}
                             {% if field.help_text %}
                                 <p class="text-gray-500 text-xs mt-1">{{ field.help_text }}</p>
                             {% endif %}
                             {% if field.errors %}
-                                <p class="text-red-600 text-sm mt-1">{{ field.errors.0 }}</p>
+                                <p class="text-red-400 text-sm mt-1">{{ field.errors.0 }}</p>
                             {% endif %}
                         </div>
                     {% endif %}
                 {% endfor %}
             </div>
-        {% endif %}
 
-        <!-- Submit -->
-        <div class="flex gap-4 border-t pt-6">
-            <button type="submit"
-                    class="bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700">
-                Add Item
-            </button>
-            <a href="{% url 'collections:collection_list' collection_type.slug %}"
-               class="bg-gray-200 text-gray-700 px-6 py-2 rounded-md hover:bg-gray-300">
-                Cancel
-            </a>
-        </div>
-    </form>
+            <!-- Custom Fields -->
+            {% if collection_type.field_schema.fields %}
+                <div class="mb-6 border-t border-white/10 pt-6">
+                    <h2 class="text-luxury-gold text-sm uppercase tracking-widest mb-4 border-b border-white/10 pb-2">{{ collection_type.name }} Details</h2>
+
+                    {% for field in form %}
+                        {% if field.name|slice:":7" == "custom_" %}
+                            <div class="mb-4">
+                                <label for="{{ field.id_for_label }}" class="block text-xs uppercase tracking-widest text-gray-400 mb-2">
+                                    {{ field.label }}{% if field.field.required %} <span class="text-luxury-gold">*</span>{% endif %}
+                                </label>
+                                {{ field }}
+                                {% if field.help_text %}
+                                    <p class="text-gray-500 text-xs mt-1">{{ field.help_text }}</p>
+                                {% endif %}
+                                {% if field.errors %}
+                                    <p class="text-red-400 text-sm mt-1">{{ field.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <!-- Submit -->
+            <div class="flex gap-4 border-t border-white/10 pt-6">
+                <button type="submit"
+                        class="px-6 py-3 bg-luxury-gold text-black font-bold uppercase text-xs tracking-widest hover:bg-yellow-600 transition-colors rounded-sm">
+                    Add Item
+                </button>
+                <a href="{% url 'collections:collection_list' collection_type.slug %}"
+                   class="px-6 py-3 border border-white/20 text-white/70 hover:text-white hover:border-white/50 font-bold uppercase text-xs tracking-widest transition-colors rounded-sm">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
 </div>
 {% endblock %}

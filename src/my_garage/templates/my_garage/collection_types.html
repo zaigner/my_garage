@@ -2,63 +2,97 @@
 
 {% block title %}My Collections{% endblock %}
 
+{% block extra_head %}
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+<style>
+    .salon-font {
+        font-family: 'Cinzel', serif;
+    }
+    .salon-bg {
+        background-color: #0B1026;
+        background-image: radial-gradient(circle at 50% 0%, #1a2342 0%, #0B1026 70%);
+    }
+    .collection-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .collection-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <div class="flex justify-between items-center mb-8">
-        <h1 class="text-3xl font-bold text-gray-900">My Collections</h1>
-        <a href="{% url 'collections:collection_type_create' %}"
-           class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">
-            + Create New Collection Type
-        </a>
+<div class="salon-bg min-h-screen text-gray-200 font-sans">
+    <div class="container mx-auto px-4 py-12">
+
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row justify-between items-center mb-12 border-b border-white/10 pb-6">
+            <div>
+                <h1 class="text-4xl md:text-5xl font-bold salon-font text-luxury-gold mb-2">My Collections</h1>
+                <p class="text-gray-400 text-sm uppercase tracking-widest">Curated Assets & Fine Collectibles</p>
+            </div>
+            <div class="mt-6 md:mt-0 flex gap-4">
+                <a href="{% url 'home' %}" class="px-6 py-2 border border-white/20 text-white/70 hover:text-white hover:border-white/50 rounded-sm uppercase text-xs tracking-widest transition-colors">
+                    Back to Vault
+                </a>
+                <a href="{% url 'collections:collection_type_create' %}" class="px-6 py-2 bg-luxury-gold text-black font-bold rounded-sm uppercase text-xs tracking-widest hover:bg-yellow-600 transition-colors">
+                    + Create Collection Type
+                </a>
+            </div>
+        </div>
+
+        {% if type_data %}
+            <!-- Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {% for data in type_data %}
+                    <div class="collection-card bg-[#151b33] border border-white/5 rounded-lg overflow-hidden">
+                        <div class="p-6">
+                            <div class="flex items-center mb-4 pb-4 border-b border-white/10">
+                                <i class="{{ data.type.icon }} text-3xl text-luxury-gold mr-3"></i>
+                                <h2 class="text-xl salon-font text-white">{{ data.type.name }}</h2>
+                            </div>
+
+                            {% if data.type.description %}
+                                <p class="text-gray-400 text-sm mb-6">{{ data.type.description }}</p>
+                            {% endif %}
+
+                            <div class="grid grid-cols-2 gap-4 mb-6">
+                                <div>
+                                    <p class="text-xs uppercase tracking-widest text-gray-600 mb-1">Items</p>
+                                    <p class="text-2xl font-bold text-white">{{ data.count }}</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-xs uppercase tracking-widest text-gray-600 mb-1">Total Value</p>
+                                    <p class="text-2xl font-bold text-luxury-gold">${{ data.total_value|floatformat:2 }}</p>
+                                </div>
+                            </div>
+
+                            <div class="flex gap-2">
+                                <a href="{% url 'collections:collection_list' data.type.slug %}"
+                                   class="flex-1 bg-luxury-gold text-black text-center px-4 py-2 rounded-sm uppercase text-xs tracking-widest font-bold hover:bg-yellow-600 transition-colors">
+                                    View Items
+                                </a>
+                                <a href="{% url 'collections:collection_type_edit' data.type.slug %}"
+                                   class="border border-white/20 text-white/70 hover:text-white hover:border-white/50 px-4 py-2 rounded-sm uppercase text-xs tracking-widest transition-colors">
+                                    Edit
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="col-span-full py-24 text-center border border-dashed border-white/10 rounded-lg bg-[#151b33]">
+                <i class="fa fa-box text-6xl text-gray-600 mb-4"></i>
+                <h3 class="text-xl salon-font text-gray-400 mb-2">The Collection Awaits</h3>
+                <p class="text-gray-600 text-sm mb-6">Create your first collection type to start tracking your assets.</p>
+                <a href="{% url 'collections:collection_type_create' %}"
+                   class="px-6 py-2 bg-luxury-gold text-black font-bold rounded-sm uppercase text-xs tracking-widest hover:bg-yellow-600 transition-colors inline-block">
+                    Create Your First Collection
+                </a>
+            </div>
+        {% endif %}
     </div>
-
-    {% if type_data %}
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {% for data in type_data %}
-                <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
-                    <div class="flex items-center mb-4">
-                        <i class="{{ data.type.icon }} text-3xl text-indigo-600 mr-3"></i>
-                        <h2 class="text-xl font-semibold text-gray-900">{{ data.type.name }}</h2>
-                    </div>
-
-                    {% if data.type.description %}
-                        <p class="text-gray-600 text-sm mb-4">{{ data.type.description }}</p>
-                    {% endif %}
-
-                    <div class="grid grid-cols-2 gap-4 mb-4">
-                        <div>
-                            <p class="text-sm text-gray-500">Items</p>
-                            <p class="text-2xl font-bold text-gray-900">{{ data.count }}</p>
-                        </div>
-                        <div>
-                            <p class="text-sm text-gray-500">Total Value</p>
-                            <p class="text-2xl font-bold text-green-600">${{ data.total_value|floatformat:2 }}</p>
-                        </div>
-                    </div>
-
-                    <div class="flex gap-2">
-                        <a href="{% url 'collections:collection_list' data.type.slug %}"
-                           class="flex-1 bg-indigo-600 text-white text-center px-4 py-2 rounded-md hover:bg-indigo-700">
-                            View Items
-                        </a>
-                        <a href="{% url 'collections:collection_type_edit' data.type.slug %}"
-                           class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300">
-                            Edit
-                        </a>
-                    </div>
-                </div>
-            {% endfor %}
-        </div>
-    {% else %}
-        <div class="bg-white rounded-lg shadow-md p-12 text-center">
-            <i class="fa fa-box text-6xl text-gray-300 mb-4"></i>
-            <h2 class="text-2xl font-semibold text-gray-700 mb-2">No Collections Yet</h2>
-            <p class="text-gray-600 mb-6">Create your first collection type to start tracking your assets.</p>
-            <a href="{% url 'collections:collection_type_create' %}"
-               class="inline-block bg-indigo-600 text-white px-6 py-3 rounded-md hover:bg-indigo-700">
-                Create Your First Collection
-            </a>
-        </div>
-    {% endif %}
 </div>
 {% endblock %}

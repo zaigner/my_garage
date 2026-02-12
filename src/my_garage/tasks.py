@@ -123,7 +123,7 @@ def task_refresh_vehicle_photo(self, vehicle_id: int):
         raise self.retry(exc=exc)
 
 
-@celery_app.task(name="my_garage.bulk_refresh")
+@celery_app.task(name="my_garage.tasks.task_bulk_valuation_refresh")
 def task_bulk_valuation_refresh():
     """
     Daily/Weekly periodic task to refresh all vehicle values.
