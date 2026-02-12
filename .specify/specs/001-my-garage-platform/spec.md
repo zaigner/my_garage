@@ -6,7 +6,7 @@
 **Status**: ✅ Phase 13 Complete - Dynamic Collections & Timepieces
 **Owner**: Development Team
 **Created**: 2025-12-21
-**Last Updated**: 2026-02-03
+**Last Updated**: 2026-02-12
 
 ## Problem Statement
 
@@ -131,6 +131,17 @@ Car enthusiasts lack professional-grade tools to manage their vehicles as financ
 - ✅ Can track service records for any collection item
 - ✅ Can manage projects/upgrades with Kanban board
 - ✅ Dedicated URL structure (`/collections/`)
+
+### Epic 9: Portfolio Dashboard
+- **As a** collector
+- **I want to** see a unified view of all my assets and their total value
+- **So that** I can understand my net worth and recent activity
+
+**Acceptance Criteria:**
+- ✅ Home page displays total portfolio valuation (sum of vehicles, timepieces, collections)
+- ✅ Breakdown of value by category
+- ✅ Recent acquisitions feed showing latest items from all categories
+- ✅ Unified aesthetic matching the "Vault" theme
 
 ## Technical Specification
 
@@ -389,6 +400,7 @@ task_bulk_valuation_refresh() -> str
 - ✅ Restructured URLs: `/garage/` (vehicles), `/timepieces/` (watches), `/collections/` (dynamic)
 - ✅ Implemented `watch_valuation` MCP tool (mock)
 - ✅ Updated all templates to use correct namespaces
+- ✅ Implemented Portfolio Dashboard with total valuation and recent acquisitions
 
 ### ⏳ Remaining Work
 
@@ -522,8 +534,6 @@ task_bulk_valuation_refresh() -> str
 ### Developer Documentation
 - ✅ claude.md - Comprehensive project guide
 - ✅ design.md - Feature specifications
-- ✅ RESTRUCTURE_PLAN.md - Architecture decisions
-- ✅ MIGRATION_GUIDE.md - Step-by-step setup
 - ✅ constitution.md - Project principles
 
 ### API Documentation
@@ -566,6 +576,7 @@ task_bulk_valuation_refresh() -> str
 - Dynamic Collections System
 - Kanban Board
 - URL Restructuring
+- Portfolio Dashboard
 
 ### Version 0.8.0 (Next)
 - FastAPI OCR service

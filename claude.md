@@ -14,6 +14,7 @@ My Garage is a comprehensive asset management and valuation platform designed fo
   - Service record tracking
   - Project/upgrade management with Kanban boards
   - Relationship mapping between items
+- **Portfolio Dashboard** - Unified view of all assets with total valuation and recent acquisitions
 
 **Tech Stack:** Django 5.2 LTS + FastAPI microservices + Celery + Redis + MongoDB + PostgreSQL
 
@@ -52,7 +53,8 @@ My Garage is a comprehensive asset management and valuation platform designed fo
 ```
 src/
 ├── config/              # Django project settings (base, local, production, test)
-│   └── urls.py          # Main URL router (mounts /garage/, /timepieces/ and /collections/)
+│   ├── urls.py          # Main URL router (mounts /garage/, /timepieces/ and /collections/)
+│   └── views.py         # Home page view (Portfolio Dashboard)
 ├── my_garage/           # Main Django app (models, views, templates, API)
 │   ├── models.py        # All data models (Vehicle, Timepiece, CollectionType, DynamicCollectionItem, etc.)
 │   ├── views.py         # View logic for all features
@@ -65,6 +67,8 @@ src/
 │   ├── tasks.py         # Celery async tasks
 │   ├── utils/           # Helper utilities
 │   ├── templates/       # Django templates
+│   │   ├── pages/
+│   │   │   └── home.html                       # Portfolio Dashboard
 │   │   └── my_garage/
 │   │       ├── collection_types.html           # Collections dashboard
 │   │       ├── collection_type_form.html       # Schema builder UI
@@ -311,6 +315,7 @@ The dynamic collections feature allows users to create custom collection types w
 - **Template Inheritance**: Reusable components (`partials/kanban_card.html`)
 - **AJAX Updates**: Kanban board updates without page reload
 - **Form Generation**: Dynamic field creation from JSON schema
+- **Unified Dashboard**: Home page aggregates data from all asset types (Vehicles, Timepieces, Collections)
 
 ### Documentation Files
 
@@ -351,6 +356,7 @@ The FastAPI service at `src/fastapi_services/mcp/` provides AI and external serv
 - **"The Collection"** - Luxury vault aesthetic with Pinyon Script font
 - **Deep midnight theme** - Gold accents, elegant serif typography
 - **Portfolio dashboard** - Clean cards showcasing collection categories
+- **Recent Acquisitions** - Unified feed of latest items across all categories
 
 ## Database & Settings Structure
 
@@ -430,3 +436,6 @@ Set environment via `DJANGO_ENVIRONMENT` in `.env` (default: `local`)
 - Check JavaScript console for errors
 - Verify CSRF token is present
 - Ensure API endpoint is accessible at `/collections/api/upgrade/<id>/update-status/`
+
+**AttributeError in Home View:**
+- When sorting items from different models (Vehicle, Timepiece, DynamicCollectionItem), ensure you handle different timestamp field names (e.g., `created_at` vs `purchase_date`). Use a helper function like `get_sort_date` to normalize.
