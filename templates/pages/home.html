@@ -97,7 +97,7 @@
             <div class="flex items-center justify-center gap-4">
                 <h1 class="text-6xl md:text-8xl font-serif text-luxury-white">
                     {% if user.is_authenticated %}
-                        ${{ total_garage_value|default:"0"|floatformat:0 }}
+                        ${{ total_automobiles_value|default:0|add:total_timepieces_value|default:0|add:total_collections_value|default:0|floatformat:0 }}
                     {% else %}
                         $---,---
                     {% endif %}
@@ -125,7 +125,7 @@
                 </div>
                 <div class="space-y-1">
                     <p class="text-luxury-text text-xs uppercase tracking-widest">Category Value</p>
-                    <p class="text-2xl font-light font-sans text-luxury-white">$84,500</p>
+                    <p class="text-2xl font-light font-sans text-luxury-white">${{ total_timepieces_value|default:"0"|floatformat:0 }}</p>
                 </div>
             </div>
 
@@ -144,7 +144,7 @@
                     <p class="text-luxury-text text-xs uppercase tracking-widest">Category Value</p>
                     <p class="text-2xl font-light font-sans text-luxury-white">
                         {% if user.is_authenticated %}
-                            ${{ total_garage_value|default:"0"|floatformat:0 }}
+                            ${{ total_automobiles_value|default:"0"|floatformat:0 }}
                         {% else %}
                             $---,---
                         {% endif %}
@@ -165,7 +165,7 @@
                 </div>
                 <div class="space-y-1">
                     <p class="text-luxury-text text-xs uppercase tracking-widest">Custom Collections</p>
-                    <p class="text-2xl font-light font-sans text-luxury-white">Wine, Art, Books...</p>
+                    <p class="text-2xl font-light font-sans text-luxury-white">${{ total_collections_value|default:"0"|floatformat:0 }}</p>
                 </div>
             </div>
         </section>

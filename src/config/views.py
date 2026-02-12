@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from django.http import HttpRequest, HttpResponse
+from my_garage.models import DynamicCollectionItem
 
 def home(request: HttpRequest) -> HttpResponse:
     """
@@ -27,14 +28,22 @@ def home(request: HttpRequest) -> HttpResponse:
         if vehicles:
             vehicles = vehicles.all()
             context["vehicles"] = vehicles
-            context["total_garage_value"] = sum(v.current_market_value for v in vehicles)
+            context["total_automobiles_value"] = sum(v.current_market_value for v in vehicles)
         else:
             context["vehicles"] = []
-            context["total_garage_value"] = 0
+            context["total_automobiles_value"] = 0
 
         if timepieces:
-            context["timepieces"] = timepieces.all()
+            timepieces = timepieces.all()
+            context["timepieces"] = timepieces
+            context["total_timepieces_value"] = sum(t.current_market_value for t in timepieces)
         else:
             context["timepieces"] = []
+            context["total_timepieces_value"] = 0
+        
+        # Calculate total value for dynamic collections
+        collections = DynamicCollectionItem.objects.filter(owner=request.user)
+        context["total_collections_value"] = sum(c.current_market_value for c in collections if c.current_market_value is not None)
+
 
     return render(request, "pages/home.html", context)
