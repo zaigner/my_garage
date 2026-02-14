@@ -113,4 +113,5 @@ We welcome fellow enthusiasts! Check out `CLAUDE.md` for developer guidelines an
 
 ---
 
-*Built with ❤️ and ☕ by [Your Name/Team]*
+
+*Built with ❤️ and ☕
