@@ -1,4 +1,4 @@
-# 🏎️ My Garage: The Ultimate Asset Management Platform for Collectors
+# My Garage: The Ultimate Asset Management Platform for Collectors
 
 **Track. Value. Manage. Enjoy.**
 
@@ -7,11 +7,11 @@ My Garage is not just a spreadsheet—it's a professional-grade asset management
 ![Portfolio Dashboard](docs/images/dashboard_hero.png)
 *(Placeholder: A screenshot of the main dashboard showing total valuation and asset breakdown)*
 
-## 🌟 Why My Garage?
+## Why My Garage?
 
 Most collectors rely on messy spreadsheets or disconnected apps. My Garage brings everything together in a unified, self-hosted platform with a focus on **data ownership**, **financial insight**, and **beautiful design**.
 
-### 🚗 Intelligent Vehicle Management
+### Intelligent Vehicle Management
 Stop guessing what your car is worth.
 *   **AI-Powered Valuations**: Real-time market data integration tracks your vehicle's value against comparable listings.
 *   **VIN Decoding**: Automatic spec population using NHTSA data.
@@ -19,7 +19,7 @@ Stop guessing what your car is worth.
 
 ![Vehicle Detail](docs/images/vehicle_detail.png)
 
-### ⌚ The Horology Salon
+### The Horology Salon
 A dedicated space for your timepiece collection.
 *   **Luxury Aesthetic**: A refined, dark-blue and gold theme designed for fine watches.
 *   **Detailed Specs**: Track movements, reference numbers, complications, and provenance.
@@ -27,12 +27,12 @@ A dedicated space for your timepiece collection.
 
 ![Horology Salon](docs/images/timepieces.png)
 
-### 🍷 Dynamic Collections
+### Dynamic Collections
 Collect anything. Literally anything.
 *   **Custom Schemas**: Define your own fields (Vintage, Region, Artist, Edition) using a drag-and-drop builder.
 *   **Universal Tracking**: Manage Art, Wine, Sneakers, Rare Books, or Trading Cards with the same power as your vehicles.
 
-### 🔧 Service & Project Management
+### Service & Project Management
 Never lose a receipt or forget a part number again.
 *   **Digital Service History**: Upload receipts, extract data via OCR (coming soon), and categorize maintenance.
 *   **Project Kanban Boards**: Plan upgrades and restorations with a Trello-style board. Track parts from "Wishlist" to "Installed".
@@ -42,7 +42,7 @@ Never lose a receipt or forget a part number again.
 
 ---
 
-## 🛠️ Built for Developers
+## Built for Developers
 
 My Garage is built on a modern, robust stack designed for scalability and extensibility. It's a perfect playground for Python developers.
 
@@ -52,7 +52,7 @@ My Garage is built on a modern, robust stack designed for scalability and extens
 *   **AI Integration**: Google Gemini for image generation & analysis
 *   **Package Management**: Pixi for hermetic environments
 
-## 🚀 Getting Started
+## Getting Started
 
 We use **pixi** for a zero-headache setup. No virtualenv hell, no missing system libraries.
 
@@ -115,3 +115,4 @@ We welcome fellow enthusiasts! Check out `CLAUDE.md` for developer guidelines an
 
 
 *Built with ❤️ and ☕
+
