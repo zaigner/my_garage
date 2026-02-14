@@ -7,6 +7,10 @@ pixi run mongo
 # Trap SIGINT (Ctrl+C) to stop all background processes
 trap 'echo "Stopping services..."; kill $(jobs -p); pixi run mongo-stop; exit' SIGINT SIGTERM
 
+# Run Migrations
+echo "Running Database Migrations..."
+pixi run migrate
+
 echo "Starting Django Server..."
 pixi run server &
 

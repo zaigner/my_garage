@@ -4,7 +4,7 @@ from decimal import Decimal
 from typing import Dict, Any
 from bson import ObjectId
 
-from my_garage.models import Vehicle, ServiceRecord, Upgrade, ConditionReport
+from my_garage.models import Vehicle, ServiceRecord, Upgrade, ConditionReport, GenericUpgrade
 from ..utils.mongo import get_collection
 
 
@@ -24,12 +24,22 @@ def vehicle_get_total_upgrade_cost(vehicle: Vehicle) -> Decimal:
     """
     Calculates the sum of all installed upgrades.
     """
-    return Upgrade.objects.filter(
+    # Sum legacy upgrades
+    legacy_total = Upgrade.objects.filter(
         vehicle=vehicle,
         status='INSTALLED'
     ).aggregate(
         total=Coalesce(Sum('cost'), Decimal('0.00'), output_field=DecimalField())
     )['total']
+
+    # Sum generic upgrades
+    generic_total = vehicle.projects.filter(
+        status='COMPLETED'
+    ).aggregate(
+        total=Coalesce(Sum('cost'), Decimal('0.00'), output_field=DecimalField())
+    )['total']
+
+    return legacy_total + generic_total
 
 
 def vehicle_get_build_summary(vehicle_id: int) -> Dict[str, Any]:
@@ -61,11 +71,18 @@ def vehicle_get_build_summary(vehicle_id: int) -> Dict[str, Any]:
     }
 
 
-def vehicle_list_wishlist_items(vehicle: Vehicle) -> QuerySet[Upgrade]:
+def vehicle_list_wishlist_items(vehicle: Vehicle) -> list:
     """
-    Returns all parts currently in the 'Wishlist' status.
+    Returns all parts currently in the 'Wishlist' status (Legacy + Generic).
     """
-    return Upgrade.objects.filter(vehicle=vehicle, status='WISHLIST').order_by('part_name')
+    legacy_wishlist = list(Upgrade.objects.filter(vehicle=vehicle, status='WISHLIST').order_by('part_name'))
+    generic_wishlist = list(vehicle.projects.filter(status='WISHLIST').order_by('name'))
+    
+    # Normalize generic items to match legacy structure for template compatibility
+    for item in generic_wishlist:
+        item.part_name = item.name
+        
+    return legacy_wishlist + generic_wishlist
 
 
 def vehicle_list_service_records(vehicle: Vehicle) -> QuerySet[ServiceRecord]:
@@ -75,11 +92,23 @@ def vehicle_list_service_records(vehicle: Vehicle) -> QuerySet[ServiceRecord]:
     return ServiceRecord.objects.filter(vehicle=vehicle).order_by('-date')
 
 
-def vehicle_list_upgrades(vehicle: Vehicle) -> QuerySet[Upgrade]:
+def vehicle_list_upgrades(vehicle: Vehicle) -> list:
     """
-    Returns all upgrades (projects) that are not in wishlist.
+    Returns all upgrades (projects) that are not in wishlist (Legacy + Generic).
     """
-    return Upgrade.objects.filter(vehicle=vehicle).exclude(status='WISHLIST').order_by('-installation_date', 'part_name')
+    legacy_upgrades = list(Upgrade.objects.filter(vehicle=vehicle).exclude(status='WISHLIST').order_by('-installation_date', 'part_name'))
+    generic_upgrades = list(vehicle.projects.exclude(status='WISHLIST').order_by('-completion_date', 'name'))
+    
+    # Normalize generic items to match legacy structure for template compatibility
+    for item in generic_upgrades:
+        item.part_name = item.name
+        # Map generic status to legacy status if needed
+        if item.status == 'COMPLETED':
+            item.status = 'INSTALLED'
+        elif item.status == 'IN_PROGRESS':
+            item.status = 'ORDERED' # Approximate mapping
+            
+    return legacy_upgrades + generic_upgrades
 
 
 def vehicle_get_pending_service_count(vehicle: Vehicle) -> int:

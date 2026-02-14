@@ -1,7 +1,7 @@
 """Django admin configuration for my_garage."""
 from django.contrib import admin
 from my_garage.models import (
-    Vehicle, ServiceRecord, Upgrade, ConditionReport,
+    Vehicle, ServiceRecord, Upgrade, ConditionReport, Timepiece,
     CollectionType, DynamicCollectionItem, GenericServiceRecord,
     GenericUpgrade, CollectionItemAttachment, CollectionItemRelationship
 )
@@ -25,6 +25,24 @@ class VehicleAdmin(admin.ModelAdmin):
         }),
         ('Metadata', {
             'fields': ('mileage', 'created_at')
+        }),
+    )
+
+
+@admin.register(Timepiece)
+class TimepieceAdmin(admin.ModelAdmin):
+    """Admin for Timepiece model."""
+
+    list_display = ['__str__', 'owner', 'year', 'current_market_value']
+    list_filter = ['brand', 'year', 'owner']
+    search_fields = ['brand', 'model', 'reference_number', 'owner__username']
+
+    fieldsets = (
+        ('Timepiece Information', {
+            'fields': ('owner', 'brand', 'model', 'reference_number', 'year')
+        }),
+        ('Financial', {
+            'fields': ('purchase_price', 'current_market_value')
         }),
     )
 
@@ -181,14 +199,14 @@ class GenericServiceRecordAdmin(admin.ModelAdmin):
 class GenericUpgradeAdmin(admin.ModelAdmin):
     """Admin for GenericUpgrade model."""
 
-    list_display = ['item', 'name', 'brand', 'status', 'cost', 'completion_date']
+    list_display = ['content_object', 'name', 'brand', 'status', 'cost', 'completion_date']
     list_filter = ['status', 'brand']
-    search_fields = ['item__name', 'name', 'brand', 'part_number']
+    search_fields = ['name', 'brand', 'part_number']
     date_hierarchy = 'completion_date'
 
     fieldsets = (
         ('Upgrade Information', {
-            'fields': ('item', 'name', 'brand', 'part_number')
+            'fields': ('content_type', 'object_id', 'name', 'brand', 'part_number')
         }),
         ('Status & Dates', {
             'fields': ('status', 'ordered_date', 'completion_date')

@@ -321,7 +321,7 @@ The dynamic collections feature allows users to create custom collection types w
 
 - `DYNAMIC_COLLECTIONS_GUIDE.md` - Complete system overview with examples
 - `SERVICE_RECORDS_GUIDE.md` - Service tracking documentation
-- `UPGRADES_KANBAN_GUIDE.md` - Kanban board usage and features
+- `UPGRADES_KANBAN_GUIDE.md` - Kanban board and project management guide
 
 ### Key Features & Integrations
 

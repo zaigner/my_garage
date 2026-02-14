@@ -1,23 +1,224 @@
 {% extends "my_garage/base.html" %}
 
-{% block title %}{{ title }} - {{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}{% endblock %}
+{% block title %}{{ title }} - {% if is_collection %}{{ vehicle.name }}{% else %}{{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}{% endif %}{% endblock %}
+
+{% block extra_head %}
+{% if is_timepiece or is_collection %}
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+<style>
+    .salon-font {
+        font-family: 'Cinzel', serif;
+    }
+    .salon-bg {
+        background-color: #0B1026;
+        background-image: radial-gradient(circle at 50% 0%, #1a2342 0%, #0B1026 70%);
+    }
+    .detail-card {
+        background: rgba(21, 27, 51, 0.6);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    /* Override form inputs for timepiece theme */
+    .detail-card input[type="text"],
+    .detail-card input[type="number"],
+    .detail-card input[type="date"],
+    .detail-card input[type="email"],
+    .detail-card select,
+    .detail-card textarea {
+        background-color: #151b33;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #e5e5e5;
+        padding: 0.5rem;
+        border-radius: 0.25rem;
+        width: 100%;
+        transition: all 0.2s;
+    }
+    .detail-card input:focus,
+    .detail-card select:focus,
+    .detail-card textarea:focus {
+        outline: none;
+        border-color: #D4AF37;
+        box-shadow: 0 0 0 1px #D4AF37;
+    }
+    .detail-card label {
+        color: #9ca3af;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+        display: block;
+    }
+</style>
+{% else %}
+<link href="https://fonts.googleapis.com/css2?family=Michroma&display=swap" rel="stylesheet">
+<style>
+    .porsche-font {
+        font-family: 'Michroma', sans-serif;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    .race-deck-bg {
+        background-color: #111;
+        background-image:
+            linear-gradient(45deg, #1a1a1a 25%, transparent 25%, transparent 75%, #1a1a1a 75%, #1a1a1a),
+            linear-gradient(45deg, #1a1a1a 25%, transparent 25%, transparent 75%, #1a1a1a 75%, #1a1a1a);
+        background-position: 0 0, 10px 10px;
+        background-size: 20px 20px;
+    }
+    .cabinet-finish {
+        background: linear-gradient(180deg, #262626 0%, #171717 100%);
+        border: 1px solid #404040;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Clean Data Entry Styling */
+    .cabinet-finish input[type="text"],
+    .cabinet-finish input[type="number"],
+    .cabinet-finish input[type="date"],
+    .cabinet-finish input[type="email"],
+    .cabinet-finish select,
+    .cabinet-finish textarea {
+        background-color: #262626;
+        border: 1px solid #404040;
+        color: #e5e5e5;
+        padding: 0.5rem;
+        border-radius: 0.25rem;
+        width: 100%;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        transition: all 0.2s;
+    }
+
+    .cabinet-finish input:focus,
+    .cabinet-finish select:focus,
+    .cabinet-finish textarea:focus {
+        outline: none;
+        border-color: #dc2626;
+        box-shadow: 0 0 0 1px #dc2626;
+        background-color: #1f1f1f;
+    }
+
+    .cabinet-finish label {
+        color: #9ca3af; /* gray-400 */
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+        display: block;
+    }
+</style>
+{% endif %}
+{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8">
-    <h1 class="text-3xl font-bold mb-6">{{ title }}</h1>
-    <h2 class="text-xl text-gray-600 mb-8">{{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}</h2>
+<div class="{% if is_timepiece or is_collection %}salon-bg{% else %}race-deck-bg{% endif %} min-h-screen text-gray-200 font-sans">
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-2xl mx-auto">
+            <!-- Header -->
+            <div class="mb-8 border-b {% if is_timepiece or is_collection %}border-white/10{% else %}border-gray-700{% endif %} pb-4">
+                <h1 class="text-3xl font-bold {% if is_timepiece or is_collection %}salon-font text-luxury-gold{% else %}porsche-font text-white{% endif %} mb-2">{{ title }}</h1>
+                <h2 class="text-xl text-gray-400">
+                    {% if is_collection %}
+                        {{ vehicle.name }}
+                    {% elif vehicle.year %}
+                        {{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}
+                    {% else %}
+                        {{ vehicle.brand }} {{ vehicle.model }}
+                    {% endif %}
+                </h2>
+            </div>
 
-    <div class="bg-white p-6 rounded-lg shadow-lg max-w-2xl">
-        <form method="post">
-            {% csrf_token %}
-            <div class="space-y-4">
-                {{ form.as_p }}
+            <!-- Form Container -->
+            <div class="{% if is_timepiece or is_collection %}detail-card{% else %}cabinet-finish{% endif %} p-8 rounded-lg">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="space-y-6">
+                        <!-- Project Identity -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="space-y-1">
+                                <label for="{{ form.name.id_for_label }}">Project Name</label>
+                                {{ form.name }}
+                            </div>
+                            <div class="space-y-1">
+                                <label for="{{ form.status.id_for_label }}">Status</label>
+                                {{ form.status }}
+                            </div>
+                        </div>
+
+                        <!-- Part Details -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="space-y-1">
+                                <label for="{{ form.brand.id_for_label }}">Brand / Manufacturer</label>
+                                {{ form.brand }}
+                            </div>
+                            <div class="space-y-1">
+                                <label for="{{ form.part_number.id_for_label }}">Part Number</label>
+                                {{ form.part_number }}
+                            </div>
+                        </div>
+
+                        <!-- Financials & Dates -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div class="space-y-1">
+                                <label for="{{ form.cost.id_for_label }}">Estimated Cost</label>
+                                {{ form.cost }}
+                            </div>
+                            <div class="space-y-1">
+                                <label for="{{ form.ordered_date.id_for_label }}">Ordered Date</label>
+                                {{ form.ordered_date }}
+                            </div>
+                            <div class="space-y-1">
+                                <label for="{{ form.completion_date.id_for_label }}">Completion Date</label>
+                                {{ form.completion_date }}
+                            </div>
+                        </div>
+
+                        <!-- Notes -->
+                        <div class="space-y-1">
+                            <label for="{{ form.notes.id_for_label }}">Project Notes</label>
+                            {{ form.notes }}
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="mt-8 flex justify-end space-x-4 pt-6 {% if is_timepiece or is_collection %}border-t border-white/10{% else %}border-t border-gray-700{% endif %}">
+                        {% if is_timepiece %}
+                            <a href="{% url 'timepieces:timepiece_detail' vehicle.id %}" class="px-6 py-3 border border-luxury-gold text-luxury-gold hover:bg-luxury-gold hover:text-black uppercase text-xs font-bold tracking-wider transition-colors rounded">Cancel</a>
+                            <button type="submit" class="px-6 py-3 bg-luxury-gold text-black rounded hover:bg-yellow-600 border border-luxury-gold uppercase text-xs font-bold tracking-wider transition-colors shadow-lg">
+                                {% if is_edit %}Update Project{% else %}Start Project{% endif %}
+                            </button>
+                        {% elif is_collection %}
+                            <a href="{% url 'collections:collection_item_detail' collection_slug vehicle.id %}" class="px-6 py-3 border border-luxury-gold text-luxury-gold hover:bg-luxury-gold hover:text-black uppercase text-xs font-bold tracking-wider transition-colors rounded">Cancel</a>
+                            <button type="submit" class="px-6 py-3 bg-luxury-gold text-black rounded hover:bg-yellow-600 border border-luxury-gold uppercase text-xs font-bold tracking-wider transition-colors shadow-lg">
+                                {% if is_edit %}Update Project{% else %}Start Project{% endif %}
+                            </button>
+                        {% else %}
+                            <a href="{% url 'my_garage:vehicle_detail' vehicle.id %}" class="px-6 py-3 bg-gray-800 text-gray-300 rounded hover:bg-gray-700 border border-gray-600 uppercase text-xs font-bold tracking-wider transition-colors">Cancel</a>
+                            <button type="submit" class="px-6 py-3 bg-red-700 text-white rounded hover:bg-red-600 border border-red-800 uppercase text-xs font-bold tracking-wider transition-colors shadow-lg">
+                                {% if is_edit %}Update Project{% else %}Start Project{% endif %}
+                            </button>
+                        {% endif %}
+                    </div>
+                </form>
             </div>
-            <div class="mt-6 flex justify-end space-x-4">
-                <a href="{% url 'my_garage:vehicle_detail' vehicle.id %}" class="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400">Cancel</a>
-                <button type="submit" class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700">Start Project</button>
-            </div>
-        </form>
+        </div>
+
+        <!-- Kanban Link -->
+        {% if is_collection %}
+        <div class="max-w-2xl mx-auto mt-8 text-center">
+            <a href="{% url 'collections:collection_upgrades_kanban' collection_slug %}" class="text-xs text-gray-500 hover:text-white uppercase tracking-widest transition-colors">
+                <i class="fas fa-columns mr-1"></i> View Kanban Board
+            </a>
+        </div>
+        {% elif not is_timepiece %}
+        <div class="max-w-2xl mx-auto mt-8 text-center">
+            <a href="{% url 'my_garage:vehicle_projects_kanban' vehicle.id %}" class="text-xs text-gray-500 hover:text-white uppercase tracking-widest transition-colors">
+                <i class="fas fa-columns mr-1"></i> View Kanban Board
+            </a>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

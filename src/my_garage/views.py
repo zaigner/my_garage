@@ -272,17 +272,44 @@ def add_upgrade_project(request: HttpRequest, vehicle_id: int) -> HttpResponse:
     vehicle = get_object_or_404(Vehicle, pk=vehicle_id, owner=request.user)
 
     if request.method == 'POST':
-        form = UpgradeForm(request.POST)
+        form = GenericUpgradeForm(request.POST)
         if form.is_valid():
             upgrade = form.save(commit=False)
-            upgrade.vehicle = vehicle
+            upgrade.content_object = vehicle
             upgrade.save()
             messages.success(request, "Upgrade project started!")
             return redirect('my_garage:vehicle_detail', vehicle_id=vehicle.id)
     else:
-        form = UpgradeForm()
+        form = GenericUpgradeForm()
 
     return render(request, 'my_garage/upgrade_form.html', {'form': form, 'vehicle': vehicle, 'title': 'Start New Project'})
+
+
+@login_required
+def vehicle_projects_kanban(request: HttpRequest, vehicle_id: int) -> HttpResponse:
+    """
+    Kanban board view for all upgrades/projects for a vehicle.
+    """
+    vehicle = get_object_or_404(Vehicle, pk=vehicle_id, owner=request.user)
+
+    # Get all generic upgrades for this vehicle
+    upgrades = vehicle.projects.all().order_by('status', '-ordered_date', '-completion_date')
+
+    # Group upgrades by status
+    wishlist = upgrades.filter(status='WISHLIST')
+    ordered = upgrades.filter(status='ORDERED')
+    in_progress = upgrades.filter(status='IN_PROGRESS')
+    completed = upgrades.filter(status='COMPLETED')
+    cancelled = upgrades.filter(status='CANCELLED')
+
+    return render(request, 'my_garage/vehicle_projects_kanban.html', {
+        'vehicle': vehicle,
+        'wishlist': wishlist,
+        'ordered': ordered,
+        'in_progress': in_progress,
+        'completed': completed,
+        'cancelled': cancelled,
+    })
 
 
 @login_required
@@ -381,6 +408,32 @@ def timepiece_detail(request: HttpRequest, timepiece_id: int) -> HttpResponse:
             return redirect('timepieces:timepiece_detail', timepiece_id=timepiece.id)
 
     return render(request, "my_garage/timepiece_detail.html", {"timepiece": timepiece})
+
+
+@login_required
+def timepiece_add_project(request: HttpRequest, timepiece_id: int) -> HttpResponse:
+    """
+    View to add a new project/upgrade to a timepiece.
+    """
+    timepiece = get_object_or_404(Timepiece, pk=timepiece_id, owner=request.user)
+
+    if request.method == 'POST':
+        form = GenericUpgradeForm(request.POST)
+        if form.is_valid():
+            upgrade = form.save(commit=False)
+            upgrade.content_object = timepiece
+            upgrade.save()
+            messages.success(request, "Project started!")
+            return redirect('timepieces:timepiece_detail', timepiece_id=timepiece.id)
+    else:
+        form = GenericUpgradeForm()
+
+    return render(request, 'my_garage/upgrade_form.html', {
+        'form': form, 
+        'vehicle': timepiece, # Reusing template, might need adjustment
+        'title': 'Start New Project',
+        'is_timepiece': True # Flag to indicate this is a timepiece
+    })
 
 
 # ============================================================================
@@ -763,11 +816,12 @@ def collection_item_add_upgrade(request: HttpRequest, collection_slug: str, item
     else:
         form = GenericUpgradeForm()
 
-    return render(request, 'my_garage/collection_upgrade_form.html', {
+    return render(request, 'my_garage/upgrade_form.html', {
         'form': form,
-        'item': item,
-        'collection_type': collection_type,
-        'title': 'Start New Project'
+        'vehicle': item,
+        'title': 'Start New Project',
+        'is_collection': True,
+        'collection_slug': collection_slug
     })
 
 
@@ -789,13 +843,14 @@ def collection_item_edit_upgrade(request: HttpRequest, collection_slug: str, ite
     else:
         form = GenericUpgradeForm(instance=upgrade)
 
-    return render(request, 'my_garage/collection_upgrade_form.html', {
+    return render(request, 'my_garage/upgrade_form.html', {
         'form': form,
-        'item': item,
-        'collection_type': collection_type,
+        'vehicle': item,
         'title': 'Edit Project',
         'is_edit': True,
-        'upgrade': upgrade
+        'upgrade': upgrade,
+        'is_collection': True,
+        'collection_slug': collection_slug
     })
 
 
@@ -897,3 +952,5 @@ def collection_upgrade_update_status(request: HttpRequest, upgrade_id: int) -> H
         })
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+# Force reload

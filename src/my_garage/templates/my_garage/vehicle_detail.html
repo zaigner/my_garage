@@ -342,6 +342,9 @@
             <div class="cabinet-finish p-6 rounded-lg">
                 <div class="flex justify-between items-center mb-6 border-b border-gray-700 pb-2">
                     <h2 class="text-xl font-bold porsche-font text-white">Build Sheet</h2>
+                    <a href="{% url 'my_garage:vehicle_projects_kanban' vehicle.id %}" class="text-xs text-blue-400 hover:text-blue-300 uppercase tracking-wider font-bold">
+                        View Kanban Board →
+                    </a>
                 </div>
 
                 <div class="mb-6">

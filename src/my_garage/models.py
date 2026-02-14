@@ -2,6 +2,8 @@ from django.db import models
 from django.conf import settings
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils.text import slugify
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
+from django.contrib.contenttypes.models import ContentType
 
 
 class Vehicle(models.Model):
@@ -37,6 +39,9 @@ class Vehicle(models.Model):
     features = models.JSONField(default=dict, blank=True)  # Stores features like "Leather Seats", "Sunroof"
     specs = models.JSONField(default=dict, blank=True)     # Stores technical specs like "Engine: V8", "HP: 400"
     photo = models.ImageField(upload_to="vehicles/%Y/%m/", null=True, blank=True) # Main vehicle photo
+
+    # Generic Projects/Upgrades (New System)
+    projects = GenericRelation('GenericUpgrade')
 
     def __str__(self):
         return f"{self.year} {self.make} {self.model}"
@@ -164,6 +169,9 @@ class Timepiece(models.Model):
     # Visuals
     photo = models.ImageField(upload_to="timepieces/%Y/%m/", null=True, blank=True)
     notes = models.TextField(blank=True)
+
+    # Generic Projects/Upgrades
+    projects = GenericRelation('GenericUpgrade')
 
     def __str__(self):
         return f"{self.brand} {self.model} ({self.reference_number})"
@@ -407,12 +415,19 @@ class GenericUpgrade(models.Model):
         ('CANCELLED', 'Cancelled'),
     ]
 
-    # Link to any collection item
+    # Link to any collection item (Legacy/Specific)
     item = models.ForeignKey(
         DynamicCollectionItem,
         on_delete=models.CASCADE,
-        related_name="upgrades"
+        related_name="upgrades",
+        null=True,
+        blank=True
     )
+
+    # Generic Relation (New System)
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, null=True, blank=True)
+    object_id = models.PositiveIntegerField(null=True, blank=True)
+    content_object = GenericForeignKey('content_type', 'object_id')
 
     # Upgrade Details
     name = models.CharField(max_length=255, help_text="Name of the upgrade/modification")
@@ -434,7 +449,11 @@ class GenericUpgrade(models.Model):
         ordering = ['-completion_date', '-ordered_date']
 
     def __str__(self):
-        return f"{self.item.name} - {self.name} ({self.status})"
+        if self.content_object:
+            return f"{self.content_object} - {self.name} ({self.status})"
+        elif self.item:
+            return f"{self.item.name} - {self.name} ({self.status})"
+        return f"Unknown Item - {self.name} ({self.status})"
 
 
 class CollectionItemAttachment(models.Model):

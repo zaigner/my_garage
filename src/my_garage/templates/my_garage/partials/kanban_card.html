@@ -1,14 +1,19 @@
 <div class="kanban-card bg-white rounded-lg shadow-sm p-4 border border-gray-200 hover:shadow-md"
      data-upgrade-id="{{ upgrade.id }}"
-     onclick="window.location.href='{% url 'collections:collection_item_edit_upgrade' upgrade.item.collection_type.slug upgrade.item.id upgrade.id %}'">
+     onclick="{% if upgrade.item %}window.location.href='{% url 'collections:collection_item_edit_upgrade' upgrade.item.collection_type.slug upgrade.item.id upgrade.id %}'{% else %}window.location.href='#'{% endif %}">
 
     <!-- Item Info -->
     <div class="flex items-start justify-between mb-2">
         <div class="flex-1 min-w-0">
             <h4 class="font-semibold text-gray-900 text-sm truncate">{{ upgrade.name }}</h4>
             <p class="text-xs text-gray-500 truncate">
-                <i class="{{ upgrade.item.collection_type.icon }} mr-1"></i>
-                {{ upgrade.item.name }}
+                {% if upgrade.item %}
+                    <i class="{{ upgrade.item.collection_type.icon }} mr-1"></i>
+                    {{ upgrade.item.name }}
+                {% elif upgrade.content_object %}
+                    <i class="fas fa-car mr-1"></i>
+                    {{ upgrade.content_object }}
+                {% endif %}
             </p>
         </div>
     </div>
