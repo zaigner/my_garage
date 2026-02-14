@@ -13,7 +13,7 @@ Most collectors rely on messy spreadsheets or disconnected apps. My Garage bring
 
 ### Intelligent Vehicle Management
 Stop guessing what your car is worth.
-*   **AI-Powered Valuations**: Real-time market data integration tracks your vehicle's value against comparable listings.
+*   **Automated Valuations**: Real-time market data integration tracks your vehicle's value against comparable listings.
 *   **VIN Decoding**: Automatic spec population using NHTSA data.
 *   **"Race Deck" UI**: A dark-mode interface inspired by professional garages, featuring manufacturer-specific typography.
 
@@ -103,7 +103,7 @@ We use **pixi** for a zero-headache setup. No virtualenv hell, no missing system
 *   [x] Vehicle & Timepiece Tracking
 *   [x] Dynamic Collection Schemas
 *   [x] Kanban Project Management
-*   [ ] **AI Receipt OCR**: Automatically extract vendor and cost from photos.
+*   [ ] **Receipt OCR**: Automatically extract vendor and cost from photos.
 *   [ ] **360° Spin Viewer**: Interactive vehicle exploration.
 *   [ ] **Market Intelligence**: Price alerts and detailed depreciation curves.
 
@@ -115,4 +115,5 @@ We welcome fellow enthusiasts! Check out `CLAUDE.md` for developer guidelines an
 
 
 *Built with ❤️ and ☕
+
 
