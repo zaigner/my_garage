@@ -109,11 +109,12 @@ We use **pixi** for a zero-headache setup. No virtualenv hell, no missing system
 
 ## 🤝 Contributing
 
-We welcome fellow enthusiasts! Check out `CLAUDE.md` for developer guidelines and `spec.md` for the detailed feature specifications.
+Still very early on in the journey to a real product
 
 ---
 
 
-*Built with ❤️ and ☕
+*Built with ADHD
+
 
 
