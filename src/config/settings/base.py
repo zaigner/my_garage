@@ -3,11 +3,15 @@ import os
 import sys
 from pathlib import Path
 from celery.schedules import crontab
+from dotenv import load_dotenv
 
 # Build paths
 # BASE_DIR is now the root of the project (containing src, manage.py, etc.)
 # Since this file is in src/config/settings/base.py
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
+
+# Load environment variables from .env file
+load_dotenv(BASE_DIR / '.env')
 
 # Add src to python path so apps can be found
 sys.path.append(str(BASE_DIR / 'src'))

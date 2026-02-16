@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Button Debug Test</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        .status { margin-top: 10px; padding: 10px; background: #f0f0f0; }
+    </style>
+</head>
+<body>
+    <h1>Collection Form Button Diagnostic</h1>
+
+    <div class="test-section">
+        <h2>Test 1: Direct Button Test</h2>
+        <button type="button" id="test-btn-1">Test Button 1</button>
+        <div id="status-1" class="status">Waiting for click...</div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 2: Generate Schema Button (Replica)</h2>
+        <input type="text" id="ai-topic" placeholder="Enter collection topic" style="padding: 8px; width: 300px;">
+        <button type="button" id="generate-schema-btn">Generate Schema</button>
+        <div id="ai-status" class="status">Waiting...</div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 3: Add Field Button (Replica)</h2>
+        <button type="button" id="add-field-btn">+ Add Field</button>
+        <div id="fields-container" style="margin-top: 10px;"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Console Output:</h2>
+        <div id="console-output" style="background: #000; color: #0f0; padding: 10px; font-family: monospace; min-height: 100px;"></div>
+    </div>
+
+    <script>
+        // Capture console logs
+        const consoleDiv = document.getElementById('console-output');
+        function log(msg) {
+            console.log(msg);
+            consoleDiv.innerHTML += msg + '<br>';
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            log("✓ DOMContentLoaded fired");
+
+            // Test 1: Simple button
+            const testBtn1 = document.getElementById('test-btn-1');
+            log("Test Button 1 found: " + (testBtn1 ? "YES" : "NO"));
+
+            if (testBtn1) {
+                testBtn1.addEventListener('click', () => {
+                    document.getElementById('status-1').textContent = "Button 1 clicked! ✓";
+                    log("Test Button 1 clicked");
+                });
+            }
+
+            // Test 2: Generate Schema Button
+            const generateBtn = document.getElementById('generate-schema-btn');
+            log("Generate Button found: " + (generateBtn ? "YES" : "NO"));
+
+            if (generateBtn) {
+                generateBtn.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    log("Generate button clicked!");
+
+                    const topic = document.getElementById('ai-topic').value.trim();
+                    const statusEl = document.getElementById('ai-status');
+
+                    if (!topic) {
+                        statusEl.textContent = "Please enter a topic!";
+                        log("ERROR: No topic entered");
+                        return;
+                    }
+
+                    statusEl.textContent = "Calling API...";
+                    log("Calling API for topic: " + topic);
+
+                    try {
+                        const url = `/collections/api/generate-schema/?topic=${encodeURIComponent(topic)}`;
+                        log("URL: " + url);
+
+                        const response = await fetch(url);
+                        log("Response status: " + response.status);
+
+                        const data = await response.json();
+                        log("Response data: " + JSON.stringify(data).substring(0, 100));
+
+                        if (data.error) {
+                            statusEl.textContent = "Error: " + data.error;
+                            log("ERROR: " + data.error);
+                        } else if (data.schema && data.schema.fields) {
+                            statusEl.textContent = `✓ Success! Generated ${data.schema.fields.length} fields`;
+                            log("SUCCESS: " + data.schema.fields.length + " fields generated");
+                        }
+                    } catch (error) {
+                        statusEl.textContent = "Error: " + error.message;
+                        log("EXCEPTION: " + error.message);
+                    }
+                });
+            } else {
+                log("ERROR: Generate button not found!");
+            }
+
+            // Test 3: Add Field Button
+            const addFieldBtn = document.getElementById('add-field-btn');
+            log("Add Field Button found: " + (addFieldBtn ? "YES" : "NO"));
+
+            let fieldCount = 0;
+            if (addFieldBtn) {
+                addFieldBtn.addEventListener('click', () => {
+                    fieldCount++;
+                    log("Add Field button clicked (count: " + fieldCount + ")");
+
+                    const container = document.getElementById('fields-container');
+                    const fieldDiv = document.createElement('div');
+                    fieldDiv.style.cssText = 'margin: 5px 0; padding: 10px; background: #f5f5f5;';
+                    fieldDiv.textContent = `Field ${fieldCount}`;
+                    container.appendChild(fieldDiv);
+                });
+            } else {
+                log("ERROR: Add Field button not found!");
+            }
+
+            log("✓ All event listeners attached");
+        });
+    </script>
+</body>
+</html>

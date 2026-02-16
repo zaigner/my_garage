@@ -9,6 +9,12 @@ urlpatterns = [
     path("", views.collection_type_list, name="collection_type_list"),
     path("create/", views.collection_type_create, name="collection_type_create"),
     path("<slug:slug>/edit/", views.collection_type_edit, name="collection_type_edit"),
+    
+    # API for AI Schema Generation
+    path("api/generate-schema/", views.generate_collection_schema, name="generate_collection_schema"),
+
+    # Debug views
+    path("debug/button-test/", views.button_test_view, name="button_test"),
 
     # Dynamic Collections - Collection Items
     path("<slug:collection_slug>/items/", views.collection_list, name="collection_list"),

@@ -1,220 +1,436 @@
-{% extends "base.html" %}
+{% extends "my_garage/base.html" %}
 
-{% block title %}{% if collection_type %}Edit{% else %}Create{% endif %} Collection Type{% endblock %}
+{% block title %}{% if collection_type %}Edit{% else %}Create{% endif %} Collection Type | The Salon{% endblock %}
+
+{% block extra_head %}
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+<style>
+    .salon-font {
+        font-family: 'Cinzel', serif;
+    }
+
+
+    /* Luxury Wood/Leather Texture Background */
+    .salon-bg {
+        background-color: #0B1026;
+        background-image: radial-gradient(circle at 50% 0%, #1a2342 0%, #0B1026 70%);
+    }
+
+    /* The Form Container */
+    .salon-card {
+        background: rgba(21, 27, 51, 0.6);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+    }
+
+    .salon-input {
+        background-color: #0f0f0f;
+        border: 1px solid #3e2723;
+        color: #e5e7eb;
+    }
+
+    .salon-input:focus {
+        border-color: #D4AF37;
+        ring-color: #D4AF37;
+    }
+
+    .salon-label {
+        color: #D4AF37; /* Gold */
+        font-family: 'Cinzel', serif;
+        font-size: 0.8rem;
+        letter-spacing: 0.05em;
+    }
+
+    .salon-btn-primary {
+        background: linear-gradient(to bottom, #D4AF37, #AA8C2C);
+        color: #1a0f0a;
+        font-weight: bold;
+        border: 1px solid #AA8C2C;
+        transition: all 0.3s ease;
+    }
+
+    .salon-btn-primary:hover {
+        background: linear-gradient(to bottom, #E5C158, #C5A035);
+        box-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
+    }
+
+    .salon-btn-primary:disabled {
+        opacity: 0.7;
+        cursor: wait;
+        filter: grayscale(0.3);
+    }
+
+    .salon-btn-secondary {
+        background: transparent;
+        border: 1px solid #3e2723;
+        color: #9ca3af;
+    }
+
+    .salon-btn-secondary:hover {
+        border-color: #D4AF37;
+        color: #D4AF37;
+    }
+
+    /* Field Row Styling */
+    .field-row {
+        background-color: rgba(0,0,0,0.3);
+        border: 1px solid #3e2723;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <h1 class="text-3xl font-bold text-gray-900 mb-8">
-        {% if collection_type %}Edit{% else %}Create{% endif %} Collection Type
-    </h1>
+<div class="salon-bg min-h-screen py-12 font-sans text-gray-300">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
 
-    <form method="post" id="collection-type-form" class="bg-white rounded-lg shadow-md p-6">
-        {% csrf_token %}
+        <!-- Header -->
+        <div class="text-center mb-10">
+            <h1 class="text-3xl md:text-4xl font-bold salon-font text-luxury-gold mb-2 tracking-widest">
+                {% if collection_type %}Edit{% else %}Create{% endif %} Collection
+            </h1>
+            <p class="text-white/30 text-xs uppercase tracking-[0.3em]">Define Your Legacy</p>
+        </div>
 
-        <!-- Basic Information -->
-        <div class="mb-6">
-            <h2 class="text-xl font-semibold text-gray-900 mb-4">Basic Information</h2>
+        <form method="post" id="collection-type-form" class="salon-card p-8">
+            {% csrf_token %}
 
-            <div class="mb-4">
-                <label for="{{ form.name.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
-                    Collection Name *
-                </label>
-                {{ form.name }}
-                {% if form.name.errors %}
-                    <p class="text-red-600 text-sm mt-1">{{ form.name.errors.0 }}</p>
-                {% endif %}
+            <!-- Basic Information -->
+            <div class="mb-8 border-b border-white/10 pb-8">
+                <h2 class="text-xl font-semibold text-luxury-gold mb-6 salon-font">Basic Information</h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="mb-4">
+                        <label for="{{ form.name.id_for_label }}" class="block salon-label mb-2">
+                            Collection Name *
+                        </label>
+                        {{ form.name }}
+                        {% if form.name.errors %}
+                            <p class="text-red-500 text-xs mt-1">{{ form.name.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="{{ form.icon.id_for_label }}" class="block salon-label mb-2">
+                            Icon (FontAwesome)
+                        </label>
+                        {{ form.icon }}
+                        <p class="text-gray-500 text-xs mt-1">
+                            e.g., fa-wine-glass, fa-palette
+                        </p>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label for="{{ form.description.id_for_label }}" class="block salon-label mb-2">
+                        Description
+                    </label>
+                    {{ form.description }}
+                </div>
+
+                <div class="mb-4">
+                    <label class="flex items-center">
+                        {{ form.is_active }}
+                        <span class="ml-2 text-sm text-gray-400">Active Collection</span>
+                    </label>
+                </div>
             </div>
 
-            <div class="mb-4">
-                <label for="{{ form.icon.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
-                    Icon (FontAwesome class)
-                </label>
-                {{ form.icon }}
-                <p class="text-gray-500 text-xs mt-1">
-                    e.g., fa-wine-glass, fa-palette, fa-bicycle
-                    <a href="https://fontawesome.com/icons" target="_blank" class="text-indigo-600 hover:underline">Browse icons</a>
+            <!-- AI Theme Generator -->
+            <div class="mb-8 bg-black/30 p-6 rounded-md border border-luxury-gold/20">
+                <h3 class="text-lg font-semibold text-luxury-gold mb-2 salon-font">✨ AI Curator</h3>
+                <p class="text-sm text-gray-400 mb-4">
+                    Let our AI curator suggest the perfect schema for your collection.
                 </p>
+                <div class="flex gap-2">
+                    <input type="text" id="ai-topic"
+                           class="flex-1 salon-input rounded-md px-4 py-2 text-sm"
+                           placeholder="e.g., Vintage Sneakers, Rare Coins, Comic Books">
+                    <button type="button" id="generate-schema-btn"
+                            class="salon-btn-primary px-4 py-2 rounded-md text-sm uppercase tracking-wider">
+                        Generate Schema
+                    </button>
+                </div>
+                <p id="ai-status" class="text-xs text-luxury-gold mt-2 hidden">Consulting the archives...</p>
             </div>
 
-            <div class="mb-4">
-                <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
-                    Description
-                </label>
-                {{ form.description }}
+            <!-- Schema Builder -->
+            <div class="mb-8">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-semibold text-luxury-gold salon-font">Custom Fields</h2>
+                    <button type="button" id="add-field-btn"
+                            class="salon-btn-secondary px-3 py-1 rounded-md text-xs uppercase tracking-wider">
+                        + Add Field
+                    </button>
+                </div>
+
+                <p class="text-gray-500 text-sm mb-4">
+                    Define specific attributes to track. Standard fields (Name, Photo, Value, Notes) are included automatically.
+                </p>
+
+                <div id="fields-container" class="space-y-4 mb-4">
+                    <!-- Fields will be added here dynamically -->
+                </div>
             </div>
 
-            <div class="mb-4">
-                <label class="flex items-center">
-                    {{ form.is_active }}
-                    <span class="ml-2 text-sm text-gray-700">Active</span>
-                </label>
+            <!-- Hidden inputs for JSON data -->
+            <input type="hidden" name="field_schema_json" id="field-schema-json">
+            <input type="hidden" name="list_display_fields_json" id="list-display-fields-json">
+
+            <!-- Existing fields data (for edit mode) -->
+            {% if collection_type and collection_type.field_schema.fields %}
+                {{ collection_type.field_schema.fields|json_script:"existing-fields-data" }}
+            {% endif %}
+
+            <!-- Submit -->
+            <div class="flex gap-4 border-t border-white/10 pt-6">
+                <button type="submit"
+                        class="salon-btn-primary px-8 py-3 rounded-md uppercase tracking-widest text-sm w-full md:w-auto">
+                    {% if collection_type %}Update{% else %}Create{% endif %} Collection
+                </button>
+                <a href="{% url 'collections:collection_type_list' %}"
+                   class="salon-btn-secondary px-8 py-3 rounded-md uppercase tracking-widest text-sm w-full md:w-auto text-center">
+                    Cancel
+                </a>
             </div>
-        </div>
-
-        <!-- Schema Builder -->
-        <div class="mb-6 border-t pt-6">
-            <h2 class="text-xl font-semibold text-gray-900 mb-4">Define Custom Fields</h2>
-            <p class="text-gray-600 text-sm mb-4">
-                Add custom fields specific to this collection type. All collections have standard fields
-                (name, photo, purchase price, date, current value, notes) automatically.
-            </p>
-
-            <div id="fields-container" class="space-y-4 mb-4">
-                <!-- Fields will be added here dynamically -->
-            </div>
-
-            <button type="button" id="add-field-btn"
-                    class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300">
-                + Add Field
-            </button>
-        </div>
-
-        <!-- Hidden inputs for JSON data -->
-        <input type="hidden" name="field_schema_json" id="field-schema-json">
-        <input type="hidden" name="list_display_fields_json" id="list-display-fields-json">
-
-        <!-- Submit -->
-        <div class="flex gap-4 border-t pt-6">
-            <button type="submit"
-                    class="bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700">
-                {% if collection_type %}Update{% else %}Create{% endif %} Collection Type
-            </button>
-            <a href="{% url 'collections:collection_type_list' %}"
-               class="bg-gray-200 text-gray-700 px-6 py-2 rounded-md hover:bg-gray-300">
-                Cancel
-            </a>
-        </div>
-    </form>
+        </form>
+    </div>
 </div>
 
 <script>
-    // Field type options
-    const fieldTypes = [
-        { value: 'text', label: 'Text' },
-        { value: 'number', label: 'Number' },
-        { value: 'date', label: 'Date' },
-        { value: 'file', label: 'File Upload' },
-        { value: 'relationship', label: 'Relationship' }
-    ];
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log("Collection Form Script Initialized");
+        console.log("Checking for buttons...");
+        console.log("Generate button exists:", !!document.getElementById('generate-schema-btn'));
+        console.log("Add field button exists:", !!document.getElementById('add-field-btn'));
+        console.log("AI topic input exists:", !!document.getElementById('ai-topic'));
 
-    // Initialize fields array
-    let fields = [];
-
-    {% if collection_type and collection_type.field_schema.fields %}
-        // Load existing fields
-        fields = {{ collection_type.field_schema.fields|safe }};
-    {% endif %}
-
-    // Render a single field row
-    function renderField(field, index) {
-        const fieldDiv = document.createElement('div');
-        fieldDiv.className = 'bg-gray-50 p-4 rounded-md border border-gray-200';
-        fieldDiv.innerHTML = `
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-2">
-                <div>
-                    <label class="block text-xs font-medium text-gray-700 mb-1">Field Name</label>
-                    <input type="text" value="${field.name || ''}"
-                           class="field-name w-full px-2 py-1 border border-gray-300 rounded-md text-sm"
-                           placeholder="e.g., vintage">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-gray-700 mb-1">Type</label>
-                    <select class="field-type w-full px-2 py-1 border border-gray-300 rounded-md text-sm">
-                        ${fieldTypes.map(t => `<option value="${t.value}" ${field.type === t.value ? 'selected' : ''}>${t.label}</option>`).join('')}
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-gray-700 mb-1">Label</label>
-                    <input type="text" value="${field.label || ''}"
-                           class="field-label w-full px-2 py-1 border border-gray-300 rounded-md text-sm"
-                           placeholder="e.g., Vintage Year">
-                </div>
-                <div class="flex items-end">
-                    <label class="flex items-center mb-1">
-                        <input type="checkbox" class="field-required mr-1" ${field.required ? 'checked' : ''}>
-                        <span class="text-xs text-gray-700">Required</span>
-                    </label>
-                    <button type="button" class="remove-field-btn ml-auto bg-red-500 text-white px-3 py-1 rounded-md text-sm hover:bg-red-600">
-                        Remove
-                    </button>
-                </div>
-            </div>
-            <div>
-                <label class="block text-xs font-medium text-gray-700 mb-1">Help Text (optional)</label>
-                <input type="text" value="${field.help_text || ''}"
-                       class="field-help w-full px-2 py-1 border border-gray-300 rounded-md text-sm"
-                       placeholder="Optional help text for this field">
-            </div>
-        `;
-
-        // Add remove handler
-        fieldDiv.querySelector('.remove-field-btn').addEventListener('click', () => {
-            fields.splice(index, 1);
-            render();
+        // --- 1. Styling & Setup ---
+        const inputs = document.querySelectorAll('input[type="text"], textarea, select');
+        inputs.forEach(input => {
+            if (!input.classList.contains('salon-input')) {
+                input.classList.add('salon-input', 'w-full', 'rounded-md', 'px-3', 'py-2', 'focus:outline-none', 'focus:ring-1', 'focus:ring-luxury-gold');
+                input.classList.remove('form-control', 'bg-white', 'text-gray-900');
+            }
         });
 
-        return fieldDiv;
-    }
+        const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach(cb => {
+            cb.classList.add('text-luxury-gold', 'focus:ring-luxury-gold', 'bg-gray-900', 'border-gray-700', 'rounded');
+        });
 
-    // Render all fields
-    function render() {
-        const container = document.getElementById('fields-container');
-        container.innerHTML = '';
+        // Pre-fill AI topic if editing and empty
+        const nameInput = document.getElementById('{{ form.name.id_for_label }}');
+        const aiTopicInput = document.getElementById('ai-topic');
 
-        if (fields.length === 0) {
-            container.innerHTML = '<p class="text-gray-500 text-sm italic">No custom fields defined yet.</p>';
-        } else {
-            fields.forEach((field, index) => {
-                container.appendChild(renderField(field, index));
+        if (nameInput && aiTopicInput && !aiTopicInput.value) {
+            aiTopicInput.value = nameInput.value;
+        }
+
+        // --- 2. Field Management Logic ---
+        const fieldTypes = [
+            { value: 'text', label: 'Text' },
+            { value: 'number', label: 'Number' },
+            { value: 'date', label: 'Date' },
+            { value: 'file', label: 'File Upload' },
+            { value: 'relationship', label: 'Relationship' }
+        ];
+
+        let fields = [];
+        {% if collection_type and collection_type.field_schema.fields %}
+            // Parse existing fields from JSON-safe attribute
+            const fieldsData = document.getElementById('existing-fields-data');
+            if (fieldsData) {
+                try {
+                    fields = JSON.parse(fieldsData.textContent);
+                    console.log('Loaded existing fields:', fields.length);
+                } catch (e) {
+                    console.error('Failed to parse existing fields:', e);
+                    fields = [];
+                }
+            }
+        {% endif %}
+
+        function renderField(field, index) {
+            const fieldDiv = document.createElement('div');
+            fieldDiv.className = 'field-row p-4 rounded-md';
+            fieldDiv.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-2">
+                    <div>
+                        <label class="block text-[10px] uppercase tracking-wider text-gray-500 mb-1">Field Name</label>
+                        <input type="text" value="${field.name || ''}"
+                               class="field-name salon-input w-full px-2 py-1 text-sm"
+                               placeholder="e.g., vintage">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] uppercase tracking-wider text-gray-500 mb-1">Type</label>
+                        <select class="field-type salon-input w-full px-2 py-1 text-sm">
+                            ${fieldTypes.map(t => `<option value="${t.value}" ${field.type === t.value ? 'selected' : ''}>${t.label}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] uppercase tracking-wider text-gray-500 mb-1">Label</label>
+                        <input type="text" value="${field.label || ''}"
+                               class="field-label salon-input w-full px-2 py-1 text-sm"
+                               placeholder="e.g., Vintage Year">
+                    </div>
+                    <div class="flex items-end">
+                        <label class="flex items-center mb-2 mr-4 cursor-pointer">
+                            <input type="checkbox" class="field-required mr-2 text-luxury-gold bg-gray-900 border-gray-700 rounded focus:ring-luxury-gold" ${field.required ? 'checked' : ''}>
+                            <span class="text-xs text-gray-400 uppercase tracking-wider">Req</span>
+                        </label>
+                        <button type="button" class="remove-field-btn ml-auto text-red-400 hover:text-red-300 text-xs uppercase tracking-wider border border-red-900/50 hover:bg-red-900/20 px-2 py-1 rounded transition-colors">
+                            Remove
+                        </button>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-[10px] uppercase tracking-wider text-gray-500 mb-1">Help Text</label>
+                    <input type="text" value="${field.help_text || ''}"
+                           class="field-help salon-input w-full px-2 py-1 text-sm text-gray-400"
+                           placeholder="Optional help text for this field">
+                </div>
+            `;
+
+            fieldDiv.querySelector('.remove-field-btn').addEventListener('click', () => {
+                fields.splice(index, 1);
+                render();
+            });
+
+            fieldDiv.querySelectorAll('input, select').forEach(input => {
+                input.addEventListener('change', updateFieldsFromDOM);
+            });
+
+            return fieldDiv;
+        }
+
+        function render() {
+            const container = document.getElementById('fields-container');
+            container.innerHTML = '';
+
+            if (fields.length === 0) {
+                container.innerHTML = '<p class="text-gray-600 text-sm italic text-center py-4">No custom fields defined yet.</p>';
+            } else {
+                fields.forEach((field, index) => {
+                    container.appendChild(renderField(field, index));
+                });
+            }
+        }
+
+        function updateFieldsFromDOM() {
+            const fieldElements = document.querySelectorAll('#fields-container > .field-row');
+            fields = [];
+            fieldElements.forEach((fieldEl) => {
+                fields.push({
+                    name: fieldEl.querySelector('.field-name').value,
+                    type: fieldEl.querySelector('.field-type').value,
+                    label: fieldEl.querySelector('.field-label').value,
+                    required: fieldEl.querySelector('.field-required').checked,
+                    help_text: fieldEl.querySelector('.field-help').value
+                });
             });
         }
-    }
 
-    // Add field button
-    document.getElementById('add-field-btn').addEventListener('click', () => {
-        fields.push({
-            name: '',
-            type: 'text',
-            label: '',
-            required: false,
-            help_text: ''
-        });
+        const addFieldBtn = document.getElementById('add-field-btn');
+        console.log("Add Field Button element:", addFieldBtn);
+        if (addFieldBtn) {
+            console.log("Attaching click listener to Add Field button");
+            addFieldBtn.addEventListener('click', () => {
+                console.log("Add Field button clicked!");
+                fields.push({ name: '', type: 'text', label: '', required: false, help_text: '' });
+                render();
+            });
+        } else {
+            console.error("Add Field button NOT FOUND!");
+        }
+
+        // --- 3. AI Generator Logic ---
+        const generateBtn = document.getElementById('generate-schema-btn');
+        if (generateBtn) {
+            generateBtn.addEventListener('click', async (e) => {
+                e.preventDefault(); // Prevent any default form submission
+                console.log("Generate button clicked");
+
+                const topic = document.getElementById('ai-topic').value.trim();
+                const statusEl = document.getElementById('ai-status');
+
+                // Get description safely
+                const descInput = document.getElementById('{{ form.description.id_for_label }}');
+                const description = descInput ? descInput.value.trim() : '';
+
+                if (!topic) {
+                    alert('Please enter a topic first.');
+                    return;
+                }
+
+                // UI Feedback
+                const originalBtnText = generateBtn.textContent;
+                generateBtn.disabled = true;
+                generateBtn.textContent = 'Generating...';
+
+                statusEl.textContent = 'Consulting the archives...';
+                statusEl.classList.remove('hidden', 'text-red-500', 'text-green-400');
+                statusEl.classList.add('text-luxury-gold', 'animate-pulse');
+
+                try {
+                    console.log(`Fetching schema for topic: ${topic}`);
+                    const url = `/collections/api/generate-schema/?topic=${encodeURIComponent(topic)}&description=${encodeURIComponent(description)}`;
+                    const response = await fetch(url);
+                    const data = await response.json();
+                    console.log("AI Response:", data);
+
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+
+                    if (data.schema && data.schema.fields) {
+                        fields = data.schema.fields;
+                        render();
+
+                        // Update name if empty
+                        if (nameInput && !nameInput.value) {
+                            nameInput.value = topic;
+                        }
+
+                        statusEl.textContent = 'Schema curated successfully.';
+                        statusEl.classList.remove('animate-pulse', 'text-luxury-gold');
+                        statusEl.classList.add('text-green-400');
+
+                        setTimeout(() => {
+                            statusEl.classList.add('hidden');
+                        }, 3000);
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    statusEl.textContent = 'Curator unavailable: ' + error.message;
+                    statusEl.classList.remove('text-luxury-gold', 'animate-pulse');
+                    statusEl.classList.add('text-red-500');
+                } finally {
+                    generateBtn.disabled = false;
+                    generateBtn.textContent = originalBtnText;
+                }
+            });
+        } else {
+            console.error("Generate button not found in DOM");
+        }
+
+        // --- 4. Form Submission ---
+        const form = document.getElementById('collection-type-form');
+        if (form) {
+            form.addEventListener('submit', (e) => {
+                updateFieldsFromDOM();
+                const validFields = fields.filter(f => f.name.trim() !== '');
+                const schema = { fields: validFields };
+                const listDisplayFields = validFields.map(f => f.name);
+
+                document.getElementById('field-schema-json').value = JSON.stringify(schema);
+                document.getElementById('list-display-fields-json').value = JSON.stringify(listDisplayFields);
+            });
+        }
+
+        // Initial render
         render();
     });
-
-    // Form submission
-    document.getElementById('collection-type-form').addEventListener('submit', (e) => {
-        // Collect field data from DOM
-        const fieldElements = document.querySelectorAll('#fields-container > div');
-        fields = [];
-
-        fieldElements.forEach((fieldEl) => {
-            const name = fieldEl.querySelector('.field-name').value.trim();
-            if (!name) return; // Skip empty fields
-
-            fields.push({
-                name: name,
-                type: fieldEl.querySelector('.field-type').value,
-                label: fieldEl.querySelector('.field-label').value.trim() || name,
-                required: fieldEl.querySelector('.field-required').checked,
-                help_text: fieldEl.querySelector('.field-help').value.trim()
-            });
-        });
-
-        // Build schema JSON
-        const schema = {
-            fields: fields
-        };
-
-        // Build list display fields (just include all field names)
-        const listDisplayFields = fields.map(f => f.name);
-
-        // Set hidden inputs
-        document.getElementById('field-schema-json').value = JSON.stringify(schema);
-        document.getElementById('list-display-fields-json').value = JSON.stringify(listDisplayFields);
-    });
-
-    // Initial render
-    render();
 </script>
 {% endblock %}

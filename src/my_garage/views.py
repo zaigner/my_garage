@@ -2,7 +2,7 @@ import logging
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.db import transaction
 
 # Import our custom Application Layer components
@@ -23,6 +23,7 @@ from .api.selectors import (
 )
 from .api.services import service_record_create_from_ocr
 from .tasks import task_update_market_valuation, task_enrich_vehicle_data, task_refresh_vehicle_photo
+from .skills.theme_generator import CollectionThemeGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -473,6 +474,39 @@ def collection_type_list(request: HttpRequest) -> HttpResponse:
 
 
 @login_required
+def generate_collection_schema(request: HttpRequest) -> JsonResponse:
+    """
+    AJAX endpoint to generate a collection schema based on a topic string.
+    Uses the Gemini-powered CollectionThemeGenerator skill.
+    """
+    topic = request.GET.get('topic', '').strip()
+    description = request.GET.get('description', '').strip()
+    
+    logger.info(f"Generating schema for topic: '{topic}'")
+    
+    if not topic:
+        logger.warning("No topic provided for schema generation")
+        return JsonResponse({'error': 'No topic provided.'}, status=400)
+        
+    try:
+        # Execute the skill
+        generator = CollectionThemeGenerator()
+        logger.info(f"CollectionThemeGenerator initialized. Enabled: {generator.enabled}")
+        
+        schema = generator.generate_schema(topic, description)
+        logger.info(f"Schema generated successfully: {schema}")
+        
+        return JsonResponse({
+            'success': True,
+            'topic': topic,
+            'schema': schema
+        })
+    except Exception as e:
+        logger.error(f"Error generating theme for topic '{topic}': {e}", exc_info=True)
+        return JsonResponse({'error': f'Failed to generate theme: {str(e)}'}, status=500)
+
+
+@login_required
 def collection_type_create(request: HttpRequest) -> HttpResponse:
     """
     Create a new collection type with schema builder.
@@ -524,9 +558,16 @@ def collection_type_edit(request: HttpRequest, slug: str) -> HttpResponse:
             collection_type = form.save(commit=False)
 
             try:
+                # Handle potential empty strings or invalid JSON
+                if not schema_json or schema_json == '""':
+                    schema_json = '{}'
+                if not list_display_fields or list_display_fields == '""':
+                    list_display_fields = '[]'
+                    
                 collection_type.field_schema = json.loads(schema_json)
                 collection_type.list_display_fields = json.loads(list_display_fields)
-            except json.JSONDecodeError:
+            except json.JSONDecodeError as e:
+                logger.error(f"JSON Decode Error: {e}")
                 messages.error(request, "Invalid schema format")
                 return render(request, 'my_garage/collection_type_form.html', {
                     'form': form,
@@ -952,5 +993,11 @@ def collection_upgrade_update_status(request: HttpRequest, upgrade_id: int) -> H
         })
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+def button_test_view(request: HttpRequest) -> HttpResponse:
+    """
+    Debug view to test button functionality (no login required for testing).
+    """
+    return render(request, 'my_garage/button_test.html', {})
 
 # Force reload

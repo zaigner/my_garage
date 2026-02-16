@@ -1,0 +1,153 @@
+{% extends "my_garage/base.html" %}
+
+{% block title %}Button Test | Debug{% endblock %}
+
+{% block content %}
+<div class="container mx-auto py-8 px-4">
+    <h1 class="text-3xl font-bold mb-6">Button Functionality Test</h1>
+
+    <div class="bg-white p-6 rounded-lg shadow-lg mb-6">
+        <h2 class="text-xl font-semibold mb-4">Test 1: Add Field Button</h2>
+        <button type="button" id="add-field-btn" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+            + Add Field
+        </button>
+        <div id="fields-container" class="mt-4 space-y-2"></div>
+    </div>
+
+    <div class="bg-white p-6 rounded-lg shadow-lg mb-6">
+        <h2 class="text-xl font-semibold mb-4">Test 2: Generate Schema Button</h2>
+        <div class="flex gap-2 mb-4">
+            <input type="text" id="ai-topic"
+                   class="flex-1 border border-gray-300 rounded px-4 py-2"
+                   placeholder="Enter collection topic (e.g., Rare Books)">
+            <button type="button" id="generate-schema-btn"
+                    class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                Generate Schema
+            </button>
+        </div>
+        <div id="ai-status" class="text-sm text-gray-600"></div>
+        <div id="generated-fields" class="mt-4"></div>
+    </div>
+
+    <div class="bg-gray-900 text-green-400 p-6 rounded-lg font-mono text-sm">
+        <h2 class="text-xl font-semibold mb-4 text-white">Console Output:</h2>
+        <div id="console-output"></div>
+    </div>
+</div>
+
+<script>
+    const consoleDiv = document.getElementById('console-output');
+    function log(msg, type = 'info') {
+        const timestamp = new Date().toLocaleTimeString();
+        const color = type === 'error' ? 'text-red-400' : type === 'success' ? 'text-green-400' : 'text-green-400';
+        consoleDiv.innerHTML += `<div class="${color}">[${timestamp}] ${msg}</div>`;
+        console.log(msg);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        log('✓ DOMContentLoaded event fired');
+        log('✓ Testing button functionality...');
+
+        // Test 1: Add Field Button
+        const addFieldBtn = document.getElementById('add-field-btn');
+        const fieldsContainer = document.getElementById('fields-container');
+
+        log('Add Field button found: ' + (!!addFieldBtn));
+
+        if (addFieldBtn) {
+            let fieldCount = 0;
+            addFieldBtn.addEventListener('click', () => {
+                fieldCount++;
+                log(`✓ Add Field button clicked (count: ${fieldCount})`, 'success');
+
+                const fieldDiv = document.createElement('div');
+                fieldDiv.className = 'bg-gray-100 p-3 rounded';
+                fieldDiv.textContent = `Field ${fieldCount} - Ready for configuration`;
+                fieldsContainer.appendChild(fieldDiv);
+            });
+            log('✓ Click listener attached to Add Field button');
+        } else {
+            log('✗ Add Field button NOT FOUND', 'error');
+        }
+
+        // Test 2: Generate Schema Button
+        const generateBtn = document.getElementById('generate-schema-btn');
+        const aiTopicInput = document.getElementById('ai-topic');
+        const aiStatus = document.getElementById('ai-status');
+        const generatedFieldsDiv = document.getElementById('generated-fields');
+
+        log('Generate Schema button found: ' + (!!generateBtn));
+        log('AI Topic input found: ' + (!!aiTopicInput));
+
+        if (generateBtn && aiTopicInput) {
+            generateBtn.addEventListener('click', async () => {
+                log('✓ Generate Schema button clicked', 'success');
+
+                const topic = aiTopicInput.value.trim();
+                if (!topic) {
+                    aiStatus.textContent = '⚠ Please enter a topic first';
+                    aiStatus.className = 'text-sm text-red-600';
+                    log('✗ No topic entered', 'error');
+                    return;
+                }
+
+                log(`Calling API with topic: "${topic}"`);
+                aiStatus.textContent = '⏳ Generating schema...';
+                aiStatus.className = 'text-sm text-blue-600';
+                generateBtn.disabled = true;
+                generateBtn.textContent = 'Generating...';
+
+                try {
+                    const url = `/collections/api/generate-schema/?topic=${encodeURIComponent(topic)}`;
+                    log(`Fetching: ${url}`);
+
+                    const response = await fetch(url);
+                    log(`Response status: ${response.status}`);
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    log(`Response received: ${JSON.stringify(data).substring(0, 100)}...`);
+
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+
+                    if (data.schema && data.schema.fields) {
+                        const fieldCount = data.schema.fields.length;
+                        log(`✓ SUCCESS! Generated ${fieldCount} fields`, 'success');
+
+                        aiStatus.textContent = `✓ Successfully generated ${fieldCount} fields!`;
+                        aiStatus.className = 'text-sm text-green-600 font-semibold';
+
+                        generatedFieldsDiv.innerHTML = '<h3 class="font-semibold mb-2">Generated Fields:</h3>';
+                        data.schema.fields.forEach((field, index) => {
+                            const fieldDiv = document.createElement('div');
+                            fieldDiv.className = 'bg-gray-50 p-3 rounded mb-2';
+                            fieldDiv.innerHTML = `
+                                <div class="font-semibold">${index + 1}. ${field.label} <span class="text-xs text-gray-500">(${field.type})</span></div>
+                                <div class="text-sm text-gray-600">${field.help_text}</div>
+                            `;
+                            generatedFieldsDiv.appendChild(fieldDiv);
+                        });
+                    }
+                } catch (error) {
+                    log(`✗ ERROR: ${error.message}`, 'error');
+                    aiStatus.textContent = `✗ Error: ${error.message}`;
+                    aiStatus.className = 'text-sm text-red-600';
+                } finally {
+                    generateBtn.disabled = false;
+                    generateBtn.textContent = 'Generate Schema';
+                }
+            });
+            log('✓ Click listener attached to Generate Schema button');
+        } else {
+            log('✗ Generate Schema button or AI Topic input NOT FOUND', 'error');
+        }
+
+        log('✓ All tests completed. Try clicking the buttons!');
+    });
+</script>
+{% endblock %}
