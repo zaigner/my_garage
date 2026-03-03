@@ -232,6 +232,12 @@ class CollectionType(models.Model):
         blank=True,
         help_text="List of field names to display in list view, e.g., ['vintage', 'region']"
     )
+    
+    # UI Customization
+    ui_theme_html = models.TextField(
+        blank=True, 
+        help_text="Custom UI component HTML for this collection"
+    )
 
     # Metadata
     created_at = models.DateTimeField(auto_now_add=True)

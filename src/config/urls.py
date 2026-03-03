@@ -9,6 +9,10 @@ urlpatterns = [
     # Admin
     path('admin/', admin.site.urls),
 
+    # Authentication
+    path('accounts/', include('django.contrib.auth.urls')),
+    path('accounts/register/', views.register, name='register'),
+
     # API
     path('api/', include('config.api_router')),
 

@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Pinyon+Script&family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <script src="https://cdn.tailwindcss.com"></script>
 
@@ -65,11 +66,54 @@
 
     <nav class="border-b border-white/10 bg-luxury-black/95 backdrop-blur-md sticky top-0 z-50 transition-all duration-300">
         <div class="max-w-7xl mx-auto px-6 py-6 flex justify-between items-center">
-            <button class="text-luxury-white hover:text-luxury-gold transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-                </svg>
-            </button>
+            <!-- Left Button: Search & Collections Dropdown -->
+            <div class="relative group">
+                <button class="text-luxury-white hover:text-luxury-gold transition-colors focus:outline-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                    </svg>
+                </button>
+
+                <!-- Dropdown Menu -->
+                <div class="absolute left-0 mt-2 w-64 bg-[#151b33] border border-white/10 rounded-lg shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 transform origin-top-left">
+                    <div class="py-2">
+                        <!-- Search Action -->
+                        <button onclick="toggleSearch()" class="w-full text-left px-4 py-3 hover:bg-white/5 flex items-center text-luxury-white group/item">
+                            <i class="fas fa-search w-6 text-luxury-gold"></i>
+                            <span class="font-serif italic">Global Search</span>
+                            <span class="ml-auto text-[10px] border border-white/20 rounded px-1 text-gray-500">⌘K</span>
+                        </button>
+
+                        <div class="border-t border-white/10 my-1"></div>
+
+                        <!-- Main Sections -->
+                        <a href="{% url 'my_garage:garage_view' %}" class="block px-4 py-3 hover:bg-white/5 flex items-center text-luxury-white">
+                            <i class="fas fa-car w-6 text-luxury-gold"></i>
+                            <span class="font-serif italic">Garage</span>
+                        </a>
+                        <a href="{% url 'timepieces:timepiece_list' %}" class="block px-4 py-3 hover:bg-white/5 flex items-center text-luxury-white">
+                            <i class="fas fa-clock w-6 text-luxury-gold"></i>
+                            <span class="font-serif italic">Horology Salon</span>
+                        </a>
+                        <a href="{% url 'collections:collection_type_list' %}" class="block px-4 py-3 hover:bg-white/5 flex items-center text-luxury-white">
+                            <i class="fas fa-layer-group w-6 text-luxury-gold"></i>
+                            <span class="font-serif italic">All Collections</span>
+                        </a>
+
+                        <!-- Dynamic Collections List -->
+                        {% if custom_collections %}
+                            <div class="border-t border-white/10 my-1"></div>
+                            <div class="px-4 py-2 text-[10px] uppercase tracking-widest text-gray-500">Your Collections</div>
+                            {% for collection in custom_collections %}
+                                <a href="{% url 'collections:collection_list' collection.slug %}" class="block px-4 py-2 hover:bg-white/5 flex items-center text-gray-300 hover:text-white text-sm">
+                                    <i class="{{ collection.icon }} w-6 text-gray-500"></i>
+                                    <span>{{ collection.name }}</span>
+                                </a>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
 
             <div class="text-4xl md:text-7xl text-luxury-gold font-script tracking-widest cursor-pointer hover:opacity-90 transition-opacity drop-shadow-lg">
                 The Collection
@@ -77,18 +121,67 @@
 
             <div class="flex items-center gap-4">
                 {% if user.is_authenticated %}
-                    <a href="{% url 'admin:index' %}" class="text-luxury-white hover:text-luxury-gold transition-colors text-sm uppercase tracking-widest">Admin</a>
+                    <!-- Right Button: User Profile / Logout -->
+                    <div class="relative group">
+                        <button class="text-luxury-white hover:text-luxury-gold transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                            </svg>
+                        </button>
+
+                        <!-- Profile Dropdown -->
+                        <div class="absolute right-0 mt-2 w-48 bg-[#151b33] border border-white/10 rounded-lg shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 transform origin-top-right">
+                            <div class="py-2">
+                                <div class="px-4 py-2 border-b border-white/10 mb-1">
+                                    <p class="text-xs text-gray-500 uppercase tracking-widest">Signed in as</p>
+                                    <p class="text-luxury-gold font-serif italic truncate">{{ user.username }}</p>
+                                </div>
+                                <form method="post" action="{% url 'logout' %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="w-full text-left px-4 py-2 hover:bg-white/5 text-sm text-red-400 hover:text-red-300 transition-colors">
+                                        Sign Out
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
                 {% else %}
-                    <a href="{% url 'admin:login' %}" class="text-luxury-white hover:text-luxury-gold transition-colors text-sm uppercase tracking-widest">Login</a>
+                    <a href="{% url 'login' %}" class="text-luxury-white hover:text-luxury-gold transition-colors text-sm uppercase tracking-widest">Login</a>
                 {% endif %}
-                <button class="text-luxury-white hover:text-luxury-gold transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-                    </svg>
-                </button>
             </div>
         </div>
     </nav>
+
+    <!-- Global Search Modal -->
+    <div id="search-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-start justify-center pt-24 opacity-0 transition-opacity duration-200">
+        <div class="bg-[#1a1a1a] w-full max-w-2xl rounded-lg shadow-2xl border border-gray-700 overflow-hidden transform scale-95 transition-transform duration-200 mx-4" id="search-panel">
+            <div class="p-4 border-b border-gray-700 flex items-center">
+                <i class="fas fa-search text-gray-400 mr-3 text-lg"></i>
+                <input type="text" id="global-search-input"
+                       class="bg-transparent border-none text-white text-lg w-full focus:ring-0 placeholder-gray-500"
+                       placeholder="Search vehicles, timepieces, collections..."
+                       autocomplete="off">
+                <button onclick="toggleSearch()" class="text-gray-500 hover:text-white">
+                    <span class="text-xs uppercase tracking-widest border border-gray-600 rounded px-2 py-1">ESC</span>
+                </button>
+            </div>
+
+            <div id="search-results" class="max-h-[60vh] overflow-y-auto custom-scrollbar">
+                <!-- Results will be injected here -->
+                <div class="p-8 text-center text-gray-500">
+                    <p class="text-sm uppercase tracking-widest">Type to search your vault</p>
+                </div>
+            </div>
+
+            <div class="bg-[#111] p-2 border-t border-gray-800 flex justify-between items-center text-[10px] text-gray-500 uppercase tracking-widest px-4">
+                <span>The Collection</span>
+                <div class="hidden md:flex gap-3">
+                    <span><i class="fas fa-arrow-up mr-1"></i><i class="fas fa-arrow-down mr-1"></i> Navigate</span>
+                    <span><i class="fas fa-level-down-alt mr-1 transform rotate-90"></i> Select</span>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <main class="max-w-7xl mx-auto px-6 py-12 space-y-16 fade-in">
 
@@ -152,22 +245,40 @@
                 </div>
             </div>
 
+            {% for collection in custom_collections %}
             <div class="group relative p-8 rounded-xl bg-luxury-card border border-white/5 hover:border-luxury-gold/50 transition-all duration-500 hover:shadow-[0_0_30px_-5px_rgba(212,175,55,0.15)]">
                 <div class="flex justify-between items-start mb-6">
-                    <h3 class="font-serif text-2xl text-luxury-white italic">Collections</h3>
+                    <div class="flex items-center gap-3">
+                        {% if collection.icon %}
+                            <i class="fa-solid {{ collection.icon }} text-luxury-gold text-xl"></i>
+                        {% endif %}
+                        <h3 class="font-serif text-2xl text-luxury-white italic">{{ collection.name }}</h3>
+                    </div>
                     {% if user.is_authenticated %}
-                        <a href="{% url 'collections:collection_type_list' %}" class="text-luxury-gold font-script text-2xl hover:text-white transition-colors cursor-pointer">
-                            View All &rarr;
+                        <a href="{% url 'collections:collection_list' collection.slug %}" class="text-luxury-gold font-script text-2xl hover:text-white transition-colors cursor-pointer">
+                            {{ collection.item_count|default:"0" }} items &rarr;
                         </a>
                     {% else %}
-                        <span class="text-luxury-gold font-script text-2xl">--</span>
+                        <span class="text-luxury-gold font-script text-2xl">-- items</span>
                     {% endif %}
                 </div>
                 <div class="space-y-1">
-                    <p class="text-luxury-text text-xs uppercase tracking-widest">Custom Collections</p>
-                    <p class="text-2xl font-light font-sans text-luxury-white">${{ total_collections_value|default:"0"|floatformat:0 }}</p>
+                    <p class="text-luxury-text text-xs uppercase tracking-widest">Category Value</p>
+                    <p class="text-2xl font-light font-sans text-luxury-white">${{ collection.total_value|default:"0"|floatformat:0 }}</p>
                 </div>
             </div>
+            {% endfor %}
+
+            {% if user.is_authenticated %}
+            <a href="{% url 'collections:collection_type_create' %}" class="group relative p-8 rounded-xl bg-luxury-card/50 border border-dashed border-white/10 hover:border-luxury-gold hover:bg-luxury-card transition-all duration-500 flex flex-col items-center justify-center gap-4 text-center min-h-[200px]">
+                <div class="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-luxury-gold/20 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8 text-luxury-gold">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                </div>
+                <h3 class="font-serif text-xl text-luxury-white italic group-hover:text-luxury-gold transition-colors">Create New Collection</h3>
+            </a>
+            {% endif %}
         </section>
 
         <section>
@@ -258,6 +369,109 @@
     <footer class="border-t border-white/5 py-12 text-center text-luxury-text text-xs tracking-widest uppercase">
         <p>&copy; 2025 The Collection. Private Vault.</p>
     </footer>
+
+    <script>
+        const searchModal = document.getElementById('search-modal');
+        const searchPanel = document.getElementById('search-panel');
+        const searchInput = document.getElementById('global-search-input');
+        const searchResults = document.getElementById('search-results');
+        let searchTimeout;
+
+        function toggleSearch() {
+            if (searchModal.classList.contains('hidden')) {
+                // Open
+                searchModal.classList.remove('hidden');
+                // Small delay to allow display:block to apply before opacity transition
+                setTimeout(() => {
+                    searchModal.classList.remove('opacity-0');
+                    searchPanel.classList.remove('scale-95');
+                    searchPanel.classList.add('scale-100');
+                    searchInput.focus();
+                }, 10);
+                document.body.style.overflow = 'hidden';
+            } else {
+                // Close
+                searchModal.classList.add('opacity-0');
+                searchPanel.classList.remove('scale-100');
+                searchPanel.classList.add('scale-95');
+                setTimeout(() => {
+                    searchModal.classList.add('hidden');
+                    searchInput.value = '';
+                    searchResults.innerHTML = '<div class="p-8 text-center text-gray-500"><p class="text-sm uppercase tracking-widest">Type to search your vault</p></div>';
+                }, 200);
+                document.body.style.overflow = '';
+            }
+        }
+
+        // Keyboard Shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Cmd+K or Ctrl+K to open
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                e.preventDefault();
+                toggleSearch();
+            }
+            // ESC to close
+            if (e.key === 'Escape' && !searchModal.classList.contains('hidden')) {
+                toggleSearch();
+            }
+        });
+
+        // Close on click outside
+        searchModal.addEventListener('click', function(e) {
+            if (e.target === searchModal) {
+                toggleSearch();
+            }
+        });
+
+        // Search Logic
+        searchInput.addEventListener('input', function(e) {
+            const query = e.target.value.trim();
+
+            clearTimeout(searchTimeout);
+
+            if (query.length < 2) {
+                searchResults.innerHTML = '<div class="p-8 text-center text-gray-500"><p class="text-sm uppercase tracking-widest">Type to search your vault</p></div>';
+                return;
+            }
+
+            searchTimeout = setTimeout(() => {
+                fetch(`/garage/api/global-search/?q=${encodeURIComponent(query)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.results.length > 0) {
+                            const html = data.results.map(item => `
+                                <a href="${item.url}" class="block p-4 hover:bg-gray-800 border-b border-gray-800 last:border-0 transition-colors group">
+                                    <div class="flex items-center">
+                                        <div class="w-10 h-10 rounded bg-gray-700 flex items-center justify-center text-luxury-gold mr-4 group-hover:bg-gray-600 transition-colors">
+                                            <i class="fas ${item.icon}"></i>
+                                        </div>
+                                        <div>
+                                            <h4 class="text-white font-medium group-hover:text-luxury-gold transition-colors">${item.name}</h4>
+                                            <p class="text-xs text-gray-500 uppercase tracking-wider">${item.category} • ${item.subtext || item.type}</p>
+                                        </div>
+                                        <div class="ml-auto opacity-0 group-hover:opacity-100 transition-opacity text-gray-500">
+                                            <i class="fas fa-chevron-right"></i>
+                                        </div>
+                                    </div>
+                                </a>
+                            `).join('');
+                            searchResults.innerHTML = html;
+                        } else {
+                            searchResults.innerHTML = `
+                                <div class="p-8 text-center text-gray-500">
+                                    <i class="fas fa-search mb-2 text-2xl opacity-50"></i>
+                                    <p class="text-sm">No results found for "${query}"</p>
+                                </div>
+                            `;
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        searchResults.innerHTML = '<div class="p-4 text-red-500 text-center text-sm">Error searching. Please try again.</div>';
+                    });
+            }, 300);
+        });
+    </script>
 
 </body>
 </html>

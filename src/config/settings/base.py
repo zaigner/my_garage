@@ -53,7 +53,7 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
+        'DIRS': [BASE_DIR / 'templates', BASE_DIR / 'src/my_garage/templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -136,3 +136,7 @@ CELERY_BEAT_SCHEDULE = {
 
 # FastAPI Service URL (separate service)
 FASTAPI_BASE_URL = os.environ.get('FASTAPI_BASE_URL', 'http://localhost:8001')
+
+# Authentication
+LOGIN_REDIRECT_URL = '/garage/'
+LOGOUT_REDIRECT_URL = '/accounts/login/'

@@ -3,7 +3,7 @@
 ## Overview
 
 **Feature ID**: 001-my-garage-platform
-**Status**: ✅ Phase 13 Complete - Dynamic Collections & Timepieces
+**Status**: ✅ Phase 14 Complete - Global Search & Navigation Enhancements
 **Owner**: Development Team
 **Created**: 2025-12-21
 **Last Updated**: 2026-02-12
@@ -24,6 +24,7 @@ Car enthusiasts lack professional-grade tools to manage their vehicles as financ
 6. Hard to visualize potential modifications before purchasing parts
 7. Generic, boring interfaces that don't reflect the passion of car ownership
 8. Lack of support for other luxury assets like watches, which often overlap with car collecting
+9. Difficulty navigating between different asset types as the portfolio grows
 
 ## User Stories
 
@@ -142,6 +143,17 @@ Car enthusiasts lack professional-grade tools to manage their vehicles as financ
 - ✅ Breakdown of value by category
 - ✅ Recent acquisitions feed showing latest items from all categories
 - ✅ Unified aesthetic matching the "Vault" theme
+
+### Epic 10: Navigation & Search (UX Enhancements)
+- **As a** power user
+- **I want to** quickly find any asset and navigate deep into the hierarchy
+- **So that** I can manage a large portfolio efficiently
+
+**Acceptance Criteria:**
+- ✅ Global Search (Cmd+K) searches across Vehicles, Timepieces, and Collection Items
+- ✅ Breadcrumb navigation on all detail pages
+- ✅ Unified dropdown menu for quick access to all collection types
+- ✅ Mobile-responsive navigation with hamburger menu
 
 ## Technical Specification
 
@@ -289,6 +301,7 @@ vehicle_get_total_maintenance_cost(vehicle: Vehicle) -> Decimal
 vehicle_get_total_upgrade_cost(vehicle: Vehicle) -> Decimal
 vehicle_list_wishlist_items(vehicle: Vehicle) -> QuerySet[Upgrade]
 vehicle_get_pending_service_count(vehicle: Vehicle) -> int
+global_search(user, query: str) -> List[Dict[str, Any]]
 ```
 
 #### Services (Write Operations)
@@ -349,7 +362,7 @@ task_bulk_valuation_refresh() -> str
 
 ## Implementation Status
 
-### ✅ Completed (Phase 1-13)
+### ✅ Completed (Phase 1-14)
 
 **Phase 1-6**: (See previous versions for details)
 
@@ -401,6 +414,13 @@ task_bulk_valuation_refresh() -> str
 - ✅ Implemented `watch_valuation` MCP tool (mock)
 - ✅ Updated all templates to use correct namespaces
 - ✅ Implemented Portfolio Dashboard with total valuation and recent acquisitions
+
+**Phase 14: Global Search & Navigation Enhancements**
+- ✅ Implemented Global Search (Cmd+K) across all asset types
+- ✅ Added breadcrumb navigation to detail pages
+- ✅ Implemented responsive mobile menu
+- ✅ Added dropdown navigation for quick access to collections
+- ✅ Fixed search bug with integer fields (Year)
 
 ### ⏳ Remaining Work
 
@@ -578,7 +598,12 @@ task_bulk_valuation_refresh() -> str
 - URL Restructuring
 - Portfolio Dashboard
 
-### Version 0.8.0 (Next)
+### Version 0.8.0 (Current) ✅
+- Global Search & Navigation
+- Breadcrumbs
+- Mobile Responsiveness
+
+### Version 0.9.0 (Next)
 - FastAPI OCR service
 - Receipt upload and processing
 - Dashboard views

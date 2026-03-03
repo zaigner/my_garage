@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.db import transaction
+from django.template import Template, Context
 
 # Import our custom Application Layer components
 from my_garage.models import (
@@ -19,7 +20,8 @@ from .api.selectors import (
     vehicle_get_build_summary, 
     vehicle_list_wishlist_items, 
     vehicle_list_service_records, 
-    vehicle_list_upgrades
+    vehicle_list_upgrades,
+    global_search
 )
 from .api.services import service_record_create_from_ocr
 from .tasks import task_update_market_valuation, task_enrich_vehicle_data, task_refresh_vehicle_photo
@@ -505,6 +507,33 @@ def generate_collection_schema(request: HttpRequest) -> JsonResponse:
         logger.error(f"Error generating theme for topic '{topic}': {e}", exc_info=True)
         return JsonResponse({'error': f'Failed to generate theme: {str(e)}'}, status=500)
 
+@login_required
+def generate_collection_ui(request: HttpRequest) -> JsonResponse:
+    """
+    AJAX endpoint to generate a UI component based on a topic string.
+    Uses the Gemini-powered CollectionThemeGenerator skill.
+    """
+    topic = request.GET.get('topic', '').strip()
+    description = request.GET.get('description', '').strip()
+    
+    logger.info(f"Generating UI for topic: '{topic}'")
+    
+    if not topic:
+        return JsonResponse({'error': 'No topic provided.'}, status=400)
+        
+    try:
+        generator = CollectionThemeGenerator()
+        ui_html = generator.generate_ui_component(topic, description)
+        
+        return JsonResponse({
+            'success': True,
+            'topic': topic,
+            'ui_html': ui_html
+        })
+    except Exception as e:
+        logger.error(f"Error generating UI for topic '{topic}': {e}", exc_info=True)
+        return JsonResponse({'error': f'Failed to generate UI: {str(e)}'}, status=500)
+
 
 @login_required
 def collection_type_create(request: HttpRequest) -> HttpResponse:
@@ -518,10 +547,12 @@ def collection_type_create(request: HttpRequest) -> HttpResponse:
         import json
         schema_json = request.POST.get('field_schema_json', '{}')
         list_display_fields = request.POST.get('list_display_fields_json', '[]')
+        ui_theme_html = request.POST.get('ui_theme_html', '')
 
         if form.is_valid():
             collection_type = form.save(commit=False)
             collection_type.owner = request.user
+            collection_type.ui_theme_html = ui_theme_html
 
             # Parse and save the schema
             try:
@@ -553,9 +584,11 @@ def collection_type_edit(request: HttpRequest, slug: str) -> HttpResponse:
         import json
         schema_json = request.POST.get('field_schema_json', '{}')
         list_display_fields = request.POST.get('list_display_fields_json', '[]')
+        ui_theme_html = request.POST.get('ui_theme_html', '')
 
         if form.is_valid():
             collection_type = form.save(commit=False)
+            collection_type.ui_theme_html = ui_theme_html
 
             try:
                 # Handle potential empty strings or invalid JSON
@@ -602,9 +635,44 @@ def collection_list(request: HttpRequest, collection_slug: str) -> HttpResponse:
         owner=request.user
     ).order_by('-created_at')
 
+    rendered_ui = None
+
+    # If a custom UI theme is defined, render it as a Django template
+    if collection_type.ui_theme_html:
+        try:
+            # Create a template object from the stored HTML string
+            template = Template(collection_type.ui_theme_html)
+            
+            # Prepare context for the template
+            # We need to calculate some stats if the template uses them
+            total_value = sum(item.current_market_value or 0 for item in items)
+            avg_price = total_value / items.count() if items.count() > 0 else 0
+            
+            context = Context({
+                'collection': {
+                    'title': collection_type.name,
+                    'description': collection_type.description,
+                    'total_items': items.count(),
+                    'total_value': total_value,
+                    'average_price': avg_price,
+                },
+                'items': items,
+                'recent_items': items[:5], # Just in case template uses 'recent_items'
+                'collection_type': collection_type, # Pass the object itself too
+                'request': request, # Pass request for URLs etc
+                'user': request.user,
+            })
+            
+            rendered_ui = template.render(context)
+        except Exception as e:
+            logger.error(f"Error rendering custom theme for {collection_type.name}: {e}")
+            # Fallback to default view if rendering fails
+            messages.error(request, "Error rendering custom theme. Falling back to default view.")
+
     return render(request, 'my_garage/collection_list.html', {
         'collection_type': collection_type,
-        'items': items
+        'items': items,
+        'rendered_ui': rendered_ui
     })
 
 
@@ -993,6 +1061,18 @@ def collection_upgrade_update_status(request: HttpRequest, upgrade_id: int) -> H
         })
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+@login_required
+def global_search_view(request: HttpRequest) -> JsonResponse:
+    """
+    AJAX endpoint for global search.
+    """
+    query = request.GET.get('q', '').strip()
+    if not query:
+        return JsonResponse({'results': []})
+        
+    results = global_search(request.user, query)
+    return JsonResponse({'results': results})
 
 def button_test_view(request: HttpRequest) -> HttpResponse:
     """

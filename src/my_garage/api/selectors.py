@@ -1,10 +1,11 @@
-from django.db.models import Sum, QuerySet, DecimalField
-from django.db.models.functions import Coalesce
+from django.db.models import Sum, QuerySet, DecimalField, Q
+from django.db.models.functions import Coalesce, Cast
+from django.db.models import CharField
 from decimal import Decimal
-from typing import Dict, Any
+from typing import Dict, Any, List
 from bson import ObjectId
 
-from my_garage.models import Vehicle, ServiceRecord, Upgrade, ConditionReport, GenericUpgrade
+from my_garage.models import Vehicle, ServiceRecord, Upgrade, ConditionReport, GenericUpgrade, Timepiece, DynamicCollectionItem
 from ..utils.mongo import get_collection
 
 
@@ -136,3 +137,76 @@ def service_record_get_ocr_details(record: ServiceRecord) -> Dict[str, Any]:
         pass
         
     return {}
+
+def global_search(user, query: str) -> List[Dict[str, Any]]:
+    """
+    Performs a global search across Vehicles, Timepieces, and Collection Items.
+    Returns a list of results with type, name, url, and icon.
+    """
+    results = []
+    
+    if not query:
+        return results
+
+    # Search Vehicles
+    # Cast year to CharField to allow string searching
+    vehicles = Vehicle.objects.annotate(
+        year_str=Cast('year', CharField())
+    ).filter(
+        Q(owner=user) & (
+            Q(make__icontains=query) | 
+            Q(model__icontains=query) | 
+            Q(year_str__icontains=query) |
+            Q(trim__icontains=query) |
+            Q(vin__icontains=query)
+        )
+    )[:5]
+    
+    for v in vehicles:
+        results.append({
+            'type': 'Vehicle',
+            'name': f"{v.year} {v.make} {v.model}",
+            'subtext': v.trim,
+            'url': f"/garage/{v.id}/",
+            'icon': 'fa-car',
+            'category': 'Garage'
+        })
+
+    # Search Timepieces
+    timepieces = Timepiece.objects.filter(
+        Q(owner=user) & (
+            Q(brand__icontains=query) | 
+            Q(model__icontains=query) | 
+            Q(reference_number__icontains=query)
+        )
+    )[:5]
+    
+    for t in timepieces:
+        results.append({
+            'type': 'Timepiece',
+            'name': f"{t.brand} {t.model}",
+            'subtext': t.reference_number,
+            'url': f"/timepieces/{t.id}/",
+            'icon': 'fa-clock',
+            'category': 'Timepieces'
+        })
+
+    # Search Collection Items
+    items = DynamicCollectionItem.objects.filter(
+        Q(owner=user) & (
+            Q(name__icontains=query) |
+            Q(collection_type__name__icontains=query)
+        )
+    ).select_related('collection_type')[:5]
+    
+    for item in items:
+        results.append({
+            'type': item.collection_type.name,
+            'name': item.name,
+            'subtext': item.collection_type.name,
+            'url': f"/collections/{item.collection_type.slug}/items/{item.id}/",
+            'icon': item.collection_type.icon or 'fa-box',
+            'category': 'Collections'
+        })
+
+    return results

@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 class CollectionThemeGenerator:
     """
     Uses Generative AI (Google Gemini via LiteLLM) to create rich,
-    context-aware schemas for user collections.
+    context-aware schemas and UI components for user collections.
     """
     
     def __init__(self):
@@ -68,7 +68,6 @@ class CollectionThemeGenerator:
 
         try:
             # Use gemini-2.5-flash as requested (or latest stable)
-            # Note: Model names change frequently. 'gemini/gemini-2.0-flash' is a good target for latest.
             response = self.litellm.completion(
                 model="gemini/gemini-2.5-flash",
                 messages=[{"role": "user", "content": prompt}],
@@ -93,6 +92,81 @@ class CollectionThemeGenerator:
         except Exception as e:
             logger.error(f"AI Schema Generation failed: {e}")
             return self._get_fallback_schema(collection_name)
+
+    def generate_ui_component(self, collection_name: str, description: str = "") -> str:
+        """
+        Generates a custom Tailwind/Alpine.js UI component for the collection.
+        Returns raw HTML string.
+        """
+        if not self.enabled:
+            return "<!-- AI UI Generator disabled or unavailable -->"
+
+        prompt = f"""You are an award-winning Digital Scenographer and UI Designer. Your goal is to create a visually immersive, thematic "digital home" for a specific collection.
+
+TARGET COLLECTION: "{collection_name}"
+CONTEXT: {description}
+
+OBJECTIVE:
+Do NOT create a generic white/gray dashboard. Create a highly atmospheric interface that captures the "vibe" of {collection_name}.
+- If it's "Wine": Think dark cellars, deep reds/purples, serif fonts, gold accents, wood textures.
+- If it's "Sneakers": Think streetwear, concrete/industrial backgrounds, bold sans-serifs, neon pops, high contrast.
+- If it's "Coins/Stamps": Think museum display cases, velvet backgrounds (deep blue/green), spotlight effects.
+- If it's "Comics": Think pop-art colors, dynamic borders, comic-book fonts.
+
+TECH STACK:
+1. HTML5 (Semantic)
+2. Tailwind CSS (Use arbitrary values like bg-[#1a2b3c] freely to achieve specific colors).
+3. Alpine.js (for interactivity).
+4. Django Template Tags (REQUIRED).
+
+CRITICAL FUNCTIONALITY (MUST INCLUDE):
+1. **Navigation**:
+   - "Back" link: `<a href="{{% url 'collections:collection_type_list' %}}" ...>...</a>`
+   - "Add Item" button: `<a href="{{% url 'collections:collection_item_add' collection_type.slug %}}" ...>...</a>`
+2. **Item Loop**:
+   - Iterate: `{{% for item in items %}} ... {{% endfor %}}`
+   - Link to Detail: `{{% url 'collections:collection_item_detail' collection_type.slug item.id %}}`
+   - Image: `{{% if item.photo %}}<img src="{{{{ item.photo.url }}}}" ...>{{% else %}}...{{% endif %}}`
+   - Data: `{{{{ item.name }}}}`, `{{{{ item.current_market_value }}}}`, `{{{{ item.purchase_price }}}}`.
+3. **Empty State**: Handle `{{% empty %}}` gracefully.
+
+DESIGN RULES:
+- **Typography**: You MAY include a `<link>` to Google Fonts at the top of the HTML to import a font that matches the theme perfectly. Apply it via `style="font-family: ..."` on the root container.
+- **Background**: The root container MUST have `min-h-screen` and a thematic background (color, gradient, or pattern).
+- **Cards**: Use glassmorphism (`bg-white/10 backdrop-blur-md`), borders, or shadows to make items pop against the background.
+- **Responsiveness**: Must look great on mobile and desktop.
+
+OUTPUT FORMAT:
+- Return ONLY the raw HTML code inside a single ```html``` block.
+- Do not include any explanations.
+"""
+
+        try:
+            response = self.litellm.completion(
+                model="gemini/gemini-2.5-flash",
+                messages=[{"role": "user", "content": prompt}],
+            )
+            
+            content = response.choices[0].message.content
+            
+            # Extract HTML from markdown block
+            if "```html" in content:
+                content = content.split("```html")[1].split("```")[0].strip()
+            elif "```" in content:
+                # This handles the case where the AI might output ```html ... ``` or just ``` ... ```
+                parts = content.split("```")
+                if len(parts) >= 3:
+                    code_block = parts[1]
+                    if code_block.strip().lower().startswith("html"):
+                        content = code_block.strip()[4:].strip()
+                    else:
+                        content = code_block.strip()
+
+            return content
+
+        except Exception as e:
+            logger.error(f"AI UI Generation failed: {e}")
+            return f"<!-- Error generating UI: {str(e)} -->"
 
     def _get_fallback_schema(self, name: str) -> Dict[str, Any]:
         """Returns a safe default schema if AI fails."""

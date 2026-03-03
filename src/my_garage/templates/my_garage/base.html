@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Pinyon+Script&family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <script src="https://cdn.tailwindcss.com"></script>
 
@@ -37,9 +38,103 @@
 
     <nav class="bg-garage-wall text-white p-4">
         <div class="container mx-auto flex justify-between items-center">
-            <a href="{% url 'home' %}" class="text-2xl font-script text-luxury-gold">The Collection</a>
+            <div class="flex items-center">
+                <!-- Mobile Menu Button -->
+                <button onclick="toggleMobileMenu()" class="md:hidden text-white hover:text-luxury-gold mr-4 focus:outline-none">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+                <a href="{% url 'home' %}" class="text-2xl font-script text-luxury-gold">The Collection</a>
+            </div>
+
+            <!-- Desktop Navigation -->
+            <div class="hidden md:flex items-center space-x-6 text-sm uppercase tracking-widest">
+                {% if user.is_authenticated %}
+                    <!-- Global Search Trigger -->
+                    <div class="relative group">
+                        <button onclick="toggleSearch()" class="flex items-center text-gray-400 hover:text-luxury-gold transition-colors focus:outline-none">
+                            <i class="fas fa-search mr-2"></i>
+                            <span class="hidden lg:inline">Search</span>
+                            <span class="ml-2 text-xs border border-gray-600 rounded px-1 text-gray-500 group-hover:text-luxury-gold group-hover:border-luxury-gold transition-colors">⌘K</span>
+                        </button>
+                    </div>
+
+                    <a href="{% url 'my_garage:garage_view' %}" class="hover:text-luxury-gold transition-colors">Garage</a>
+                    <a href="{% url 'timepieces:timepiece_list' %}" class="hover:text-luxury-gold transition-colors">Timepieces</a>
+                    <a href="{% url 'collections:collection_type_list' %}" class="hover:text-luxury-gold transition-colors">Collections</a>
+
+                    <div class="border-l border-gray-600 pl-6 ml-2">
+                        <form method="post" action="{% url 'logout' %}" class="inline">
+                            {% csrf_token %}
+                            <button type="submit" class="hover:text-luxury-gold transition-colors uppercase tracking-widest">
+                                Logout
+                            </button>
+                        </form>
+                    </div>
+                {% else %}
+                    <a href="{% url 'login' %}" class="hover:text-luxury-gold transition-colors">Login</a>
+                {% endif %}
+            </div>
+
+            <!-- Mobile Search Icon -->
+            <div class="md:hidden">
+                {% if user.is_authenticated %}
+                <button onclick="toggleSearch()" class="text-gray-400 hover:text-luxury-gold focus:outline-none">
+                    <i class="fas fa-search text-lg"></i>
+                </button>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Mobile Menu Dropdown -->
+        <div id="mobile-menu" class="hidden md:hidden border-t border-gray-700 mt-4 pt-4 pb-2">
+            {% if user.is_authenticated %}
+                <a href="{% url 'my_garage:garage_view' %}" class="block py-2 hover:text-luxury-gold transition-colors uppercase tracking-widest text-sm">Garage</a>
+                <a href="{% url 'timepieces:timepiece_list' %}" class="block py-2 hover:text-luxury-gold transition-colors uppercase tracking-widest text-sm">Timepieces</a>
+                <a href="{% url 'collections:collection_type_list' %}" class="block py-2 hover:text-luxury-gold transition-colors uppercase tracking-widest text-sm">Collections</a>
+                <div class="border-t border-gray-700 my-2 pt-2">
+                    <form method="post" action="{% url 'logout' %}" class="inline">
+                        {% csrf_token %}
+                        <button type="submit" class="block w-full text-left py-2 hover:text-luxury-gold transition-colors uppercase tracking-widest text-sm">
+                            Logout
+                        </button>
+                    </form>
+                </div>
+            {% else %}
+                <a href="{% url 'login' %}" class="block py-2 hover:text-luxury-gold transition-colors uppercase tracking-widest text-sm">Login</a>
+            {% endif %}
         </div>
     </nav>
+
+    <!-- Global Search Modal -->
+    <div id="search-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-start justify-center pt-24 opacity-0 transition-opacity duration-200">
+        <div class="bg-[#1a1a1a] w-full max-w-2xl rounded-lg shadow-2xl border border-gray-700 overflow-hidden transform scale-95 transition-transform duration-200 mx-4" id="search-panel">
+            <div class="p-4 border-b border-gray-700 flex items-center">
+                <i class="fas fa-search text-gray-400 mr-3 text-lg"></i>
+                <input type="text" id="global-search-input"
+                       class="bg-transparent border-none text-white text-lg w-full focus:ring-0 placeholder-gray-500"
+                       placeholder="Search vehicles, timepieces, collections..."
+                       autocomplete="off">
+                <button onclick="toggleSearch()" class="text-gray-500 hover:text-white">
+                    <span class="text-xs uppercase tracking-widest border border-gray-600 rounded px-2 py-1">ESC</span>
+                </button>
+            </div>
+
+            <div id="search-results" class="max-h-[60vh] overflow-y-auto custom-scrollbar">
+                <!-- Results will be injected here -->
+                <div class="p-8 text-center text-gray-500">
+                    <p class="text-sm uppercase tracking-widest">Type to search your vault</p>
+                </div>
+            </div>
+
+            <div class="bg-[#111] p-2 border-t border-gray-800 flex justify-between items-center text-[10px] text-gray-500 uppercase tracking-widest px-4">
+                <span>The Collection</span>
+                <div class="hidden md:flex gap-3">
+                    <span><i class="fas fa-arrow-up mr-1"></i><i class="fas fa-arrow-down mr-1"></i> Navigate</span>
+                    <span><i class="fas fa-level-down-alt mr-1 transform rotate-90"></i> Select</span>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <main>
         {% if messages %}
@@ -53,6 +148,118 @@
         {% endif %}
         {% block content %}{% endblock %}
     </main>
+
+    <script>
+        const searchModal = document.getElementById('search-modal');
+        const searchPanel = document.getElementById('search-panel');
+        const searchInput = document.getElementById('global-search-input');
+        const searchResults = document.getElementById('search-results');
+        const mobileMenu = document.getElementById('mobile-menu');
+        let searchTimeout;
+
+        function toggleMobileMenu() {
+            mobileMenu.classList.toggle('hidden');
+        }
+
+        function toggleSearch() {
+            if (searchModal.classList.contains('hidden')) {
+                // Open
+                searchModal.classList.remove('hidden');
+                // Small delay to allow display:block to apply before opacity transition
+                setTimeout(() => {
+                    searchModal.classList.remove('opacity-0');
+                    searchPanel.classList.remove('scale-95');
+                    searchPanel.classList.add('scale-100');
+                    searchInput.focus();
+                }, 10);
+                document.body.style.overflow = 'hidden';
+                // Close mobile menu if open
+                if (!mobileMenu.classList.contains('hidden')) {
+                    mobileMenu.classList.add('hidden');
+                }
+            } else {
+                // Close
+                searchModal.classList.add('opacity-0');
+                searchPanel.classList.remove('scale-100');
+                searchPanel.classList.add('scale-95');
+                setTimeout(() => {
+                    searchModal.classList.add('hidden');
+                    searchInput.value = '';
+                    searchResults.innerHTML = '<div class="p-8 text-center text-gray-500"><p class="text-sm uppercase tracking-widest">Type to search your vault</p></div>';
+                }, 200);
+                document.body.style.overflow = '';
+            }
+        }
+
+        // Keyboard Shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Cmd+K or Ctrl+K to open
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                e.preventDefault();
+                toggleSearch();
+            }
+            // ESC to close
+            if (e.key === 'Escape' && !searchModal.classList.contains('hidden')) {
+                toggleSearch();
+            }
+        });
+
+        // Close on click outside
+        searchModal.addEventListener('click', function(e) {
+            if (e.target === searchModal) {
+                toggleSearch();
+            }
+        });
+
+        // Search Logic
+        searchInput.addEventListener('input', function(e) {
+            const query = e.target.value.trim();
+
+            clearTimeout(searchTimeout);
+
+            if (query.length < 2) {
+                searchResults.innerHTML = '<div class="p-8 text-center text-gray-500"><p class="text-sm uppercase tracking-widest">Type to search your vault</p></div>';
+                return;
+            }
+
+            searchTimeout = setTimeout(() => {
+                fetch(`/garage/api/global-search/?q=${encodeURIComponent(query)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.results.length > 0) {
+                            const html = data.results.map(item => `
+                                <a href="${item.url}" class="block p-4 hover:bg-gray-800 border-b border-gray-800 last:border-0 transition-colors group">
+                                    <div class="flex items-center">
+                                        <div class="w-10 h-10 rounded bg-gray-700 flex items-center justify-center text-luxury-gold mr-4 group-hover:bg-gray-600 transition-colors">
+                                            <i class="fas ${item.icon}"></i>
+                                        </div>
+                                        <div>
+                                            <h4 class="text-white font-medium group-hover:text-luxury-gold transition-colors">${item.name}</h4>
+                                            <p class="text-xs text-gray-500 uppercase tracking-wider">${item.category} • ${item.subtext || item.type}</p>
+                                        </div>
+                                        <div class="ml-auto opacity-0 group-hover:opacity-100 transition-opacity text-gray-500">
+                                            <i class="fas fa-chevron-right"></i>
+                                        </div>
+                                    </div>
+                                </a>
+                            `).join('');
+                            searchResults.innerHTML = html;
+                        } else {
+                            searchResults.innerHTML = `
+                                <div class="p-8 text-center text-gray-500">
+                                    <i class="fas fa-search mb-2 text-2xl opacity-50"></i>
+                                    <p class="text-sm">No results found for "${query}"</p>
+                                </div>
+                            `;
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        searchResults.innerHTML = '<div class="p-4 text-red-500 text-center text-sm">Error searching. Please try again.</div>';
+                    });
+            }, 300);
+        });
+    </script>
 
 </body>
 </html>

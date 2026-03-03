@@ -1,0 +1,216 @@
+{% extends "my_garage/base.html" %}
+
+{% block title %}The Winder | Horology Salon{% endblock %}
+
+{% block extra_head %}
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+<style>
+    .salon-font {
+        font-family: 'Cinzel', serif;
+    }
+
+    /* Luxury Wood/Leather Texture Background */
+    .winder-bg {
+        background-color: #1a1a1a;
+        background-image:
+            linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)),
+            url('https://www.transparenttextures.com/patterns/wood-pattern.png'); /* Fallback texture */
+        box-shadow: inset 0 0 100px rgba(0,0,0,0.9);
+    }
+
+    /* The Winder Box Container */
+    .winder-box {
+        background: linear-gradient(145deg, #2a1b12 0%, #1a0f0a 100%); /* Dark Mahogany */
+        border: 8px solid #3e2723;
+        border-radius: 12px;
+        box-shadow:
+            0 20px 50px rgba(0,0,0,0.8),
+            inset 0 0 20px rgba(0,0,0,0.8),
+            inset 0 0 2px rgba(255,255,255,0.1); /* Highlight */
+        position: relative;
+        padding: 20px;
+    }
+
+    /* Glass Lid Effect (Optional overlay) */
+    .winder-box::after {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, transparent 40%, rgba(255,255,255,0.02) 100%);
+        pointer-events: none;
+        border-radius: 4px;
+        z-index: 10;
+    }
+
+    /* Individual Winder Slot */
+    .winder-slot {
+        background: #0f0f0f; /* Deep interior black */
+        border-radius: 50%;
+        aspect-ratio: 1/1;
+        position: relative;
+        box-shadow:
+            inset 0 10px 20px rgba(0,0,0,0.9),
+            0 1px 0 rgba(255,255,255,0.05);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+
+    /* The Cushion (Holder) */
+    .winder-cushion {
+        width: 70%;
+        height: 70%;
+        background: radial-gradient(circle at 30% 30%, #333, #111); /* Leather/Velvet look */
+        border-radius: 15%; /* Soft square/circle hybrid */
+        box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        z-index: 1;
+    }
+
+    /* Empty Slot State */
+    .slot-empty .winder-cushion {
+        background: radial-gradient(circle at 30% 30%, #222, #0a0a0a);
+        border: 1px dashed rgba(255,255,255,0.1);
+        cursor: pointer;
+    }
+
+    .slot-empty:hover .winder-cushion {
+        background: radial-gradient(circle at 30% 30%, #2a2a2a, #111);
+        border-color: #D4AF37;
+        transform: scale(1.02);
+    }
+
+    .add-icon {
+        color: rgba(255,255,255,0.1);
+        transition: color 0.3s ease, transform 0.3s ease;
+    }
+
+    .slot-empty:hover .add-icon {
+        color: #D4AF37;
+        transform: scale(1.1) rotate(90deg);
+    }
+
+    /* Occupied Slot State */
+    .slot-occupied img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 15%;
+        mask-image: radial-gradient(white, black); /* Soften edges slightly */
+    }
+
+    /* Hover Info for Occupied Slot */
+    .watch-info {
+        position: absolute;
+        bottom: -40px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 120%;
+        text-align: center;
+        opacity: 0;
+        transition: opacity 0.3s ease, bottom 0.3s ease;
+        z-index: 20;
+        pointer-events: none;
+    }
+
+    .winder-slot:hover .watch-info {
+        opacity: 1;
+        bottom: 10px;
+    }
+
+    .winder-slot:hover {
+        z-index: 20; /* Bring above glass */
+    }
+
+    /* LED Status Light */
+    .status-led {
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background-color: #00ff00;
+        box-shadow: 0 0 5px #00ff00;
+        position: absolute;
+        bottom: 15px;
+        left: 50%;
+        transform: translateX(-50%);
+        opacity: 0.5;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="winder-bg min-h-screen flex flex-col items-center justify-center py-12 font-sans">
+
+    <!-- Header -->
+    <div class="text-center mb-10 z-10">
+        <h1 class="text-3xl md:text-4xl font-bold salon-font text-luxury-gold mb-2 tracking-widest">The Winder</h1>
+        <p class="text-white/30 text-xs uppercase tracking-[0.3em]">Automatic Collection Management</p>
+    </div>
+
+    <!-- The Winder Box -->
+    <div class="winder-box w-full max-w-4xl mx-4">
+
+        <!-- 4x2 Grid for 8 Slots -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 p-4 md:p-8 bg-[#0a0503] rounded-lg shadow-inner border border-white/5">
+
+            {% for slot in slots %}
+                {% if slot.watch %}
+                    <!-- Occupied Slot -->
+                    <a href="{% url 'timepieces:timepiece_detail' slot.watch.id %}" class="winder-slot slot-occupied group">
+                        <div class="winder-cushion">
+                            {% if slot.watch.photo %}
+                                <img src="{{ slot.watch.photo.url }}" alt="{{ slot.watch.model }}">
+                            {% else %}
+                                <div class="text-white/20 text-xs text-center">No Photo</div>
+                            {% endif %}
+                        </div>
+                        <div class="status-led"></div>
+
+                        <!-- Hover Info -->
+                        <div class="watch-info bg-black/80 backdrop-blur-md p-2 rounded border border-luxury-gold/30">
+                            <p class="text-luxury-gold text-[10px] uppercase font-bold">{{ slot.watch.brand }}</p>
+                            <p class="text-white text-[9px] truncate">{{ slot.watch.model }}</p>
+                        </div>
+                    </a>
+                {% else %}
+                    <!-- Empty Slot -->
+                    <div class="winder-slot slot-empty">
+                        <a href="{% url 'timepieces:timepiece_add' %}" class="winder-cushion flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 add-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4" />
+                            </svg>
+                        </a>
+                        <div class="absolute bottom-4 text-[9px] text-white/10 uppercase tracking-widest pointer-events-none">Empty</div>
+                    </div>
+                {% endif %}
+            {% endfor %}
+
+        </div>
+
+        <!-- Box Hardware Details -->
+        <div class="flex justify-between items-center mt-4 px-4">
+            <div class="text-[10px] text-white/20 uppercase tracking-widest">
+                Temp: 68°F • Humidity: 45%
+            </div>
+            <div class="flex gap-2">
+                <div class="w-2 h-2 rounded-full bg-red-900"></div>
+                <div class="w-2 h-2 rounded-full bg-green-900 shadow-[0_0_5px_#0f0]"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Navigation Footer -->
+    <div class="mt-12 flex gap-6 z-10">
+        <a href="{% url 'home' %}" class="text-white/40 hover:text-luxury-gold text-xs uppercase tracking-widest transition-colors">
+            &larr; Back to Vault
+        </a>
+    </div>
+
+</div>
+{% endblock %}

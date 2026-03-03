@@ -1,0 +1,97 @@
+{% extends "my_garage/base.html" %}
+
+{% block title %}Login | The Collection{% endblock %}
+
+{% block extra_head %}
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+<style>
+    .salon-font {
+        font-family: 'Cinzel', serif;
+    }
+    .salon-bg {
+        background-color: #0B1026;
+        background-image: radial-gradient(circle at 50% 0%, #1a2342 0%, #0B1026 70%);
+    }
+    .login-card {
+        background: rgba(21, 27, 51, 0.6);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+    }
+    .salon-input {
+        background-color: #151b33;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #e5e5e5;
+        transition: all 0.3s ease;
+    }
+    .salon-input:focus {
+        border-color: #D4AF37;
+        box-shadow: 0 0 0 1px #D4AF37;
+        outline: none;
+    }
+    .salon-btn {
+        background: linear-gradient(to bottom, #D4AF37, #AA8C2C);
+        color: #1a0f0a;
+        font-weight: bold;
+        border: 1px solid #AA8C2C;
+        transition: all 0.3s ease;
+    }
+    .salon-btn:hover {
+        background: linear-gradient(to bottom, #E5C158, #C5A035);
+        box-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="salon-bg min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full space-y-8 login-card p-10 rounded-xl">
+        <div>
+            <h2 class="mt-6 text-center text-3xl font-extrabold text-luxury-gold salon-font tracking-wider">
+                The Collection
+            </h2>
+            <p class="mt-2 text-center text-sm text-gray-400 uppercase tracking-widest">
+                Sign in to your collection
+            </p>
+        </div>
+
+        <form class="mt-8 space-y-6" method="post" action="{% url 'login' %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ next }}">
+
+            {% if form.errors %}
+                <div class="bg-red-900/30 border border-red-500/50 text-red-200 px-4 py-3 rounded relative" role="alert">
+                    <span class="block sm:inline text-sm">Your username and password didn't match. Please try again.</span>
+                </div>
+            {% endif %}
+
+            <div class="rounded-md shadow-sm -space-y-px">
+                <div class="mb-4">
+                    <label for="id_username" class="block text-xs uppercase tracking-widest text-gray-400 mb-2">Username</label>
+                    <input id="id_username" name="username" type="text" required
+                           class="salon-input appearance-none rounded relative block w-full px-3 py-3 placeholder-gray-500 focus:z-10 sm:text-sm"
+                           placeholder="Enter your username">
+                </div>
+                <div>
+                    <label for="id_password" class="block text-xs uppercase tracking-widest text-gray-400 mb-2">Password</label>
+                    <input id="id_password" name="password" type="password" required
+                           class="salon-input appearance-none rounded relative block w-full px-3 py-3 placeholder-gray-500 focus:z-10 sm:text-sm"
+                           placeholder="Enter your password">
+                </div>
+            </div>
+
+            <div>
+                <button type="submit" class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md salon-btn uppercase tracking-widest">
+                    Sign in
+                </button>
+            </div>
+
+            <div class="text-center mt-4">
+                <a href="{% url 'register' %}" class="text-xs text-luxury-gold hover:text-white uppercase tracking-widest transition-colors">
+                    New to The Collection? Create an account
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

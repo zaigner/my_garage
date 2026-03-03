@@ -1,16 +1,9 @@
+{% extends "my_garage/base.html" %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Collection | My Garage</title>
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <!-- Base Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Pinyon+Script&family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+{% block title %}The Collection | My Garage{% endblock %}
 
+{% block extra_head %}
     <!-- Manufacturer Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Michroma&display=swap" rel="stylesheet"> <!-- Porsche/Audi/Modern -->
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet"> <!-- Luxury/British -->
@@ -18,17 +11,16 @@
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet"> <!-- JDM/Tech -->
     <link href="https://fonts.googleapis.com/css2?family=Rye&display=swap" rel="stylesheet"> <!-- Classic American -->
 
-    <script src="https://cdn.tailwindcss.com"></script>
-
     <script>
+        // Override and extend tailwind config from base.html
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        'garage-wall': '#2C2C2C',     /* Concrete Gray */
-                        'garage-floor': '#0a0a0a',    /* Deep Black */
+                        'garage-wall': '#2C2C2C',
+                        'garage-floor': '#0a0a0a',
                         'luxury-gold': '#D4AF37',
-                        'luxury-red': '#8B0000',      /* Deep Racing Red */
+                        'luxury-red': '#8B0000',
                     },
                     fontFamily: {
                         'script': ['"Pinyon Script"', 'cursive'],
@@ -46,22 +38,22 @@
     </script>
 
     <style>
-        /* 1. RACE DECK FLOOR PATTERN */
-        .race-deck-floor {
-            background-color: #050505;
+        /* Styles from vehicle_detail.html */
+        .race-deck-bg {
+            background-color: #111;
             background-image:
-                linear-gradient(#151515 2px, transparent 2px),
-                linear-gradient(90deg, #151515 2px, transparent 2px);
-            background-size: 50px 50px;
-            perspective: 1000px; /* Adds 3D depth */
+                linear-gradient(45deg, #1a1a1a 25%, transparent 25%, transparent 75%, #1a1a1a 75%, #1a1a1a),
+                linear-gradient(45deg, #1a1a1a 25%, transparent 25%, transparent 75%, #1a1a1a 75%, #1a1a1a);
+            background-position: 0 0, 10px 10px;
+            background-size: 20px 20px;
+        }
+        .cabinet-finish {
+            background: linear-gradient(180deg, #262626 0%, #171717 100%);
+            border: 1px solid #404040;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
         }
 
-        /* 2. SPOTLIGHT WALL EFFECT */
-        .garage-wall {
-            background: radial-gradient(circle at 50% 30%, #4a4a4a, #2C2C2C 60%, #1a1a1a 100%);
-        }
-
-        /* 3. CAROUSEL TRANSITIONS */
+        /* Styles from original garage.html */
         .slide {
             display: none;
             animation: fadeIn 0.8s ease-in-out;
@@ -75,24 +67,22 @@
             to { opacity: 1; transform: scale(1); }
         }
     </style>
-</head>
-<body class="h-screen w-screen overflow-hidden bg-black flex flex-col">
+{% endblock %}
 
-    <nav class="absolute top-0 w-full z-50 p-6 grid grid-cols-3 items-center text-white/50">
-        <div class="text-left">
-            <a href="{% url 'home' %}" class="hover:text-white transition-colors">&larr; Back to Home</a>
+{% block content %}
+<div class="race-deck-bg min-h-screen text-gray-200 font-sans">
+    <div class="container mx-auto px-4 py-8">
+
+        <!-- Header Section -->
+        <div class="flex flex-col md:flex-row justify-between items-center mb-8 border-b border-gray-700 pb-4">
+            <div class="flex flex-wrap gap-2">
+                <a href="{% url 'home' %}" class="px-4 py-2 bg-gray-800 text-gray-200 rounded hover:bg-gray-700 border border-gray-600 uppercase text-xs font-bold tracking-wider transition-colors shadow-md">&larr; Home</a>
+                <a href="{% url 'my_garage:vehicle_add' %}" class="px-4 py-2 bg-red-700 text-white rounded hover:bg-red-600 border border-red-800 uppercase text-xs font-bold tracking-wider transition-colors shadow-md">Add Vehicle &rarr;</a>
+            </div>
         </div>
-        <div class="text-center text-3xl text-luxury-gold font-script">My Garage</div>
-        <div class="text-right">
-            <a href="{% url 'my_garage:vehicle_add' %}" class="hover:text-white transition-colors">Add Vehicle &rarr;</a>
-        </div>
-    </nav>
 
-    <div class="relative w-full h-full flex flex-col">
-
-        <div class="garage-wall h-[65%] w-full relative flex items-end justify-center pb-12 border-b-8 border-luxury-red shadow-[0_0_50px_rgba(0,0,0,0.8)] z-10">
-
-            <div id="carousel" class="w-full max-w-5xl px-12 relative">
+        <div class="cabinet-finish p-6 rounded-lg relative">
+            <div id="carousel" class="w-full relative">
 
                 <button onclick="prevSlide()" class="absolute left-0 top-1/2 -translate-y-1/2 p-4 text-white/20 hover:text-luxury-gold hover:scale-110 transition-all z-50">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-16 h-16">
@@ -110,10 +100,10 @@
                     <a href="{% url 'my_garage:vehicle_detail' vehicle.id %}">
                         {% if vehicle.photo %}
                             <img src="{{ vehicle.photo.url }}"
-                                 class="mx-auto h-[40vh] object-contain drop-shadow-2xl hover:scale-105 transition-transform duration-500"
+                                 class="mx-auto h-[60vh] object-contain drop-shadow-2xl hover:scale-105 transition-transform duration-500"
                                  alt="{{ vehicle }}">
                         {% else %}
-                            <div class="mx-auto h-[40vh] w-full max-w-2xl bg-black/20 flex items-center justify-center border-2 border-dashed border-white/10 rounded-lg">
+                            <div class="mx-auto h-[60vh] w-full max-w-3xl bg-black/20 flex items-center justify-center border-2 border-dashed border-white/10 rounded-lg">
                                 <div class="text-center text-white/30">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -124,7 +114,6 @@
                         {% endif %}
                     </a>
                     <div class="mt-4">
-                        <!-- Dynamic Font Application -->
                         <h1 class="text-5xl md:text-7xl text-white drop-shadow-lg manufacturer-font" data-make="{{ vehicle.make|lower }}">{{ vehicle.year }} {{ vehicle.make }}</h1>
                         <p class="text-luxury-gold font-sans tracking-[0.2em] text-sm mt-2 uppercase">
                             {{ vehicle.model }} {{ vehicle.trim }}
@@ -140,7 +129,7 @@
                 </div>
                 {% empty %}
                 <div class="slide active text-center">
-                    <div class="mx-auto h-[40vh] flex items-center justify-center text-white/30">
+                    <div class="mx-auto h-[60vh] flex items-center justify-center text-white/30">
                         <p>No vehicles in garage</p>
                     </div>
                     <div class="mt-4">
@@ -149,14 +138,9 @@
                     </div>
                 </div>
                 {% endfor %}
-
             </div>
-        </div>
 
-        <div class="race-deck-floor h-[35%] w-full relative">
-            <div class="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-black/50 to-transparent pointer-events-none"></div>
-
-            <div class="absolute bottom-10 w-full text-center">
+            <div class="mt-12 text-center">
                 <div class="inline-flex gap-8 text-white/30 text-xs tracking-widest uppercase">
                     <div>Valuation: <span class="text-white" id="current-valuation">$0</span></div>
                     <div>Location: <span class="text-white">Main Garage</span></div>
@@ -164,93 +148,86 @@
                 </div>
             </div>
         </div>
-
     </div>
+</div>
 
-    <script>
-        let currentSlide = 0;
-        const slides = document.querySelectorAll('.slide');
-        const valuationEl = document.getElementById('current-valuation');
+<script>
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    const valuationEl = document.getElementById('current-valuation');
 
-        // Font Mapping Logic
-        function applyManufacturerFonts() {
-            const headers = document.querySelectorAll('.manufacturer-font');
-            headers.forEach(header => {
-                const make = header.getAttribute('data-make');
+    // Font Mapping Logic
+    function applyManufacturerFonts() {
+        const headers = document.querySelectorAll('.manufacturer-font');
+        headers.forEach(header => {
+            const make = header.getAttribute('data-make');
+            let fontClass = 'font-sans'; // Default fallback
 
-                // Default fallback
-                let fontClass = 'font-sans';
-
-                if (['porsche', 'audi', 'tesla', 'bmw', 'mercedes', 'volkswagen'].includes(make)) {
-                    fontClass = 'font-porsche'; // Michroma (Euro/Modern)
-                } else if (['ferrari', 'lamborghini', 'maserati', 'alfa romeo', 'bugatti'].includes(make)) {
-                    fontClass = 'font-muscle'; // Racing Sans One (Exotic/Sport) - placeholder, could use others
-                } else if (['ford', 'chevrolet', 'dodge', 'jeep', 'pontiac', 'plymouth'].includes(make)) {
-                    fontClass = 'font-muscle'; // Racing Sans One (Muscle)
-                } else if (['toyota', 'honda', 'nissan', 'mazda', 'subaru', 'mitsubishi', 'lexus', 'infiniti', 'acura'].includes(make)) {
-                    fontClass = 'font-tech'; // Orbitron (JDM/Tech)
-                } else if (['rolls-royce', 'bentley', 'aston martin', 'jaguar', 'land rover'].includes(make)) {
-                    fontClass = 'font-luxury'; // Cinzel (British Luxury)
-                } else if (['cadillac', 'lincoln', 'buick'].includes(make)) {
-                    fontClass = 'font-classic'; // Rye (Classic American Luxury) - or Cinzel
-                }
-
-                header.classList.add(fontClass);
-            });
-        }
-
-        function updateInfo(index) {
-            if (slides.length === 0) return;
-            const slide = slides[index];
-            const value = slide.getAttribute('data-value');
-            if (value) {
-                // Format currency
-                const formatter = new Intl.NumberFormat('en-US', {
-                    style: 'currency',
-                    currency: 'USD',
-                    maximumFractionDigits: 0
-                });
-                valuationEl.textContent = formatter.format(value);
-            } else {
-                valuationEl.textContent = '---';
+            if (['porsche', 'audi', 'tesla', 'bmw', 'mercedes', 'volkswagen'].includes(make)) {
+                fontClass = 'font-porsche';
+            } else if (['ferrari', 'lamborghini', 'maserati', 'alfa romeo', 'bugatti'].includes(make)) {
+                fontClass = 'font-muscle';
+            } else if (['ford', 'chevrolet', 'dodge', 'jeep', 'pontiac', 'plymouth'].includes(make)) {
+                fontClass = 'font-muscle';
+            } else if (['toyota', 'honda', 'nissan', 'mazda', 'subaru', 'mitsubishi', 'lexus', 'infiniti', 'acura'].includes(make)) {
+                fontClass = 'font-tech';
+            } else if (['rolls-royce', 'bentley', 'aston martin', 'jaguar', 'land rover'].includes(make)) {
+                fontClass = 'font-luxury';
+            } else if (['cadillac', 'lincoln', 'buick'].includes(make)) {
+                fontClass = 'font-classic';
             }
-        }
-
-        function showSlide(index) {
-            slides.forEach((slide, i) => {
-                slide.classList.remove('active');
-                if (i === index) {
-                    slide.classList.add('active');
-                }
-            });
-            updateInfo(index);
-        }
-
-        function nextSlide() {
-            if (slides.length === 0) return;
-            currentSlide = (currentSlide + 1) % slides.length;
-            showSlide(currentSlide);
-        }
-
-        function prevSlide() {
-            if (slides.length === 0) return;
-            currentSlide = (currentSlide - 1 + slides.length) % slides.length;
-            showSlide(currentSlide);
-        }
-
-        // Keyboard Navigation
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'ArrowRight') nextSlide();
-            if (e.key === 'ArrowLeft') prevSlide();
+            header.classList.add(fontClass);
         });
+    }
 
-        // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
-            applyManufacturerFonts();
-            if (slides.length > 0) {
-                updateInfo(0);
+    function updateInfo(index) {
+        if (slides.length === 0) return;
+        const slide = slides[index];
+        const value = slide.getAttribute('data-value');
+        if (value) {
+            const formatter = new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                maximumFractionDigits: 0
+            });
+            valuationEl.textContent = formatter.format(value);
+        } else {
+            valuationEl.textContent = '---';
+        }
+    }
+
+    function showSlide(index) {
+        slides.forEach((slide, i) => {
+            slide.classList.remove('active');
+            if (i === index) {
+                slide.classList.add('active');
             }
         });
-    </script>
-</body>
-</html>
+        updateInfo(index);
+    }
+
+    function nextSlide() {
+        if (slides.length === 0) return;
+        currentSlide = (currentSlide + 1) % slides.length;
+        showSlide(currentSlide);
+    }
+
+    function prevSlide() {
+        if (slides.length === 0) return;
+        currentSlide = (currentSlide - 1 + slides.length) % slides.length;
+        showSlide(currentSlide);
+    }
+
+    // Keyboard Navigation
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'ArrowRight') nextSlide();
+        if (e.key === 'ArrowLeft') prevSlide();
+    });
+
+    // Initialize
+    applyManufacturerFonts();
+    if (slides.length > 0) {
+        showSlide(0);
+    }
+</script>
+{% endblock %}

@@ -4,6 +4,8 @@
 {% block title %}{{ collection_type.name }}{% endblock %}
 
 {% block extra_head %}
+<!-- If a custom UI theme exists, we might want to inject its styles or scripts here if they were separated.
+     For now, we assume the theme is self-contained HTML/Tailwind/Alpine. -->
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
 <style>
     .salon-font {
@@ -24,97 +26,119 @@
 {% endblock %}
 
 {% block content %}
-<div class="salon-bg min-h-screen text-gray-200 font-sans">
-    <div class="container mx-auto px-4 py-12">
+    {% if rendered_ui %}
+        <!-- Render the Custom AI-Generated Theme -->
+        <div id="custom-theme-root" class="min-h-screen relative">
+            {{ rendered_ui|safe }}
 
-        <!-- Header -->
-        <div class="flex flex-col md:flex-row justify-between items-center mb-12 border-b border-white/10 pb-6">
-            <div>
-                <a href="{% url 'collections:collection_type_list' %}" class="text-gray-400 hover:text-luxury-gold text-xs uppercase tracking-widest transition-colors mb-4 inline-block">
-                    ← Back to Collections
+            <!-- Safety Navigation Bar (Always visible for custom themes) -->
+            <div class="fixed bottom-6 right-6 z-50 flex gap-2">
+                <a href="{% url 'collections:collection_type_list' %}"
+                   class="bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-full shadow-lg border border-gray-600 text-sm font-medium transition-colors flex items-center">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                    Back
                 </a>
-                <h1 class="text-4xl md:text-5xl font-bold salon-font text-luxury-gold mb-2">
-                    <i class="{{ collection_type.icon }} mr-3"></i>
-                    {{ collection_type.name }}
-                </h1>
-                {% if collection_type.description %}
-                    <p class="text-gray-400 text-sm uppercase tracking-widest">{{ collection_type.description }}</p>
-                {% endif %}
-            </div>
-            <div class="mt-6 md:mt-0 flex gap-4">
-                <a href="{% url 'collections:collection_type_list' %}" class="px-6 py-2 border border-white/20 text-white/70 hover:text-white hover:border-white/50 rounded-sm uppercase text-xs tracking-widest transition-colors">
-                    Back to All Collections
-                </a>
-                <a href="{% url 'collections:collection_item_add' collection_type.slug %}" class="px-6 py-2 bg-luxury-gold text-black font-bold rounded-sm uppercase text-xs tracking-widest hover:bg-yellow-600 transition-colors">
-                    + Add Item
+                <a href="{% url 'collections:collection_item_add' collection_type.slug %}"
+                   class="bg-luxury-gold hover:bg-yellow-600 text-black px-4 py-2 rounded-full shadow-lg border border-yellow-600 text-sm font-bold transition-colors flex items-center">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    Add Item
                 </a>
             </div>
         </div>
+    {% else %}
+        <!-- Fallback to Default Salon Theme -->
+        <div class="salon-bg min-h-screen text-gray-200 font-sans">
+            <div class="container mx-auto px-4 py-12">
 
-        {% if items %}
-            <!-- Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {% for item in items %}
-                    <a href="{% url 'collections:collection_item_detail' collection_type.slug item.id %}" class="block group">
-                        <div class="item-card bg-[#151b33] border border-white/5 rounded-lg overflow-hidden relative">
-                            <!-- Image Container -->
-                            <div class="aspect-[4/5] overflow-hidden bg-gray-900 relative">
-                                {% if item.photo %}
-                                    <img src="{{ item.photo.url }}" alt="{{ item.name }}" class="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700">
-                                {% else %}
-                                    <div class="w-full h-full flex items-center justify-center text-white/20">
-                                        <i class="{{ collection_type.icon }} text-6xl"></i>
+                <!-- Header -->
+                <div class="flex flex-col md:flex-row justify-between items-center mb-12 border-b border-white/10 pb-6">
+                    <div>
+                        <a href="{% url 'collections:collection_type_list' %}" class="text-gray-400 hover:text-luxury-gold text-xs uppercase tracking-widest transition-colors mb-4 inline-block">
+                            ← Back to Collections
+                        </a>
+                        <h1 class="text-4xl md:text-5xl font-bold salon-font text-luxury-gold mb-2">
+                            <i class="{{ collection_type.icon }} mr-3"></i>
+                            {{ collection_type.name }}
+                        </h1>
+                        {% if collection_type.description %}
+                            <p class="text-gray-400 text-sm uppercase tracking-widest">{{ collection_type.description }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="mt-6 md:mt-0 flex gap-4">
+                        <a href="{% url 'collections:collection_type_list' %}" class="px-6 py-2 border border-white/20 text-white/70 hover:text-white hover:border-white/50 rounded-sm uppercase text-xs tracking-widest transition-colors">
+                            Back to All Collections
+                        </a>
+                        <a href="{% url 'collections:collection_item_add' collection_type.slug %}" class="px-6 py-2 bg-luxury-gold text-black font-bold rounded-sm uppercase text-xs tracking-widest hover:bg-yellow-600 transition-colors">
+                            + Add Item
+                        </a>
+                    </div>
+                </div>
+
+                {% if items %}
+                    <!-- Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        {% for item in items %}
+                            <a href="{% url 'collections:collection_item_detail' collection_type.slug item.id %}" class="block group">
+                                <div class="item-card bg-[#151b33] border border-white/5 rounded-lg overflow-hidden relative">
+                                    <!-- Image Container -->
+                                    <div class="aspect-[4/5] overflow-hidden bg-gray-900 relative">
+                                        {% if item.photo %}
+                                            <img src="{{ item.photo.url }}" alt="{{ item.name }}" class="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700">
+                                        {% else %}
+                                            <div class="w-full h-full flex items-center justify-center text-white/20">
+                                                <i class="{{ collection_type.icon }} text-6xl"></i>
+                                            </div>
+                                        {% endif %}
+
+                                        <!-- Overlay Gradient -->
+                                        <div class="absolute inset-0 bg-gradient-to-t from-[#151b33] via-transparent to-transparent opacity-80"></div>
                                     </div>
-                                {% endif %}
 
-                                <!-- Overlay Gradient -->
-                                <div class="absolute inset-0 bg-gradient-to-t from-[#151b33] via-transparent to-transparent opacity-80"></div>
-                            </div>
+                                    <!-- Details -->
+                                    <div class="p-6 relative -mt-12 z-10">
+                                        <h3 class="text-2xl salon-font text-white mb-4">{{ item.name }}</h3>
 
-                            <!-- Details -->
-                            <div class="p-6 relative -mt-12 z-10">
-                                <h3 class="text-2xl salon-font text-white mb-4">{{ item.name }}</h3>
+                                        <!-- Display custom fields -->
+                                        <div class="space-y-2 mb-4">
+                                            {% for field_name in collection_type.list_display_fields %}
+                                                {% with value=item.custom_fields|get_item:field_name %}
+                                                    {% if value %}
+                                                        <p class="text-xs text-gray-400">
+                                                            <span class="uppercase tracking-widest text-[10px] text-gray-600">{{ field_name|title }}:</span>
+                                                            <span class="text-gray-300 ml-2">{{ value }}</span>
+                                                        </p>
+                                                    {% endif %}
+                                                {% endwith %}
+                                            {% endfor %}
+                                        </div>
 
-                                <!-- Display custom fields -->
-                                <div class="space-y-2 mb-4">
-                                    {% for field_name in collection_type.list_display_fields %}
-                                        {% with value=item.custom_fields|get_item:field_name %}
-                                            {% if value %}
-                                                <p class="text-xs text-gray-400">
-                                                    <span class="uppercase tracking-widest text-[10px] text-gray-600">{{ field_name|title }}:</span>
-                                                    <span class="text-gray-300 ml-2">{{ value }}</span>
-                                                </p>
+                                        <!-- Financial info -->
+                                        <div class="border-t border-white/10 pt-4">
+                                            {% if item.current_market_value %}
+                                                <span class="block uppercase tracking-widest text-[10px] text-gray-600 mb-1">Current Value</span>
+                                                <span class="font-mono text-white text-xl">${{ item.current_market_value|floatformat:2 }}</span>
+                                            {% elif item.purchase_price %}
+                                                <span class="block uppercase tracking-widest text-[10px] text-gray-600 mb-1">Purchase Price</span>
+                                                <span class="font-mono text-gray-300 text-xl">${{ item.purchase_price|floatformat:2 }}</span>
                                             {% endif %}
-                                        {% endwith %}
-                                    {% endfor %}
+                                        </div>
+                                    </div>
                                 </div>
-
-                                <!-- Financial info -->
-                                <div class="border-t border-white/10 pt-4">
-                                    {% if item.current_market_value %}
-                                        <span class="block uppercase tracking-widest text-[10px] text-gray-600 mb-1">Current Value</span>
-                                        <span class="font-mono text-white text-xl">${{ item.current_market_value|floatformat:2 }}</span>
-                                    {% elif item.purchase_price %}
-                                        <span class="block uppercase tracking-widest text-[10px] text-gray-600 mb-1">Purchase Price</span>
-                                        <span class="font-mono text-gray-300 text-xl">${{ item.purchase_price|floatformat:2 }}</span>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                    </a>
-                {% endfor %}
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="col-span-full py-24 text-center border border-dashed border-white/10 rounded-lg bg-[#151b33]">
+                        <i class="{{ collection_type.icon }} text-6xl text-gray-600 mb-4"></i>
+                        <h3 class="text-xl salon-font text-gray-400 mb-2">No Items Yet</h3>
+                        <p class="text-gray-600 text-sm mb-6">Add your first item to this collection.</p>
+                        <a href="{% url 'collections:collection_item_add' collection_type.slug %}"
+                           class="px-6 py-2 bg-luxury-gold text-black font-bold rounded-sm uppercase text-xs tracking-widest hover:bg-yellow-600 transition-colors inline-block">
+                            Add First Item
+                        </a>
+                    </div>
+                {% endif %}
             </div>
-        {% else %}
-            <div class="col-span-full py-24 text-center border border-dashed border-white/10 rounded-lg bg-[#151b33]">
-                <i class="{{ collection_type.icon }} text-6xl text-gray-600 mb-4"></i>
-                <h3 class="text-xl salon-font text-gray-400 mb-2">No Items Yet</h3>
-                <p class="text-gray-600 text-sm mb-6">Add your first item to this collection.</p>
-                <a href="{% url 'collections:collection_item_add' collection_type.slug %}"
-                   class="px-6 py-2 bg-luxury-gold text-black font-bold rounded-sm uppercase text-xs tracking-widest hover:bg-yellow-600 transition-colors inline-block">
-                    Add First Item
-                </a>
-            </div>
-        {% endif %}
-    </div>
-</div>
+        </div>
+    {% endif %}
 {% endblock %}

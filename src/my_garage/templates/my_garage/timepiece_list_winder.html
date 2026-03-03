@@ -4,213 +4,250 @@
 
 {% block extra_head %}
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 <style>
+    [x-cloak] { display: none !important; }
     .salon-font {
         font-family: 'Cinzel', serif;
-    }
-
-    /* Luxury Wood/Leather Texture Background */
-    .winder-bg {
-        background-color: #1a1a1a;
-        background-image:
-            linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)),
-            url('https://www.transparenttextures.com/patterns/wood-pattern.png'); /* Fallback texture */
-        box-shadow: inset 0 0 100px rgba(0,0,0,0.9);
-    }
-
-    /* The Winder Box Container */
-    .winder-box {
-        background: linear-gradient(145deg, #2a1b12 0%, #1a0f0a 100%); /* Dark Mahogany */
-        border: 8px solid #3e2723;
-        border-radius: 12px;
-        box-shadow:
-            0 20px 50px rgba(0,0,0,0.8),
-            inset 0 0 20px rgba(0,0,0,0.8),
-            inset 0 0 2px rgba(255,255,255,0.1); /* Highlight */
-        position: relative;
-        padding: 20px;
-    }
-
-    /* Glass Lid Effect (Optional overlay) */
-    .winder-box::after {
-        content: '';
-        position: absolute;
-        top: 0; left: 0; right: 0; bottom: 0;
-        background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, transparent 40%, rgba(255,255,255,0.02) 100%);
-        pointer-events: none;
-        border-radius: 4px;
-        z-index: 10;
-    }
-
-    /* Individual Winder Slot */
-    .winder-slot {
-        background: #0f0f0f; /* Deep interior black */
-        border-radius: 50%;
-        aspect-ratio: 1/1;
-        position: relative;
-        box-shadow:
-            inset 0 10px 20px rgba(0,0,0,0.9),
-            0 1px 0 rgba(255,255,255,0.05);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        overflow: hidden;
-        transition: all 0.3s ease;
-    }
-
-    /* The Cushion (Holder) */
-    .winder-cushion {
-        width: 70%;
-        height: 70%;
-        background: radial-gradient(circle at 30% 30%, #333, #111); /* Leather/Velvet look */
-        border-radius: 15%; /* Soft square/circle hybrid */
-        box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        position: relative;
-        z-index: 1;
-    }
-
-    /* Empty Slot State */
-    .slot-empty .winder-cushion {
-        background: radial-gradient(circle at 30% 30%, #222, #0a0a0a);
-        border: 1px dashed rgba(255,255,255,0.1);
-        cursor: pointer;
-    }
-
-    .slot-empty:hover .winder-cushion {
-        background: radial-gradient(circle at 30% 30%, #2a2a2a, #111);
-        border-color: #D4AF37;
-        transform: scale(1.02);
-    }
-
-    .add-icon {
-        color: rgba(255,255,255,0.1);
-        transition: color 0.3s ease, transform 0.3s ease;
-    }
-
-    .slot-empty:hover .add-icon {
-        color: #D4AF37;
-        transform: scale(1.1) rotate(90deg);
-    }
-
-    /* Occupied Slot State */
-    .slot-occupied img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        border-radius: 15%;
-        mask-image: radial-gradient(white, black); /* Soften edges slightly */
-    }
-
-    /* Hover Info for Occupied Slot */
-    .watch-info {
-        position: absolute;
-        bottom: -40px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 120%;
-        text-align: center;
-        opacity: 0;
-        transition: opacity 0.3s ease, bottom 0.3s ease;
-        z-index: 20;
-        pointer-events: none;
-    }
-
-    .winder-slot:hover .watch-info {
-        opacity: 1;
-        bottom: 10px;
-    }
-
-    .winder-slot:hover {
-        z-index: 20; /* Bring above glass */
-    }
-
-    /* LED Status Light */
-    .status-led {
-        width: 4px;
-        height: 4px;
-        border-radius: 50%;
-        background-color: #00ff00;
-        box-shadow: 0 0 5px #00ff00;
-        position: absolute;
-        bottom: 15px;
-        left: 50%;
-        transform: translateX(-50%);
-        opacity: 0.5;
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="winder-bg min-h-screen flex flex-col items-center justify-center py-12 font-sans">
+<div x-data="{
+    modalOpen: false,
+    selectedSlot: null,
+    toggleWinder(slotId) {
+        // Logic to toggle winding state would go here via HTMX or Fetch
+        console.log('Toggling winder:', slotId);
+    }
+}" class="min-h-screen bg-slate-950 text-slate-200 font-sans selection:bg-amber-500/30">
 
-    <!-- Header -->
-    <div class="text-center mb-10 z-10">
-        <h1 class="text-3xl md:text-4xl font-bold salon-font text-luxury-gold mb-2 tracking-widest">The Winder</h1>
-        <p class="text-white/30 text-xs uppercase tracking-[0.3em]">Automatic Collection Management</p>
-    </div>
+    <header class="border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-amber-500 rounded-lg flex items-center justify-center shadow-lg shadow-amber-500/20">
+                    <svg class="w-6 h-6 text-slate-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight text-white uppercase">ChronoVault <span class="text-amber-500 text-xs align-top ml-1">v2.4</span></h1>
+                    <p class="text-xs text-slate-500 font-mono tracking-widest uppercase">Precision Maintenance System</p>
+                </div>
+            </div>
 
-    <!-- The Winder Box -->
-    <div class="winder-box w-full max-w-4xl mx-4">
+            <div class="hidden md:flex items-center gap-8">
+                <div class="text-right">
+                    <p class="text-[10px] uppercase text-slate-500 font-bold tracking-tighter">Active Rotors</p>
+                    <p class="text-xl font-mono text-amber-500 leading-none">{{ timepieces|length }}<span class="text-slate-600">/</span>{{ slots|length }}</p>
+                </div>
+                <div class="h-8 w-px bg-slate-800"></div>
+                <button class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-all border border-slate-700">
+                    System Logs
+                </button>
+            </div>
+        </div>
+    </header>
 
-        <!-- 4x2 Grid for 8 Slots -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 p-4 md:p-8 bg-[#0a0503] rounded-lg shadow-inner border border-white/5">
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+            <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
+                <p class="text-slate-500 text-xs font-bold uppercase tracking-widest mb-2">Collection Value</p>
+                <p class="text-2xl font-light text-white">$142,500 <span class="text-xs text-emerald-500 font-mono">+2.4%</span></p>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
+                <p class="text-slate-500 text-xs font-bold uppercase tracking-widest mb-2">Avg. TPD Setting</p>
+                <p class="text-2xl font-light text-white">650 <span class="text-sm text-slate-500 uppercase tracking-tighter ml-1">Turns Per Day</span></p>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl relative overflow-hidden group">
+                <div class="relative z-10">
+                    <p class="text-slate-500 text-xs font-bold uppercase tracking-widest mb-2">Next Service</p>
+                    <p class="text-2xl font-light text-white">184 <span class="text-sm text-slate-500 uppercase tracking-tighter ml-1">Days</span></p>
+                </div>
+                <div class="absolute right-[-20px] bottom-[-20px] opacity-10 group-hover:opacity-20 transition-opacity">
+                    <svg class="w-32 h-32 text-amber-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 15.5A3.5 3.5 0 0 1 8.5 12 3.5 3.5 0 0 1 12 8.5a3.5 3.5 0 0 1 3.5 3.5 3.5 3.5 0 0 1-3.5 3.5m7.43-2.53c.04-.32.07-.64.07-.97 0-.33-.03-.66-.07-1l2.11-1.63c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.31-.61-.22l-2.49 1c-.52-.39-1.09-.73-1.69-.98l-.37-2.65A.506.506 0 0 0 14 2h-4c-.25 0-.46.18-.5.42l-.37 2.65c-.6.25-1.17.59-1.69.98l-2.49-1c-.22-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64L4.57 11c-.04.34-.07.67-.07 1s.03.66.07 1l-2.11 1.63c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.31.61.22l2.49-1c.52.39 1.09.73 1.69.98l.37 2.65c.04.24.25.42.5.42h4c.25 0 .46-.18.5-.42l.37-2.65c.6-.25 1.17-.59 1.69-.98l2.49 1c.22.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.63Z"/></svg>
+                </div>
+            </div>
+        </div>
 
+        <h2 class="text-sm font-bold uppercase tracking-widest text-slate-500 mb-6 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+            Virtual Winder Bay
+        </h2>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
             {% for slot in slots %}
-                {% if slot.watch %}
-                    <!-- Occupied Slot -->
-                    <a href="{% url 'timepieces:timepiece_detail' slot.watch.id %}" class="winder-slot slot-occupied group">
-                        <div class="winder-cushion">
-                            {% if slot.watch.photo %}
-                                <img src="{{ slot.watch.photo.url }}" alt="{{ slot.watch.model }}">
+            <div
+                x-data="{ running: {% if slot.watch %}true{% else %}false{% endif %} }"
+                class="group bg-slate-900 border border-slate-800 rounded-3xl p-6 transition-all hover:border-amber-500/50 hover:shadow-2xl hover:shadow-amber-500/5"
+            >
+                <div class="relative flex justify-center mb-6">
+                    <div class="w-48 h-48 rounded-full border-4 border-slate-800 flex items-center justify-center relative shadow-inner">
+                        <div
+                            :class="running ? 'animate-[spin_8s_linear_infinite]' : ''"
+                            class="w-40 h-40 rounded-full bg-gradient-to-br from-slate-800 to-slate-950 border border-slate-700 shadow-xl flex items-center justify-center overflow-hidden transition-all duration-1000"
+                        >
+                            {% if slot.watch %}
+                                {% if slot.watch.photo %}
+                                <img src="{{ slot.watch.photo.url }}"
+                                     alt="{{ slot.watch.model }}"
+                                     class="w-32 h-32 object-contain drop-shadow-2xl rotate-[30deg]">
+                                {% else %}
+                                <div class="text-slate-700 flex flex-col items-center">
+                                    <span class="text-[10px] font-bold uppercase tracking-tighter opacity-40">No Photo</span>
+                                </div>
+                                {% endif %}
                             {% else %}
-                                <div class="text-white/20 text-xs text-center">No Photo</div>
+                                <div class="text-slate-700 flex flex-col items-center">
+                                    <svg class="w-12 h-12 mb-1 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"></path></svg>
+                                    <span class="text-[10px] font-bold uppercase tracking-tighter opacity-40">Empty Bay</span>
+                                </div>
                             {% endif %}
                         </div>
-                        <div class="status-led"></div>
 
-                        <!-- Hover Info -->
-                        <div class="watch-info bg-black/80 backdrop-blur-md p-2 rounded border border-luxury-gold/30">
-                            <p class="text-luxury-gold text-[10px] uppercase font-bold">{{ slot.watch.brand }}</p>
-                            <p class="text-white text-[9px] truncate">{{ slot.watch.model }}</p>
+                        <div class="absolute inset-0 pointer-events-none">
+                            <div class="absolute top-2 left-1/2 -translate-x-1/2 w-1 h-3 bg-amber-500/40 rounded-full"></div>
                         </div>
-                    </a>
-                {% else %}
-                    <!-- Empty Slot -->
-                    <div class="winder-slot slot-empty">
-                        <a href="{% url 'timepieces:timepiece_add' %}" class="winder-cushion flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 add-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4" />
-                            </svg>
-                        </a>
-                        <div class="absolute bottom-4 text-[9px] text-white/10 uppercase tracking-widest pointer-events-none">Empty</div>
                     </div>
-                {% endif %}
+                </div>
+
+                <div class="space-y-4">
+                    {% if slot.watch %}
+                    <div class="text-center">
+                        <h3 class="text-white font-bold text-lg leading-tight">{{ slot.watch.brand }}</h3>
+                        <p class="text-slate-400 text-sm font-medium">{{ slot.watch.model }}</p>
+                        <p class="text-slate-600 text-[10px] font-mono mt-1">{{ slot.watch.reference_number|default:"REF-9921-A" }}</p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 py-4 border-y border-slate-800/50">
+                        <div class="text-center">
+                            <p class="text-[10px] uppercase text-slate-500 font-bold">Setting</p>
+                            <p class="text-xs text-white font-mono">650 TPD</p>
+                        </div>
+                        <div class="text-center border-l border-slate-800/50">
+                            <p class="text-[10px] uppercase text-slate-500 font-bold">Direction</p>
+                            <p class="text-xs text-white font-mono">BI-DIR</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-2">
+                        <button
+                            @click="running = !running; toggleWinder({{ slot.watch.id }})"
+                            :class="running ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : 'bg-slate-800 text-slate-400 border-slate-700'"
+                            class="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold transition-all border"
+                        >
+                            <span :class="running ? 'animate-pulse' : ''" class="w-2 h-2 rounded-full bg-current"></span>
+                            <span x-text="running ? 'WINDING' : 'PAUSED'"></span>
+                        </button>
+
+                        <a href="{% url 'timepieces:timepiece_detail' slot.watch.id %}" class="ml-2 p-2 text-slate-500 hover:text-white transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path></svg>
+                        </a>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-6">
+                        <a
+                            href="{% url 'timepieces:timepiece_add' %}"
+                            class="w-full py-4 border-2 border-dashed border-slate-800 rounded-2xl text-slate-500 hover:border-amber-500/40 hover:text-amber-500 transition-all flex flex-col items-center gap-2"
+                        >
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                            <span class="text-xs font-bold uppercase tracking-widest">Assign Watch</span>
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
             {% endfor %}
 
+            <a href="{% url 'timepieces:timepiece_add' %}" class="group bg-slate-900/30 border-2 border-dashed border-slate-800 rounded-3xl p-6 flex flex-col items-center justify-center gap-4 hover:border-slate-700 transition-all min-h-[420px]">
+                <div class="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center text-slate-500 group-hover:bg-slate-700 group-hover:text-white transition-all">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                </div>
+                <div class="text-center">
+                    <p class="text-white font-bold">Expand Collection</p>
+                    <p class="text-slate-500 text-xs">Add new mechanical rotor slot</p>
+                </div>
+            </a>
         </div>
+    </main>
 
-        <!-- Box Hardware Details -->
-        <div class="flex justify-between items-center mt-4 px-4">
-            <div class="text-[10px] text-white/20 uppercase tracking-widest">
-                Temp: 68°F • Humidity: 45%
-            </div>
-            <div class="flex gap-2">
-                <div class="w-2 h-2 rounded-full bg-red-900"></div>
-                <div class="w-2 h-2 rounded-full bg-green-900 shadow-[0_0_5px_#0f0]"></div>
+    <template x-teleport="body">
+        <div
+            x-show="modalOpen"
+            class="fixed inset-0 z-[100] flex items-center justify-center px-4"
+            x-cloak
+        >
+            <div
+                x-show="modalOpen"
+                x-transition:enter="ease-out duration-300"
+                x-transition:enter-start="opacity-0"
+                x-transition:enter-end="opacity-100"
+                x-transition:leave="ease-in duration-200"
+                x-transition:leave-start="opacity-100"
+                x-transition:leave-end="opacity-0"
+                @click="modalOpen = false"
+                class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
+            ></div>
+
+            <div
+                x-show="modalOpen"
+                x-transition:enter="ease-out duration-300"
+                x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                x-transition:leave="ease-in duration-200"
+                x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+                x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                class="relative bg-slate-900 border border-slate-800 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden"
+            >
+                <div class="p-8">
+                    <div class="flex justify-between items-start mb-6">
+                        <div>
+                            <h2 class="text-2xl font-bold text-white">Initialize Rotor</h2>
+                            <p class="text-slate-400 text-sm">Configure technical specifications for Slot #<span x-text="selectedSlot"></span></p>
+                        </div>
+                        <button @click="modalOpen = false" class="text-slate-500 hover:text-white">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+
+                    <form action="#" method="POST" class="space-y-6">
+                        {% csrf_token %}
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="space-y-2">
+                                <label class="text-[10px] uppercase font-bold text-slate-500 tracking-widest">Brand</label>
+                                <input type="text" placeholder="e.g. Patek Philippe" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500 transition-colors">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-[10px] uppercase font-bold text-slate-500 tracking-widest">Model</label>
+                                <input type="text" placeholder="e.g. Nautilus" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500 transition-colors">
+                            </div>
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="text-[10px] uppercase font-bold text-slate-500 tracking-widest">TPD Setting (Turns Per Day)</label>
+                            <input type="range" min="300" max="1200" step="50" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500">
+                            <div class="flex justify-between text-[10px] font-mono text-slate-500">
+                                <span>300 TPD</span>
+                                <span>650 TPD (Standard)</span>
+                                <span>1200 TPD</span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="text-[10px] uppercase font-bold text-slate-500 tracking-widest">Direction</label>
+                            <div class="grid grid-cols-3 gap-2">
+                                <button type="button" class="py-2 bg-slate-950 border border-amber-500 text-amber-500 rounded-lg text-xs font-bold">CW</button>
+                                <button type="button" class="py-2 bg-slate-950 border border-slate-800 text-slate-400 rounded-lg text-xs font-bold hover:border-slate-600 transition-colors">CCW</button>
+                                <button type="button" class="py-2 bg-slate-950 border border-slate-800 text-slate-400 rounded-lg text-xs font-bold hover:border-slate-600 transition-colors">BOTH</button>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold py-4 rounded-xl shadow-lg shadow-amber-500/20 transition-all transform hover:-translate-y-0.5 active:translate-y-0">
+                            Synchronize Collection
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
-
-    </div>
-
-    <!-- Navigation Footer -->
-    <div class="mt-12 flex gap-6 z-10">
-        <a href="{% url 'home' %}" class="text-white/40 hover:text-luxury-gold text-xs uppercase tracking-widest transition-colors">
-            &larr; Back to Vault
-        </a>
-    </div>
-
+    </template>
 </div>
 {% endblock %}

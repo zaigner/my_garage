@@ -1,0 +1,120 @@
+{% extends "my_garage/base.html" %}
+
+{% block title %}Register | The Collection{% endblock %}
+
+{% block extra_head %}
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+<style>
+    .salon-font {
+        font-family: 'Cinzel', serif;
+    }
+    .salon-bg {
+        background-color: #0B1026;
+        background-image: radial-gradient(circle at 50% 0%, #1a2342 0%, #0B1026 70%);
+    }
+    .login-card {
+        background: rgba(21, 27, 51, 0.6);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+    }
+    .salon-input {
+        background-color: #151b33;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #e5e5e5;
+        transition: all 0.3s ease;
+    }
+    .salon-input:focus {
+        border-color: #D4AF37;
+        box-shadow: 0 0 0 1px #D4AF37;
+        outline: none;
+    }
+    .salon-btn {
+        background: linear-gradient(to bottom, #D4AF37, #AA8C2C);
+        color: #1a0f0a;
+        font-weight: bold;
+        border: 1px solid #AA8C2C;
+        transition: all 0.3s ease;
+    }
+    .salon-btn:hover {
+        background: linear-gradient(to bottom, #E5C158, #C5A035);
+        box-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
+    }
+    /* Style Django form errors */
+    .errorlist {
+        color: #ef4444;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+        list-style-type: none;
+        padding: 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="salon-bg min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full space-y-8 login-card p-10 rounded-xl">
+        <div>
+            <h2 class="mt-6 text-center text-3xl font-extrabold text-luxury-gold salon-font tracking-wider">
+                Join The Collection
+            </h2>
+            <p class="mt-2 text-center text-sm text-gray-400 uppercase tracking-widest">
+                Create your exclusive account
+            </p>
+        </div>
+
+        <form class="mt-8 space-y-6" method="post">
+            {% csrf_token %}
+
+            {% if form.errors %}
+                <div class="bg-red-900/30 border border-red-500/50 text-red-200 px-4 py-3 rounded relative" role="alert">
+                    <span class="block sm:inline text-sm">Please correct the errors below.</span>
+                </div>
+            {% endif %}
+
+            <div class="space-y-4">
+                {% for field in form %}
+                    <div>
+                        <label for="{{ field.id_for_label }}" class="block text-xs uppercase tracking-widest text-gray-400 mb-2">
+                            {{ field.label }}
+                        </label>
+                        <div class="mt-1">
+                            {{ field }}
+                        </div>
+                        {% if field.help_text %}
+                            <p class="mt-1 text-xs text-gray-500">{{ field.help_text }}</p>
+                        {% endif %}
+                        {% if field.errors %}
+                            {{ field.errors }}
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+
+            <div>
+                <button type="submit" class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md salon-btn uppercase tracking-widest mt-6">
+                    Create Account
+                </button>
+            </div>
+
+            <div class="text-center mt-4">
+                <a href="{% url 'login' %}" class="text-xs text-luxury-gold hover:text-white uppercase tracking-widest transition-colors">
+                    Already have an account? Sign in
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Apply styling to Django form fields
+    document.addEventListener('DOMContentLoaded', function() {
+        const inputs = document.querySelectorAll('input');
+        inputs.forEach(input => {
+            if (input.type !== 'hidden' && input.type !== 'submit') {
+                input.classList.add('salon-input', 'appearance-none', 'rounded', 'relative', 'block', 'w-full', 'px-3', 'py-3', 'placeholder-gray-500', 'focus:z-10', 'sm:text-sm');
+            }
+        });
+    });
+</script>
+{% endblock %}
