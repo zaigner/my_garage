@@ -43,13 +43,11 @@ def vehicle_get_total_upgrade_cost(vehicle: Vehicle) -> Decimal:
     return legacy_total + generic_total
 
 
-def vehicle_get_build_summary(vehicle_id: int) -> Dict[str, Any]:
+def vehicle_get_build_summary(vehicle: Vehicle) -> Dict[str, Any]:
     """
     Aggregates all financial and condition data for a specific vehicle dashboard.
     This is a primary 'Application Layer' selector.
     """
-    vehicle = Vehicle.objects.get(pk=vehicle_id)
-
     maintenance = vehicle_get_total_maintenance_cost(vehicle)
     upgrades = vehicle_get_total_upgrade_cost(vehicle)
     total_investment = maintenance + upgrades + (vehicle.purchase_price or Decimal('0.00'))
@@ -62,6 +60,7 @@ def vehicle_get_build_summary(vehicle_id: int) -> Dict[str, Any]:
 
     return {
         "vehicle": vehicle,
+        "purchase_price": vehicle.purchase_price,
         "maintenance_total": maintenance,
         "upgrade_total": upgrades,
         "total_investment": total_investment,

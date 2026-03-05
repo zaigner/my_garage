@@ -15,13 +15,13 @@ urlpatterns = [
     path("<int:vehicle_id>/refresh-valuation/", views.trigger_valuation_refresh, name="refresh_valuation"),
     path("<int:vehicle_id>/enrich-vin/", views.trigger_vin_enrichment, name="enrich_vin"),
     path("<int:vehicle_id>/upload-receipt/", views.upload_service_receipt, name="upload_receipt"),
-    path("<int:vehicle_id>/add-service/", views.add_service_record, name="add_service_record"),
-    path("<int:vehicle_id>/add-project/", views.add_upgrade_project, name="add_upgrade_project"),
+    path("<int:vehicle_id>/add-service/", views.service_record_add, name="add_service_record"),
+    path("<int:vehicle_id>/add-project/", views.upgrade_add, name="add_upgrade_project"),
     path("<int:vehicle_id>/projects/kanban/", views.vehicle_projects_kanban, name="vehicle_projects_kanban"),
 
     # Service Record CRUD
-    path("service/<int:record_id>/edit/", views.edit_service_record, name="edit_service_record"),
-    path("service/<int:record_id>/delete/", views.delete_service_record, name="delete_service_record"),
+    path("service/<int:record_id>/edit/", views.service_record_edit, name="edit_service_record"),
+    path("service/<int:record_id>/delete/", views.service_record_delete, name="delete_service_record"),
     path("service/<int:record_id>/ocr-debug/", views.view_ocr_debug, name="view_ocr_debug"),
 
     # Valuation History

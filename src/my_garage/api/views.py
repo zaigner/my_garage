@@ -54,7 +54,7 @@ class VehicleViewSet(viewsets.ModelViewSet):
     def build_summary(self, request, pk=None):
         """Get comprehensive build summary."""
         vehicle = self.get_object()
-        summary = vehicle_get_build_summary(vehicle.id)
+        summary = vehicle_get_build_summary(vehicle)
         # Convert Decimal to string for JSON
         summary_json = {k: str(v) if isinstance(v, type(summary['equity'])) else v
                        for k, v in summary.items() if k != 'vehicle'}

@@ -93,7 +93,7 @@ class CollectionThemeGenerator:
             logger.error(f"AI Schema Generation failed: {e}")
             return self._get_fallback_schema(collection_name)
 
-    def generate_ui_component(self, collection_name: str, description: str = "") -> str:
+    def generate_ui_component(self, collection_name: str, description: str = "", feedback: str = "") -> str:
         """
         Generates a custom Tailwind/Alpine.js UI component for the collection.
         Returns raw HTML string.
@@ -101,13 +101,24 @@ class CollectionThemeGenerator:
         if not self.enabled:
             return "<!-- AI UI Generator disabled or unavailable -->"
 
+        feedback_context = ""
+        if feedback:
+            feedback_context = f"""
+            USER FEEDBACK ON PREVIOUS ITERATION:
+            "{feedback}"
+            
+            ADJUSTMENT INSTRUCTION:
+            Modify the design to specifically address the user's feedback above while maintaining all other requirements.
+            """
+
         prompt = f"""You are an award-winning Digital Scenographer and UI Designer. Your goal is to create a visually immersive, thematic "digital home" for a specific collection.
 
 TARGET COLLECTION: "{collection_name}"
 CONTEXT: {description}
+{feedback_context}
 
 OBJECTIVE:
-Do NOT create a generic white/gray dashboard. Create a highly atmospheric interface that captures the "vibe" of {collection_name}.
+Create a highly atmospheric interface that captures the "vibe" of {collection_name} while maintaining functional parity with the default theme.
 - If it's "Wine": Think dark cellars, deep reds/purples, serif fonts, gold accents, wood textures.
 - If it's "Sneakers": Think streetwear, concrete/industrial backgrounds, bold sans-serifs, neon pops, high contrast.
 - If it's "Coins/Stamps": Think museum display cases, velvet backgrounds (deep blue/green), spotlight effects.
@@ -119,16 +130,27 @@ TECH STACK:
 3. Alpine.js (for interactivity).
 4. Django Template Tags (REQUIRED).
 
-CRITICAL FUNCTIONALITY (MUST INCLUDE):
+CRITICAL REQUIREMENTS:
+1. **Inheritance**: The output MUST NOT include `<html>`, `<head>`, or `<body>` tags. It will be injected into a template that extends `my_garage/base.html`. Start with a root `<div>` that has `min-h-screen` and your thematic background.
+2. **Feature Parity**: You MUST include all the buttons and features found in the default theme:
+   - **Header**: Title, Description, Stats (Total Items, Total Value).
+   - **Action Bar**: "Add Item" button (Primary), "Edit Collection" button (Secondary).
+   - **Search/Filter**: A search bar (can be visual only or functional with Alpine).
+   - **View Toggle**: Buttons to switch between Grid/List (optional but good).
+   - **Item Cards**: Must show Name, Photo (handle missing photo), Value, and a few key fields.
+   - **Item Actions**: Each card needs an "Edit/View" link.
+
+FUNCTIONALITY (MUST INCLUDE):
 1. **Navigation**:
    - "Back" link: `<a href="{{% url 'collections:collection_type_list' %}}" ...>...</a>`
    - "Add Item" button: `<a href="{{% url 'collections:collection_item_add' collection_type.slug %}}" ...>...</a>`
+   - "Edit Collection" button: `<a href="{{% url 'collections:collection_type_edit' collection_type.slug %}}" ...>...</a>`
 2. **Item Loop**:
-   - Iterate: `{{% for item in items %}} ... {{% endfor %}}`
+   - **IMPORTANT**: Use EXACTLY this syntax for the loop: `{{% for item in items %}}` ... `{{% endfor %}}`
    - Link to Detail: `{{% url 'collections:collection_item_detail' collection_type.slug item.id %}}`
    - Image: `{{% if item.photo %}}<img src="{{{{ item.photo.url }}}}" ...>{{% else %}}...{{% endif %}}`
    - Data: `{{{{ item.name }}}}`, `{{{{ item.current_market_value }}}}`, `{{{{ item.purchase_price }}}}`.
-3. **Empty State**: Handle `{{% empty %}}` gracefully.
+3. **Empty State**: Handle `{{% empty %}}` gracefully with a thematic message and an "Add Item" button.
 
 DESIGN RULES:
 - **Typography**: You MAY include a `<link>` to Google Fonts at the top of the HTML to import a font that matches the theme perfectly. Apply it via `style="font-family: ..."` on the root container.

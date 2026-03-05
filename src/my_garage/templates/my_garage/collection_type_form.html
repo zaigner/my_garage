@@ -181,11 +181,44 @@
             <!-- UI Preview Section -->
             <div id="ui-preview-container" class="mb-8 {% if not collection_type.ui_theme_html %}hidden{% endif %}">
                 <h2 class="text-xl font-semibold text-luxury-gold salon-font mb-4">UI Preview</h2>
-                <div id="ui-preview-content" class="border border-white/10 p-4 rounded-md bg-black/20">
+
+                <div class="flex gap-2 mb-4">
+                    <button type="button" id="preview-full-btn"
+                            class="salon-btn-secondary px-4 py-2 rounded-md text-sm uppercase tracking-wider w-full">
+                        👁️ Preview Full Design
+                    </button>
+                </div>
+
+                <!-- Feedback Loop -->
+                <div class="mb-4 bg-black/20 p-4 rounded-md border border-white/5">
+                    <label class="block text-[10px] uppercase tracking-wider text-gray-500 mb-2">Refine Design</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="ui-feedback"
+                               class="flex-1 salon-input rounded-md px-3 py-2 text-sm"
+                               placeholder="e.g., Make the background white, use larger fonts...">
+                        <button type="button" id="regenerate-ui-btn"
+                                class="salon-btn-primary px-4 py-2 rounded-md text-xs uppercase tracking-wider">
+                            Regenerate
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Hidden preview content div, kept for data storage but hidden from view -->
+                <div id="ui-preview-content" class="hidden">
                     <!-- AI Generated UI will be injected here -->
                     {% if collection_type.ui_theme_html %}
                         {{ collection_type.ui_theme_html|safe }}
                     {% endif %}
+                </div>
+                <div class="flex gap-2 mt-4">
+                    <button type="button" id="accept-ui-btn"
+                            class="salon-btn-primary px-4 py-2 rounded-md text-sm uppercase tracking-wider">
+                        Accept AI Design
+                    </button>
+                    <button type="button" id="reset-ui-btn"
+                            class="salon-btn-secondary px-4 py-2 rounded-md text-sm uppercase tracking-wider">
+                        Use Default Salon Theme
+                    </button>
                 </div>
             </div>
 
@@ -433,67 +466,167 @@
         }
 
         const generateUiBtn = document.getElementById('generate-ui-btn');
+        const regenerateUiBtn = document.getElementById('regenerate-ui-btn');
+
+        async function handleGenerateUi(feedback = '') {
+            console.log("Generate UI button clicked, feedback:", feedback);
+
+            const topic = document.getElementById('ai-topic').value.trim();
+            const statusEl = document.getElementById('ai-status');
+            const descInput = document.getElementById('{{ form.description.id_for_label }}');
+            const description = descInput ? descInput.value.trim() : '';
+
+            if (!topic) {
+                alert('Please enter a topic first.');
+                return;
+            }
+
+            // Button state management
+            const btn = feedback ? regenerateUiBtn : generateUiBtn;
+            const originalBtnText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = feedback ? 'Refining...' : 'Designing...';
+
+            statusEl.textContent = feedback ? 'Refining design based on feedback...' : 'Designing UI components...';
+            statusEl.classList.remove('hidden', 'text-red-500', 'text-green-400');
+            statusEl.classList.add('text-luxury-gold', 'animate-pulse');
+
+            try {
+                const url = `/collections/api/generate-ui/?topic=${encodeURIComponent(topic)}&description=${encodeURIComponent(description)}&feedback=${encodeURIComponent(feedback)}`;
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                if (data.ui_html) {
+                    const previewContainer = document.getElementById('ui-preview-container');
+                    const previewContent = document.getElementById('ui-preview-content');
+                    const uiThemeInput = document.getElementById('ui-theme-html');
+
+                    previewContent.innerHTML = data.ui_html;
+                    previewContainer.classList.remove('hidden');
+
+                    // Store the generated HTML in the hidden input
+                    uiThemeInput.value = data.ui_html;
+
+                    statusEl.textContent = feedback ? 'Design refined successfully.' : 'UI Design generated successfully.';
+                    statusEl.classList.remove('animate-pulse', 'text-luxury-gold');
+                    statusEl.classList.add('text-green-400');
+
+                    // Clear feedback input if successful
+                    if (feedback) {
+                        document.getElementById('ui-feedback').value = '';
+                    }
+
+                    setTimeout(() => {
+                        statusEl.classList.add('hidden');
+                    }, 3000);
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                statusEl.textContent = 'Designer unavailable: ' + error.message;
+                statusEl.classList.remove('text-luxury-gold', 'animate-pulse');
+                statusEl.classList.add('text-red-500');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalBtnText;
+            }
+        }
+
         if (generateUiBtn) {
-            generateUiBtn.addEventListener('click', async (e) => {
+            generateUiBtn.addEventListener('click', (e) => {
                 e.preventDefault();
-                console.log("Generate UI button clicked");
+                handleGenerateUi();
+            });
+        }
 
-                const topic = document.getElementById('ai-topic').value.trim();
+        if (regenerateUiBtn) {
+            regenerateUiBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const feedback = document.getElementById('ui-feedback').value.trim();
+                if (!feedback) {
+                    alert("Please enter some feedback to refine the design.");
+                    return;
+                }
+                handleGenerateUi(feedback);
+            });
+        }
+
+        // --- 5. UI Acceptance Logic ---
+        const acceptUiBtn = document.getElementById('accept-ui-btn');
+        const resetUiBtn = document.getElementById('reset-ui-btn');
+        const previewFullBtn = document.getElementById('preview-full-btn');
+
+        if (acceptUiBtn) {
+            acceptUiBtn.addEventListener('click', () => {
+                // Just visual feedback, as the value is already in the hidden input
                 const statusEl = document.getElementById('ai-status');
-                const descInput = document.getElementById('{{ form.description.id_for_label }}');
-                const description = descInput ? descInput.value.trim() : '';
+                statusEl.textContent = 'Design accepted.';
+                statusEl.classList.remove('hidden', 'text-red-500');
+                statusEl.classList.add('text-green-400');
+                setTimeout(() => {
+                    statusEl.classList.add('hidden');
+                }, 2000);
+            });
+        }
 
-                if (!topic) {
-                    alert('Please enter a topic first.');
+        if (resetUiBtn) {
+            resetUiBtn.addEventListener('click', () => {
+                const previewContainer = document.getElementById('ui-preview-container');
+                const previewContent = document.getElementById('ui-preview-content');
+                const uiThemeInput = document.getElementById('ui-theme-html');
+
+                previewContent.innerHTML = '';
+                previewContainer.classList.add('hidden');
+                uiThemeInput.value = '';
+
+                const statusEl = document.getElementById('ai-status');
+                statusEl.textContent = 'Reverted to default Salon theme.';
+                statusEl.classList.remove('hidden', 'text-red-500');
+                statusEl.classList.add('text-green-400');
+                setTimeout(() => {
+                    statusEl.classList.add('hidden');
+                }, 2000);
+            });
+        }
+
+        if (previewFullBtn) {
+            previewFullBtn.addEventListener('click', () => {
+                const uiThemeInput = document.getElementById('ui-theme-html');
+                const htmlContent = uiThemeInput.value;
+
+                if (!htmlContent) {
+                    alert("No design to preview.");
                     return;
                 }
 
-                const originalBtnText = generateUiBtn.textContent;
-                generateUiBtn.disabled = true;
-                generateUiBtn.textContent = 'Designing...';
+                // Create a form to post the content to the preview endpoint
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/collections/api/preview-ui/';
+                form.target = '_blank'; // Open in new tab
 
-                statusEl.textContent = 'Designing UI components...';
-                statusEl.classList.remove('hidden', 'text-red-500', 'text-green-400');
-                statusEl.classList.add('text-luxury-gold', 'animate-pulse');
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'ui_html';
+                input.value = htmlContent;
 
-                try {
-                    const url = `/collections/api/generate-ui/?topic=${encodeURIComponent(topic)}&description=${encodeURIComponent(description)}`;
-                    const response = await fetch(url);
-                    const data = await response.json();
+                // Add CSRF token if needed (though endpoint is csrf_exempt for simplicity in this flow)
+                // But good practice to include if we remove exemption
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = 'csrfmiddlewaretoken';
+                csrfInput.value = csrfToken;
 
-                    if (data.error) {
-                        throw new Error(data.error);
-                    }
-
-                    if (data.ui_html) {
-                        const previewContainer = document.getElementById('ui-preview-container');
-                        const previewContent = document.getElementById('ui-preview-content');
-                        const uiThemeInput = document.getElementById('ui-theme-html');
-
-                        previewContent.innerHTML = data.ui_html;
-                        previewContainer.classList.remove('hidden');
-
-                        // Store the generated HTML in the hidden input
-                        uiThemeInput.value = data.ui_html;
-
-                        statusEl.textContent = 'UI Design generated successfully.';
-                        statusEl.classList.remove('animate-pulse', 'text-luxury-gold');
-                        statusEl.classList.add('text-green-400');
-
-                        setTimeout(() => {
-                            statusEl.classList.add('hidden');
-                        }, 3000);
-                    }
-
-                } catch (error) {
-                    console.error('Error:', error);
-                    statusEl.textContent = 'Designer unavailable: ' + error.message;
-                    statusEl.classList.remove('text-luxury-gold', 'animate-pulse');
-                    statusEl.classList.add('text-red-500');
-                } finally {
-                    generateUiBtn.disabled = false;
-                    generateUiBtn.textContent = originalBtnText;
-                }
+                form.appendChild(input);
+                form.appendChild(csrfInput);
+                document.body.appendChild(form);
+                form.submit();
+                document.body.removeChild(form);
             });
         }
 

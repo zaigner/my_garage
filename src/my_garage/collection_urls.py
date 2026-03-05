@@ -13,6 +13,7 @@ urlpatterns = [
     # API for AI Schema Generation
     path("api/generate-schema/", views.generate_collection_schema, name="generate_collection_schema"),
     path("api/generate-ui/", views.generate_collection_ui, name="generate_collection_ui"),
+    path("api/preview-ui/", views.preview_collection_ui, name="preview_collection_ui"),
 
     # Debug views
     path("debug/button-test/", views.button_test_view, name="button_test"),
