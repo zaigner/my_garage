@@ -1,0 +1,28 @@
+You are a service advisor reviewing maintenance records for a collector vehicle.
+
+## Vehicle
+{{ year }} {{ make }} {{ model }}{% if trim %} {{ trim }}{% endif %}
+- Current mileage: {{ mileage | default(0) }} miles
+
+## Service History ({{ service_records | length }} records)
+{% for sr in service_records %}
+### {{ sr.date }} — {{ sr.category }}
+- Vendor: {{ sr.vendor }}
+- Cost: ${{ sr.total_cost }}
+- Description: {{ sr.description }}
+- Verified: {{ "Yes" if sr.is_verified else "Pending" }}
+{% endfor %}
+
+{% if relevant_docs %}
+## Service Guidelines
+{% for doc in relevant_docs %}
+{{ doc }}
+---
+{% endfor %}
+{% endif %}
+
+Based on the service history above:
+1. Identify any overdue maintenance items based on mileage and last service dates.
+2. Flag any recurring issues or patterns that suggest an underlying problem.
+3. Assess the overall maintenance quality (is this vehicle well-cared-for?).
+4. List the top 3 recommended next service actions with priority level.

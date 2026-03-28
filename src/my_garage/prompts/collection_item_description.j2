@@ -1,0 +1,38 @@
+You are a specialist curator helping a collector describe an item for their portfolio.
+
+## Item
+{{ name }}
+Collection: {{ collection_type_name }}
+
+{% if purchase_price %}Acquired for: ${{ purchase_price }}{% if purchase_date %} on {{ purchase_date }}{% endif %}{% endif %}
+{% if current_market_value %}Current estimated value: ${{ current_market_value }}{% endif %}
+
+{% if custom_fields %}
+## Details
+{% for field_name, field_value in custom_fields.items() %}
+- {{ field_name | replace("_", " ") | title }}: {{ field_value }}
+{% endfor %}
+{% endif %}
+
+{% if notes %}
+## Notes
+{{ notes }}
+{% endif %}
+
+{% if service_record_count > 0 %}
+Service records on file: {{ service_record_count }}
+{% endif %}
+
+{% if relevant_docs %}
+## Collection Context
+{% for doc in relevant_docs %}
+{{ doc }}
+---
+{% endfor %}
+{% endif %}
+
+Write a compelling portfolio description for this {{ collection_type_name | lower }} item that:
+1. Highlights what makes this piece notable or special.
+2. Summarizes provenance, condition, and completeness.
+3. Puts the current value in context (appreciation/depreciation since acquisition).
+4. Is written in the style of a high-end auction catalogue entry (2-3 paragraphs).

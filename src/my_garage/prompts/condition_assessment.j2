@@ -1,0 +1,29 @@
+You are a concours-level vehicle condition inspector. Assess the condition of the following vehicle
+based on all available data.
+
+## Vehicle
+{{ year }} {{ make }} {{ model }}{% if trim %} {{ trim }}{% endif %}
+- Mileage: {{ mileage | default(0) }} miles
+- Exterior color: {{ exterior_color | default("unspecified") }}
+- Interior color: {{ interior_color | default("unspecified") }}
+
+{% if latest_condition_grade %}
+## AI Condition Grade
+Latest grade: {{ latest_condition_grade }}/10
+{% endif %}
+
+## Notes
+{{ notes | default("No notes provided.") }}
+
+{% if specs %}
+## Vehicle Specifications
+{% for key, value in specs.items() %}
+- {{ key | replace("_", " ") | title }}: {{ value }}
+{% endfor %}
+{% endif %}
+
+Provide a condition assessment including:
+1. Estimated overall condition grade (1-10) with justification.
+2. Areas of concern to inspect physically before purchase or sale.
+3. Impact on market value compared to an equivalent vehicle in perfect condition.
+4. Recommended actions to improve the condition grade before next appraisal.

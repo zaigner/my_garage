@@ -1,0 +1,52 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard",
+    "security:openssf-scorecard"
+  ],
+  "timezone": "UTC",
+  "schedule": ["every weekend"],
+  "pixi": {
+    "enabled": true
+  },
+  "pip_requirements": {
+    "enabled": true
+  },
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "schedule": ["at any time"],
+    "automerge": false,
+    "labels": ["security"]
+  },
+  "osvVulnerabilityAlerts": true,
+  "packageRules": [
+    {
+      "description": "Group all non-security updates into one PR per week",
+      "matchUpdateTypes": ["minor", "patch", "digest"],
+      "groupName": "all non-security updates",
+      "schedule": ["every weekend"]
+    },
+    {
+      "description": "Security fixes get their own PR immediately, not grouped",
+      "matchCategories": ["security"],
+      "groupName": null,
+      "schedule": ["at any time"],
+      "labels": ["security", "priority"]
+    },
+    {
+      "description": "Pin GitHub Actions to SHA digests",
+      "matchManagers": ["github-actions"],
+      "pinDigests": true
+    },
+    {
+      "description": "Auto-merge patch updates for dev tools only (ruff, pytest, etc.)",
+      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["patch"],
+      "automerge": true,
+      "automergeType": "pr"
+    }
+  ],
+  "prConcurrentLimit": 3,
+  "labels": ["dependencies"]
+}

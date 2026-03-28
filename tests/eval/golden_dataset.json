@@ -1,0 +1,133 @@
+[
+  {
+    "id": "vehicle_context_basic",
+    "description": "Vehicle context includes all required financial and identity fields",
+    "task": "get_vehicle_context",
+    "expected_keys": ["id", "make", "model", "year", "trim", "vin", "mileage",
+                      "purchase_price", "current_market_value",
+                      "total_maintenance_cost", "total_upgrade_cost",
+                      "total_investment", "equity", "is_profitable",
+                      "service_records", "upgrades"],
+    "expected_values": {
+      "make": "Porsche",
+      "model": "911",
+      "year": 2019,
+      "trim": "Carrera S"
+    }
+  },
+  {
+    "id": "vehicle_service_records_populated",
+    "description": "Vehicle context includes service records when they exist",
+    "task": "get_vehicle_context",
+    "expected_keys": ["service_records"],
+    "expected_nested": {
+      "service_records": {
+        "min_length": 1,
+        "item_keys": ["id", "date", "vendor", "description", "category", "total_cost"]
+      }
+    }
+  },
+  {
+    "id": "vehicle_financial_aggregates",
+    "description": "Maintenance costs are correctly aggregated from service records",
+    "task": "get_vehicle_context",
+    "expected_financials": {
+      "total_maintenance_cost_min": "1200.00",
+      "purchase_price": "85000.00",
+      "current_market_value": "92000.00"
+    }
+  },
+  {
+    "id": "timepiece_context_basic",
+    "description": "Timepiece context includes horological and financial fields",
+    "task": "get_timepiece_context",
+    "expected_keys": ["id", "brand", "model", "reference_number",
+                      "has_box", "has_papers", "condition_grade",
+                      "purchase_price", "current_market_value"],
+    "expected_values": {
+      "brand": "Rolex",
+      "model": "Submariner",
+      "reference_number": "126610LN",
+      "has_box": true,
+      "has_papers": true
+    }
+  },
+  {
+    "id": "collection_item_context_basic",
+    "description": "Collection item context includes custom fields",
+    "task": "get_collection_item_context",
+    "expected_keys": ["id", "name", "collection_type_name", "collection_type_slug",
+                      "purchase_price", "current_market_value", "custom_fields"],
+    "expected_values": {
+      "name": "2015 Opus One",
+      "collection_type_name": "Wine Collection"
+    },
+    "expected_custom_field_keys": ["vintage", "region", "producer"]
+  },
+  {
+    "id": "portfolio_summary_counts",
+    "description": "Portfolio summary correctly counts all asset types",
+    "task": "get_portfolio_summary",
+    "expected_keys": ["vehicle_count", "timepiece_count", "collection_item_count",
+                      "total_portfolio_value", "collection_types"],
+    "expected_counts": {
+      "vehicle_count": 1,
+      "timepiece_count": 1,
+      "collection_item_count": 1
+    }
+  },
+  {
+    "id": "portfolio_total_value",
+    "description": "Portfolio total value equals sum of all asset values",
+    "task": "get_portfolio_summary",
+    "expected_total_value_formula": "vehicles + timepieces + collections"
+  },
+  {
+    "id": "rag_returns_list",
+    "description": "RAG retrieval returns a list (empty or populated) without raising",
+    "task": "retrieve_relevant_docs",
+    "query": "vehicle service record oil change maintenance",
+    "expected_type": "list"
+  },
+  {
+    "id": "rag_empty_query",
+    "description": "RAG retrieval returns empty list for empty query",
+    "task": "retrieve_relevant_docs",
+    "query": "",
+    "expected_result": []
+  },
+  {
+    "id": "mcp_vehicle_lookup_structure",
+    "description": "VIN lookup tool returns a dict with expected NHTSA fields",
+    "task": "mcp_tool",
+    "tool": "lookup_vehicle_details",
+    "mock_response": {
+      "Results": [
+        {"Variable": "Make", "Value": "PORSCHE"},
+        {"Variable": "Model", "Value": "911"},
+        {"Variable": "Model Year", "Value": "2019"},
+        {"Variable": "Engine Number of Cylinders", "Value": "6"},
+        {"Variable": "Error Code", "Value": null}
+      ]
+    },
+    "expected_keys": ["make", "model", "model_year"],
+    "must_not_contain": ["error_code"]
+  },
+  {
+    "id": "mcp_watch_valuation_structure",
+    "description": "Watch valuation returns required financial fields",
+    "task": "mcp_tool",
+    "tool": "get_watch_valuation",
+    "inputs": {"brand": "Rolex", "model": "Submariner"},
+    "expected_keys": ["estimated_value", "currency", "confidence"],
+    "expected_currency": "USD"
+  },
+  {
+    "id": "config_available_tools_no_keys",
+    "description": "Config correctly reports only no-key tools as available when keys missing",
+    "task": "config_check",
+    "scenario": "no_keys",
+    "expected_available": ["lookup_vehicle_details", "search_google_images", "get_watch_valuation"],
+    "expected_unavailable": ["search_market_listings", "get_sales_stats", "generate_vehicle_image"]
+  }
+]

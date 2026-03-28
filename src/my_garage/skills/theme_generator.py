@@ -1,32 +1,38 @@
 import json
 import logging
 import os
-from typing import Dict, Any, Optional
+from typing import Any, Dict
 
 logger = logging.getLogger(__name__)
 
+
 class CollectionThemeGenerator:
     """
-    Uses Generative AI (Google Gemini via LiteLLM) to create rich,
+    Uses Generative AI (Google Gemini via google-genai) to create rich,
     context-aware schemas and UI components for user collections.
     """
-    
+
     def __init__(self):
-        # We'll use litellm to abstract the provider
         try:
-            import litellm
-            self.litellm = litellm
+            from google import genai
+
             # Ensure we have an API key
-            if not os.getenv("GEMINI_API_KEY") and not os.getenv("GOOGLE_API_KEY"):
-                logger.warning("No Google API key found. AI theme generation will be disabled.")
+            api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+            if not api_key:
+                logger.warning(
+                    "No Google API key found. AI theme generation will be disabled."
+                )
                 self.enabled = False
             else:
+                self.client = genai.Client(api_key=api_key)
                 self.enabled = True
         except ImportError:
-            logger.error("LiteLLM not installed. AI theme generation disabled.")
+            logger.error("google-genai not installed. AI theme generation disabled.")
             self.enabled = False
 
-    def generate_schema(self, collection_name: str, description: str = "") -> Dict[str, Any]:
+    def generate_schema(
+        self, collection_name: str, description: str = ""
+    ) -> Dict[str, Any]:
         """
         Generates a JSON schema for a collection type based on its name and description.
         Returns a dictionary compatible with CollectionType.field_schema.
@@ -37,20 +43,20 @@ class CollectionThemeGenerator:
 
         prompt = f"""
         You are an expert archivist and database architect for a high-end asset management platform.
-        
+
         Task: Create a data schema for a collection of: "{collection_name}"
         Context: {description}
-        
+
         The schema must be a JSON object with a 'fields' list. Each field must have:
         - name: snake_case identifier
         - type: one of ['text', 'number', 'date', 'file', 'relationship']
         - label: Human readable label
         - required: boolean
         - help_text: Short description
-        
+
         Include 5-8 specific fields that an expert collector would track.
         Do NOT include standard fields like 'name', 'photo', 'purchase_price', 'value', 'notes' as these are built-in.
-        
+
         Example for 'Wine':
         {{
             "fields": [
@@ -62,18 +68,18 @@ class CollectionThemeGenerator:
                 {{"name": "drink_window_end", "type": "number", "label": "Drink Until", "required": false, "help_text": "Year past peak"}}
             ]
         }}
-        
+
         Return ONLY the JSON object.
         """
 
         try:
-            # Use gemini-2.5-flash as requested (or latest stable)
-            response = self.litellm.completion(
-                model="gemini/gemini-2.5-flash",
-                messages=[{"role": "user", "content": prompt}],
+            # Use gemini-2.5-flash
+            response = self.client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=prompt,
             )
-            
-            content = response.choices[0].message.content
+
+            content = response.text
             # Clean up potential markdown code blocks
             if "```json" in content:
                 content = content.split("```json")[1].split("```")[0].strip()
@@ -81,19 +87,21 @@ class CollectionThemeGenerator:
                 content = content.split("```")[1].split("```")[0].strip()
 
             schema = json.loads(content)
-            
+
             # Basic validation
             if "fields" not in schema:
                 logger.error("AI returned invalid schema structure")
                 return self._get_fallback_schema(collection_name)
-                
+
             return schema
-            
+
         except Exception as e:
             logger.error(f"AI Schema Generation failed: {e}")
             return self._get_fallback_schema(collection_name)
 
-    def generate_ui_component(self, collection_name: str, description: str = "", feedback: str = "") -> str:
+    def generate_ui_component(
+        self, collection_name: str, description: str = "", feedback: str = ""
+    ) -> str:
         """
         Generates a custom Tailwind/Alpine.js UI component for the collection.
         Returns raw HTML string.
@@ -106,7 +114,7 @@ class CollectionThemeGenerator:
             feedback_context = f"""
             USER FEEDBACK ON PREVIOUS ITERATION:
             "{feedback}"
-            
+
             ADJUSTMENT INSTRUCTION:
             Modify the design to specifically address the user's feedback above while maintaining all other requirements.
             """
@@ -164,13 +172,13 @@ OUTPUT FORMAT:
 """
 
         try:
-            response = self.litellm.completion(
-                model="gemini/gemini-2.5-flash",
-                messages=[{"role": "user", "content": prompt}],
+            response = self.client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=prompt,
             )
-            
-            content = response.choices[0].message.content
-            
+
+            content = response.text
+
             # Extract HTML from markdown block
             if "```html" in content:
                 content = content.split("```html")[1].split("```")[0].strip()
@@ -199,28 +207,28 @@ OUTPUT FORMAT:
                     "type": "text",
                     "label": "Brand/Maker",
                     "required": True,
-                    "help_text": "Who made this item?"
+                    "help_text": "Who made this item?",
                 },
                 {
                     "name": "year",
                     "type": "number",
                     "label": "Year",
                     "required": False,
-                    "help_text": "Year of production"
+                    "help_text": "Year of production",
                 },
                 {
                     "name": "condition",
                     "type": "text",
                     "label": "Condition",
                     "required": False,
-                    "help_text": "Current state of the item"
+                    "help_text": "Current state of the item",
                 },
                 {
                     "name": "provenance",
                     "type": "text",
                     "label": "Provenance",
                     "required": False,
-                    "help_text": "History of ownership"
-                }
+                    "help_text": "History of ownership",
+                },
             ]
         }

@@ -1,27 +1,25 @@
 import logging
+
 from config.celery_app import app as celery_app
-from django.db import transaction
-from django.core.exceptions import ObjectDoesNotExist
-from decimal import Decimal
+from my_garage.models import ServiceRecord, Vehicle
 
 # Import the service layer logic
 from .api.services import (
-    vehicle_update_market_valuation,
+    VehicleServiceError,
+    service_record_process_ocr_data,
     vehicle_enrich_from_vin,
     vehicle_fetch_stock_photo,
-    VehicleServiceError,
-    service_record_process_ocr_data
+    vehicle_update_market_valuation,
 )
-from my_garage.models import Vehicle, ServiceRecord
 
 logger = logging.getLogger(__name__)
 
 # --- CONFIGURATION ---
 # We define retry settings for AI/External API tasks
 RETRY_KWARGS = {
-    'max_retries': 5,
-    'default_retry_delay': 60,  # 1 minute
-    'backoff': True,
+    "max_retries": 5,
+    "default_retry_delay": 60,  # 1 minute
+    "backoff": True,
 }
 
 
@@ -32,7 +30,7 @@ def task_process_receipt_ocr(self, record_id: int):
     Uses the service layer to handle the specific logic.
     """
     try:
-        record = ServiceRecord.objects.select_related('vehicle').get(pk=record_id)
+        record = ServiceRecord.objects.select_related("vehicle").get(pk=record_id)
         logger.info(f"Processing OCR for Record #{record_id}...")
 
         # Delegate to Service Layer
@@ -83,12 +81,12 @@ def task_enrich_vehicle_data(self, vehicle_id: int):
         logger.info(f"Enriching data for {vehicle} (VIN: {vehicle.vin})...")
 
         success = vehicle_enrich_from_vin(vehicle)
-        
+
         if success:
             logger.info(f"Successfully enriched data for {vehicle}")
         else:
             logger.warning(f"Failed to enrich data for {vehicle}")
-            
+
         return success
 
     except Vehicle.DoesNotExist:
@@ -108,12 +106,12 @@ def task_refresh_vehicle_photo(self, vehicle_id: int):
         logger.info(f"Refreshing photo for {vehicle}...")
 
         success = vehicle_fetch_stock_photo(vehicle, force_refresh=True)
-        
+
         if success:
             logger.info(f"Successfully refreshed photo for {vehicle}")
         else:
             logger.warning(f"Failed to refresh photo for {vehicle}")
-            
+
         return success
 
     except Vehicle.DoesNotExist:
@@ -123,6 +121,22 @@ def task_refresh_vehicle_photo(self, vehicle_id: int):
         raise self.retry(exc=exc)
 
 
+@celery_app.task(name="my_garage.tasks.task_refresh_bmad_context")
+def task_refresh_bmad_context():
+    """
+    Daily periodic task to refresh the BMAD project context file
+    with live portfolio statistics.
+    """
+    from django.core.management import call_command
+
+    try:
+        call_command("refresh_bmad_context")
+        return "BMAD context refreshed."
+    except Exception as e:
+        logger.error(f"Failed to refresh BMAD context: {e}")
+        return f"Failed: {e}"
+
+
 @celery_app.task(name="my_garage.tasks.task_bulk_valuation_refresh")
 def task_bulk_valuation_refresh():
     """
@@ -130,7 +144,7 @@ def task_bulk_valuation_refresh():
     Designed to be run by Celery Beat.
     """
     # Use .iterator() to keep memory usage low for large garages
-    vehicle_ids = Vehicle.objects.values_list('id', flat=True).iterator()
+    vehicle_ids = Vehicle.objects.values_list("id", flat=True).iterator()
     count = 0
 
     for v_id in vehicle_ids:

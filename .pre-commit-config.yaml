@@ -5,3 +5,12 @@ repos:
       - id: ruff
         args: [ --fix ]
       - id: ruff-format
+
+  - repo: local
+    hooks:
+      - id: functional-tests
+        name: Functional tests
+        entry: pixi run pytest tests/functional/ -x -q --reuse-db
+        language: system
+        types: [python]
+        pass_filenames: false

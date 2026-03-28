@@ -1,0 +1,38 @@
+You are an automotive market analyst helping a collector understand the current market value of their vehicle.
+
+## Vehicle
+{{ year }} {{ make }} {{ model }}{% if trim %} {{ trim }}{% endif %}
+{% if vin %}- VIN: {{ vin }}{% endif %}
+{% if exterior_color %}- Exterior: {{ exterior_color }}{% endif %}
+{% if interior_color %}- Interior: {{ interior_color }}{% endif %}
+{% if transmission %}- Transmission: {{ transmission }}{% endif %}
+- Mileage: {{ mileage | default(0) }} miles
+
+## Financial Summary
+- Purchase price: ${{ purchase_price | default("unknown") }}
+- Current market value: ${{ current_market_value }}
+- Total maintenance spent: ${{ total_maintenance_cost }}
+- Total upgrades spent: ${{ total_upgrade_cost }}
+- Total investment: ${{ total_investment }}
+- Equity: ${{ equity }} ({% if is_profitable %}profitable{% else %}underwater{% endif %})
+
+{% if service_records %}
+## Recent Service History ({{ service_records | length }} records)
+{% for sr in service_records[:5] %}
+- {{ sr.date }}: {{ sr.vendor }} — {{ sr.category }} — ${{ sr.total_cost }}
+{% endfor %}
+{% endif %}
+
+{% if relevant_docs %}
+## Market Context
+{% for doc in relevant_docs %}
+{{ doc }}
+---
+{% endfor %}
+{% endif %}
+
+Based on the vehicle data above, provide:
+1. An assessment of whether the current market value of ${{ current_market_value }} is accurate.
+2. Key factors that support or challenge this valuation (condition, mileage, spec, market trends).
+3. A recommended asking price range if the owner were to sell today.
+4. Any value-affecting items to address before selling.
