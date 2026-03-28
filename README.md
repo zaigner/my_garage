@@ -1,4 +1,4 @@
-# My Garage: The Ultimate Asset Management Platform for Collectors
+# My Garage: The Asset Management Platform for Collectors
 
 **Track. Value. Manage. Enjoy.**
 
