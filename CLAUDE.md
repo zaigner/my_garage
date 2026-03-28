@@ -164,6 +164,7 @@ pixi run manage <cmd>     # Django management commands
 pixi run mongo            # Start local MongoDB
 pixi run pytest           # Run all tests
 pixi run refresh-context  # Refresh BMAD portfolio context
+pixi run start-app        # starts all services
 ```
 
 **All tasks set `PYTHONPATH=src` automatically. Never run `python` directly — use `pixi run`.**
