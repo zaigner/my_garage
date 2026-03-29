@@ -87,11 +87,11 @@
                         <div class="border-t border-white/10 my-1"></div>
 
                         <!-- Main Sections -->
-                        <a href="{% url 'my_garage:garage_view' %}" class="block px-4 py-3 hover:bg-white/5 flex items-center text-luxury-white">
+                        <a href="{% url 'collections:collection_list' 'automobiles' %}" class="block px-4 py-3 hover:bg-white/5 flex items-center text-luxury-white">
                             <i class="fas fa-car w-6 text-luxury-gold"></i>
                             <span class="font-serif italic">Garage</span>
                         </a>
-                        <a href="{% url 'timepieces:timepiece_list' %}" class="block px-4 py-3 hover:bg-white/5 flex items-center text-luxury-white">
+                        <a href="{% url 'collections:collection_list' 'horology-salon' %}" class="block px-4 py-3 hover:bg-white/5 flex items-center text-luxury-white">
                             <i class="fas fa-clock w-6 text-luxury-gold"></i>
                             <span class="font-serif italic">Horology Salon</span>
                         </a>
@@ -209,8 +209,8 @@
                 <div class="flex justify-between items-start mb-6">
                     <h3 class="font-serif text-2xl text-luxury-white italic">Timepieces</h3>
                     {% if user.is_authenticated %}
-                        <a href="{% url 'timepieces:timepiece_list' %}" class="text-luxury-gold font-script text-2xl hover:text-white transition-colors cursor-pointer">
-                            {{ timepieces.count|default:"0" }} items &rarr;
+                        <a href="{% url 'collections:collection_list' 'horology-salon' %}" class="text-luxury-gold font-script text-2xl hover:text-white transition-colors cursor-pointer">
+                            {{ timepieces_count|default:"0" }} items &rarr;
                         </a>
                     {% else %}
                         <span class="text-luxury-gold font-script text-2xl">-- items</span>
@@ -226,8 +226,8 @@
                 <div class="flex justify-between items-start mb-6">
                     <h3 class="font-serif text-2xl text-luxury-white italic">Automobiles</h3>
                     {% if user.is_authenticated %}
-                        <a href="{% url 'my_garage:garage_view' %}" class="text-luxury-gold font-script text-2xl hover:text-white transition-colors cursor-pointer">
-                            {{ vehicles.count|default:"0" }} items &rarr;
+                        <a href="{% url 'collections:collection_list' 'automobiles' %}" class="text-luxury-gold font-script text-2xl hover:text-white transition-colors cursor-pointer">
+                            {{ automobiles_count|default:"0" }} items &rarr;
                         </a>
                     {% else %}
                         <span class="text-luxury-gold font-script text-2xl">-- items</span>

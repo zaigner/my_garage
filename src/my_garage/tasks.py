@@ -1,124 +1,18 @@
 import logging
 
 from config.celery_app import app as celery_app
-from my_garage.models import ServiceRecord, Vehicle
+from my_garage.models import DynamicCollectionItem
 
-# Import the service layer logic
-from .api.services import (
-    VehicleServiceError,
-    service_record_process_ocr_data,
-    vehicle_enrich_from_vin,
-    vehicle_fetch_stock_photo,
-    vehicle_update_market_valuation,
-)
+from .services.collection_services import get_collection_services
 
 logger = logging.getLogger(__name__)
 
 # --- CONFIGURATION ---
-# We define retry settings for AI/External API tasks
 RETRY_KWARGS = {
     "max_retries": 5,
     "default_retry_delay": 60,  # 1 minute
     "backoff": True,
 }
-
-
-@celery_app.task(bind=True, **RETRY_KWARGS)
-def task_process_receipt_ocr(self, record_id: int):
-    """
-    Background task to process a receipt via the FastAPI AI engine.
-    Uses the service layer to handle the specific logic.
-    """
-    try:
-        record = ServiceRecord.objects.select_related("vehicle").get(pk=record_id)
-        logger.info(f"Processing OCR for Record #{record_id}...")
-
-        # Delegate to Service Layer
-        success = service_record_process_ocr_data(record)
-
-        if not success:
-            logger.warning(f"OCR failed for record {record_id}, no data extracted.")
-            return False
-
-        logger.info(f"Successfully processed Record #{record_id}")
-        return True
-
-    except ServiceRecord.DoesNotExist:
-        logger.error(f"ServiceRecord {record_id} not found.")
-    except Exception as exc:
-        logger.error(f"Transient error in OCR for {record_id}: {exc}")
-        raise self.retry(exc=exc)
-
-
-@celery_app.task(bind=True, name="my_garage.update_valuation", **RETRY_KWARGS)
-def task_update_market_valuation(self, vehicle_id: int):
-    """
-    Updates the current market value of a vehicle using the Web MCP agent.
-    """
-    try:
-        vehicle = Vehicle.objects.get(pk=vehicle_id)
-
-        # Trigger Service Layer
-        new_value = vehicle_update_market_valuation(vehicle)
-
-        logger.info(f"Valuation updated for {vehicle}: {new_value}")
-        return str(new_value)
-
-    except Vehicle.DoesNotExist:
-        logger.error(f"Vehicle {vehicle_id} not found.")
-    except VehicleServiceError as e:
-        logger.warning(f"Valuation failed for vehicle {vehicle_id}: {e}")
-        raise self.retry(exc=e)
-
-
-@celery_app.task(bind=True, name="my_garage.enrich_vehicle", **RETRY_KWARGS)
-def task_enrich_vehicle_data(self, vehicle_id: int):
-    """
-    Background task to look up vehicle features and photos using the VIN.
-    """
-    try:
-        vehicle = Vehicle.objects.get(pk=vehicle_id)
-        logger.info(f"Enriching data for {vehicle} (VIN: {vehicle.vin})...")
-
-        success = vehicle_enrich_from_vin(vehicle)
-
-        if success:
-            logger.info(f"Successfully enriched data for {vehicle}")
-        else:
-            logger.warning(f"Failed to enrich data for {vehicle}")
-
-        return success
-
-    except Vehicle.DoesNotExist:
-        logger.error(f"Vehicle {vehicle_id} not found.")
-    except Exception as exc:
-        logger.error(f"Error enriching vehicle {vehicle_id}: {exc}", exc_info=True)
-        raise self.retry(exc=exc)
-
-
-@celery_app.task(bind=True, name="my_garage.refresh_photo", **RETRY_KWARGS)
-def task_refresh_vehicle_photo(self, vehicle_id: int):
-    """
-    Background task to force refresh the vehicle photo based on current specs/color.
-    """
-    try:
-        vehicle = Vehicle.objects.get(pk=vehicle_id)
-        logger.info(f"Refreshing photo for {vehicle}...")
-
-        success = vehicle_fetch_stock_photo(vehicle, force_refresh=True)
-
-        if success:
-            logger.info(f"Successfully refreshed photo for {vehicle}")
-        else:
-            logger.warning(f"Failed to refresh photo for {vehicle}")
-
-        return success
-
-    except Vehicle.DoesNotExist:
-        logger.error(f"Vehicle {vehicle_id} not found.")
-    except Exception as exc:
-        logger.error(f"Error refreshing photo for {vehicle_id}: {exc}", exc_info=True)
-        raise self.retry(exc=exc)
 
 
 @celery_app.task(bind=True, name="my_garage.collection_item_refresh_valuation", **RETRY_KWARGS)
@@ -127,9 +21,6 @@ def task_collection_item_refresh_valuation(self, item_id: int):
     Background task: refresh market valuation for a DynamicCollectionItem
     using the service provider registered for its CollectionType.
     """
-    from my_garage.models import DynamicCollectionItem
-    from my_garage.services.collection_services import get_collection_services
-
     try:
         item = DynamicCollectionItem.objects.select_related("collection_type").get(pk=item_id)
         provider = get_collection_services(item.collection_type.service_provider_key)
@@ -152,9 +43,6 @@ def task_collection_item_enrich(self, item_id: int):
     Background task: run provider enrichment (e.g. VIN decode) for a
     DynamicCollectionItem.
     """
-    from my_garage.models import DynamicCollectionItem
-    from my_garage.services.collection_services import get_collection_services
-
     try:
         item = DynamicCollectionItem.objects.select_related("collection_type").get(pk=item_id)
         provider = get_collection_services(item.collection_type.service_provider_key)
@@ -190,17 +78,12 @@ def task_refresh_bmad_context():
 @celery_app.task(name="my_garage.tasks.task_bulk_valuation_refresh")
 def task_bulk_valuation_refresh():
     """
-    Daily/Weekly periodic task to refresh all vehicle values.
+    Daily/Weekly periodic task to refresh all collection item values.
     Designed to be run by Celery Beat.
     """
-    # Use .iterator() to keep memory usage low for large garages
-    vehicle_ids = Vehicle.objects.values_list("id", flat=True).iterator()
+    item_ids = DynamicCollectionItem.objects.values_list("id", flat=True).iterator()
     count = 0
-
-    for v_id in vehicle_ids:
-        # IMPORTANT: Use delay_on_commit if calling from inside a transaction
-        # Otherwise, standard .delay() is fine for a background manager.
-        task_update_market_valuation.delay(v_id)
+    for item_id in item_ids:
+        task_collection_item_refresh_valuation.delay(item_id)
         count += 1
-
-    return f"Queued refresh for {count} vehicles."
+    return f"Queued refresh for {count} collection items."

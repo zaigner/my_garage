@@ -1,58 +1,51 @@
 """DRF Serializers for my_garage API."""
 from rest_framework import serializers
-from my_garage.models import Vehicle, ServiceRecord, Upgrade, ConditionReport
+from my_garage.models import (
+    CollectionType,
+    DynamicCollectionItem,
+    GenericServiceRecord,
+    GenericValuationHistory,
+    GenericUpgrade,
+)
 
 
-class VehicleSerializer(serializers.ModelSerializer):
-    """Serializer for Vehicle model."""
+class CollectionTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CollectionType
+        fields = ['id', 'name', 'slug', 'icon', 'description', 'service_provider_key',
+                  'is_system', 'is_active', 'created_at']
+        read_only_fields = ['slug', 'created_at']
 
-    owner_username = serializers.CharField(source='owner.username', read_only=True)
+
+class DynamicCollectionItemSerializer(serializers.ModelSerializer):
+    collection_type_name = serializers.CharField(source='collection_type.name', read_only=True)
+    equity = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
 
     class Meta:
-        model = Vehicle
-        fields = [
-            'id', 'owner', 'owner_username', 'make', 'model', 'year', 'trim', 'vin',
-            'purchase_price', 'current_market_value', 'mileage', 'created_at'
-        ]
-        read_only_fields = ['owner', 'created_at']
+        model = DynamicCollectionItem
+        fields = ['id', 'collection_type', 'collection_type_name', 'owner', 'name',
+                  'purchase_price', 'purchase_date', 'current_market_value', 'equity',
+                  'custom_fields', 'notes', 'created_at', 'updated_at']
+        read_only_fields = ['owner', 'created_at', 'updated_at']
 
 
-class ServiceRecordSerializer(serializers.ModelSerializer):
-    """Serializer for ServiceRecord model."""
-
-    vehicle_display = serializers.CharField(source='vehicle.__str__', read_only=True)
-
+class GenericServiceRecordSerializer(serializers.ModelSerializer):
     class Meta:
-        model = ServiceRecord
-        fields = [
-            'id', 'vehicle', 'vehicle_display', 'date', 'vendor', 'description',
-            'category', 'total_cost', 'receipt_image', 'ocr_raw_data', 'is_verified'
-        ]
+        model = GenericServiceRecord
+        fields = ['id', 'item', 'date', 'vendor', 'description', 'category',
+                  'total_cost', 'ocr_raw_data', 'is_verified']
         read_only_fields = ['ocr_raw_data']
 
 
-class UpgradeSerializer(serializers.ModelSerializer):
-    """Serializer for Upgrade model."""
-
-    vehicle_display = serializers.CharField(source='vehicle.__str__', read_only=True)
-
+class GenericValuationHistorySerializer(serializers.ModelSerializer):
     class Meta:
-        model = Upgrade
-        fields = [
-            'id', 'vehicle', 'vehicle_display', 'part_name', 'brand', 'part_number',
-            'status', 'cost', 'installation_date', 'notes'
-        ]
+        model = GenericValuationHistory
+        fields = ['id', 'item', 'date', 'value', 'raw_data']
+        read_only_fields = ['date']
 
 
-class ConditionReportSerializer(serializers.ModelSerializer):
-    """Serializer for ConditionReport model."""
-
-    vehicle_display = serializers.CharField(source='vehicle.__str__', read_only=True)
-
+class GenericUpgradeSerializer(serializers.ModelSerializer):
     class Meta:
-        model = ConditionReport
-        fields = [
-            'id', 'vehicle', 'vehicle_display', 'area', 'photo',
-            'grade', 'ai_feedback', 'value_adjustment', 'created_at'
-        ]
-        read_only_fields = ['created_at']
+        model = GenericUpgrade
+        fields = ['id', 'content_type', 'object_id', 'item', 'name', 'brand',
+                  'part_number', 'status', 'cost', 'ordered_date', 'completion_date', 'notes']

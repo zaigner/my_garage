@@ -1,56 +1,40 @@
 [
   {
     "id": "vehicle_context_basic",
-    "description": "Vehicle context includes all required financial and identity fields",
-    "task": "get_vehicle_context",
-    "expected_keys": ["id", "make", "model", "year", "trim", "vin", "mileage",
-                      "purchase_price", "current_market_value",
-                      "total_maintenance_cost", "total_upgrade_cost",
-                      "total_investment", "equity", "is_profitable",
-                      "service_records", "upgrades"],
+    "description": "Collection item context for a migrated vehicle includes required fields",
+    "task": "get_collection_item_context",
+    "expected_keys": ["id", "name", "collection_type_name", "collection_type_slug",
+                      "purchase_price", "current_market_value", "custom_fields",
+                      "service_record_count", "upgrade_count"],
     "expected_values": {
-      "make": "Porsche",
-      "model": "911",
-      "year": 2019,
-      "trim": "Carrera S"
+      "collection_type_slug": "automobiles"
     }
   },
   {
     "id": "vehicle_service_records_populated",
-    "description": "Vehicle context includes service records when they exist",
-    "task": "get_vehicle_context",
-    "expected_keys": ["service_records"],
-    "expected_nested": {
-      "service_records": {
-        "min_length": 1,
-        "item_keys": ["id", "date", "vendor", "description", "category", "total_cost"]
-      }
-    }
+    "description": "Migrated vehicle item has service records accessible via the model",
+    "task": "get_collection_item_context",
+    "expected_service_record_count_min": 1
   },
   {
     "id": "vehicle_financial_aggregates",
-    "description": "Maintenance costs are correctly aggregated from service records",
-    "task": "get_vehicle_context",
+    "description": "Migrated vehicle item preserves purchase price and market value",
+    "task": "get_collection_item_context",
     "expected_financials": {
-      "total_maintenance_cost_min": "1200.00",
       "purchase_price": "85000.00",
       "current_market_value": "92000.00"
     }
   },
   {
     "id": "timepiece_context_basic",
-    "description": "Timepiece context includes horological and financial fields",
-    "task": "get_timepiece_context",
-    "expected_keys": ["id", "brand", "model", "reference_number",
-                      "has_box", "has_papers", "condition_grade",
-                      "purchase_price", "current_market_value"],
+    "description": "Collection item context for a migrated timepiece includes required fields",
+    "task": "get_collection_item_context",
+    "expected_keys": ["id", "name", "collection_type_name", "collection_type_slug",
+                      "purchase_price", "current_market_value", "custom_fields"],
     "expected_values": {
-      "brand": "Rolex",
-      "model": "Submariner",
-      "reference_number": "126610LN",
-      "has_box": true,
-      "has_papers": true
-    }
+      "collection_type_slug": "horology-salon"
+    },
+    "expected_custom_field_keys": ["brand", "watch_model", "reference_number"]
   },
   {
     "id": "collection_item_context_basic",
@@ -73,14 +57,14 @@
     "expected_counts": {
       "vehicle_count": 1,
       "timepiece_count": 1,
-      "collection_item_count": 1
+      "collection_item_count": 3
     }
   },
   {
     "id": "portfolio_total_value",
     "description": "Portfolio total value equals sum of all asset values",
     "task": "get_portfolio_summary",
-    "expected_total_value_formula": "vehicles + timepieces + collections"
+    "expected_total_value_formula": "vehicles + timepieces + non_system_collections"
   },
   {
     "id": "rag_returns_list",

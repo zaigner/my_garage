@@ -154,5 +154,5 @@ MONGO_URI = os.environ.get("MONGO_URI", "mongodb://localhost:27017/")
 MONGO_DB_NAME = os.environ.get("MONGO_DB_NAME", "my_garage_docs")
 
 # Authentication
-LOGIN_REDIRECT_URL = "/garage/"
+LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/accounts/login/"

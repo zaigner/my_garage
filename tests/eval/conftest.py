@@ -14,9 +14,7 @@ from django.contrib.auth import get_user_model
 from my_garage.models import (
     CollectionType,
     DynamicCollectionItem,
-    ServiceRecord,
-    Timepiece,
-    Vehicle,
+    GenericServiceRecord,
 )
 from my_garage.services import ContextService
 
@@ -37,23 +35,55 @@ def eval_user(db):
 
 
 @pytest.fixture
-def eval_vehicle(eval_user):
-    v = Vehicle.objects.create(
+def eval_automobiles_type(eval_user):
+    ct, _ = CollectionType.objects.get_or_create(
         owner=eval_user,
-        make="Porsche",
-        model="911",
-        year=2019,
-        trim="Carrera S",
-        vin="WP0AB2A91KS123456",
-        exterior_color="Guards Red",
-        mileage=12000,
+        slug="automobiles",
+        defaults={
+            "name": "Automobiles",
+            "service_provider_key": "vehicle",
+            "is_system": True,
+        },
+    )
+    return ct
+
+
+@pytest.fixture
+def eval_horology_type(eval_user):
+    ct, _ = CollectionType.objects.get_or_create(
+        owner=eval_user,
+        slug="horology-salon",
+        defaults={
+            "name": "Horology Salon",
+            "service_provider_key": "timepiece",
+            "is_system": True,
+        },
+    )
+    return ct
+
+
+@pytest.fixture
+def eval_vehicle(eval_user, eval_automobiles_type):
+    item = DynamicCollectionItem.objects.create(
+        owner=eval_user,
+        collection_type=eval_automobiles_type,
+        name="2019 Porsche 911 Carrera S",
         purchase_price=Decimal("85000.00"),
         current_market_value=Decimal("92000.00"),
-        specs={"engine": "3.0L Twin-Turbo Flat-6", "horsepower": "443"},
+        custom_fields={
+            "make": "Porsche",
+            "model": "911",
+            "year": 2019,
+            "trim": "Carrera S",
+            "vin": "WP0AB2A91KS123456",
+            "exterior_color": "Guards Red",
+            "mileage": 12000,
+            "specs": {"engine": "3.0L Twin-Turbo Flat-6", "horsepower": "443"},
+        },
         notes="One owner, all service records.",
     )
-    ServiceRecord.objects.create(
-        vehicle=v,
+    GenericServiceRecord.objects.create(
+        item=item,
         date=date(2023, 1, 15),
         vendor="Porsche of Austin",
         description="Annual service and oil change",
@@ -61,8 +91,8 @@ def eval_vehicle(eval_user):
         total_cost=Decimal("1200.00"),
         is_verified=True,
     )
-    ServiceRecord.objects.create(
-        vehicle=v,
+    GenericServiceRecord.objects.create(
+        item=item,
         date=date(2023, 6, 1),
         vendor="Porsche of Austin",
         description="Brake fluid flush",
@@ -70,27 +100,31 @@ def eval_vehicle(eval_user):
         total_cost=Decimal("350.00"),
         is_verified=True,
     )
-    return v
+    return item
 
 
 @pytest.fixture
-def eval_timepiece(eval_user):
-    return Timepiece.objects.create(
+def eval_timepiece(eval_user, eval_horology_type):
+    return DynamicCollectionItem.objects.create(
         owner=eval_user,
-        brand="Rolex",
-        model="Submariner",
-        reference_number="126610LN",
-        serial_number="SN123456",
-        year=2022,
-        movement_type="AUTOMATIC",
-        case_material="Oystersteel",
-        dial_color="Black",
-        complications=["Date"],
-        has_box=True,
-        has_papers=True,
-        condition_grade="Mint",
+        collection_type=eval_horology_type,
+        name="Rolex Submariner 126610LN",
         purchase_price=Decimal("13500.00"),
         current_market_value=Decimal("14800.00"),
+        custom_fields={
+            "brand": "Rolex",
+            "watch_model": "Submariner",
+            "reference_number": "126610LN",
+            "serial_number": "SN123456",
+            "year": 2022,
+            "movement_type": "AUTOMATIC",
+            "case_material": "Oystersteel",
+            "dial_color": "Black",
+            "complications": ["Date"],
+            "has_box": True,
+            "has_papers": True,
+            "condition_grade": "Mint",
+        },
     )
 
 

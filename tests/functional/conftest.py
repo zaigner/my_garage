@@ -3,7 +3,6 @@ Shared fixtures for functional (HTTP smoke) tests.
 """
 from __future__ import annotations
 
-from datetime import date
 from decimal import Decimal
 
 import pytest
@@ -13,9 +12,6 @@ from django.test import Client
 from my_garage.models import (
     CollectionType,
     DynamicCollectionItem,
-    ServiceRecord,
-    Timepiece,
-    Vehicle,
 )
 
 User = get_user_model()
@@ -34,49 +30,66 @@ def auth_client(user):
 
 
 @pytest.fixture
-def vehicle(user):
-    v = Vehicle.objects.create(
+def automobiles_type(user):
+    ct, _ = CollectionType.objects.get_or_create(
         owner=user,
-        make="Toyota",
-        model="Tacoma",
-        year=2021,
-        mileage=15000,
+        slug="automobiles",
+        defaults={
+            "name": "Automobiles",
+            "service_provider_key": "vehicle",
+            "is_system": True,
+        },
+    )
+    return ct
+
+
+@pytest.fixture
+def horology_type(user):
+    ct, _ = CollectionType.objects.get_or_create(
+        owner=user,
+        slug="horology-salon",
+        defaults={
+            "name": "Horology Salon",
+            "service_provider_key": "timepiece",
+            "is_system": True,
+        },
+    )
+    return ct
+
+
+@pytest.fixture
+def migrated_vehicle_item(user, automobiles_type):
+    """A DynamicCollectionItem representing a migrated vehicle (has source_vehicle_id)."""
+    return DynamicCollectionItem.objects.create(
+        owner=user,
+        collection_type=automobiles_type,
+        name="2021 Toyota Tacoma",
         purchase_price=Decimal("38000.00"),
         current_market_value=Decimal("40000.00"),
+        custom_fields={
+            "source_vehicle_id": 999,
+            "make": "Toyota",
+            "model": "Tacoma",
+            "year": 2021,
+        },
     )
-    ServiceRecord.objects.create(
-        vehicle=v,
-        date=date(2023, 3, 10),
-        vendor="Toyota Dealer",
-        description="Oil change",
-        category="MAINTENANCE",
-        total_cost=Decimal("80.00"),
-        is_verified=True,
-    )
-    return v
 
 
 @pytest.fixture
-def service_record(vehicle):
-    return vehicle.services.first()
-
-
-@pytest.fixture
-def timepiece(user):
-    return Timepiece.objects.create(
+def migrated_timepiece_item(user, horology_type):
+    """A DynamicCollectionItem representing a migrated timepiece (has source_timepiece_id)."""
+    return DynamicCollectionItem.objects.create(
         owner=user,
-        brand="Seiko",
-        model="Prospex",
-        reference_number="SPB143J1",
-        year=2021,
-        movement_type="AUTOMATIC",
-        case_material="Stainless Steel",
-        dial_color="Blue",
-        complications=[],
-        has_box=True,
-        has_papers=False,
+        collection_type=horology_type,
+        name="Seiko Prospex SPB143J1",
         purchase_price=Decimal("500.00"),
         current_market_value=Decimal("550.00"),
+        custom_fields={
+            "source_timepiece_id": 888,
+            "brand": "Seiko",
+            "watch_model": "Prospex",
+            "reference_number": "SPB143J1",
+        },
     )
 
 

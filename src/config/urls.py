@@ -1,6 +1,7 @@
 """Main URL Configuration."""
 from django.contrib import admin
 from django.urls import path, include
+from django.views.generic import RedirectView
 from django.conf import settings
 from django.conf.urls.static import static
 from . import views
@@ -16,13 +17,29 @@ urlpatterns = [
     # API
     path('api/', include('config.api_router')),
 
-    # Timepieces (moved out of garage)
+    # ── Phase 4 redirects ─────────────────────────────────────────────────────
+    # /garage/ list → consolidated automobiles collection
+    # /timepieces/ list → consolidated horology-salon collection
+    # Sub-routes (e.g. /garage/42/) are still served by the includes below.
+    path(
+        'garage/',
+        RedirectView.as_view(url='/collections/automobiles/items/', permanent=False),
+        name='garage_redirect',
+    ),
+    path(
+        'timepieces/',
+        RedirectView.as_view(url='/collections/horology-salon/items/', permanent=False),
+        name='timepieces_redirect',
+    ),
+    # ─────────────────────────────────────────────────────────────────────────
+
+    # Timepieces detail/add/winder routes (sub-paths only — list is redirected above)
     path('timepieces/', include('my_garage.timepiece_urls', namespace='timepieces')),
 
-    # My Garage App (Vehicles)
+    # Vehicle detail/add/service routes (sub-paths only — list is redirected above)
     path('garage/', include('my_garage.urls', namespace='my_garage')),
 
-    # Dynamic Collections (separate mount point, shares 'my_garage' namespace)
+    # Dynamic Collections (separate mount point)
     path('collections/', include('my_garage.collection_urls')),
 
     # Home

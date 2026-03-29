@@ -9,7 +9,7 @@ Usage:
     from my_garage.services import ContextService
 
     ctx = ContextService()
-    vehicle_context = ctx.get_vehicle_context(vehicle_id=1, user=request.user)
+    item_context = ctx.get_collection_item_context(item_id=1, user=request.user)
     docs = ctx.retrieve_relevant_docs("service record oil change")
 """
 from __future__ import annotations
@@ -21,22 +21,15 @@ from typing import TYPE_CHECKING
 
 from pymongo.errors import ServerSelectionTimeoutError
 
-from my_garage.api import selectors
 from my_garage.models import (
     CollectionType,
     DynamicCollectionItem,
-    Timepiece,
-    Vehicle,
 )
 from my_garage.utils.mongo import get_collection
 
 from .context_models import (
     CollectionItemContext,
     PortfolioSummary,
-    ServiceRecordContext,
-    TimepieceContext,
-    UpgradeContext,
-    VehicleContext,
 )
 
 if TYPE_CHECKING:
@@ -66,119 +59,6 @@ class ContextService:
     All methods return Pydantic models that can be serialized directly
     into prompt templates via ContextService.to_dict().
     """
-
-    # ------------------------------------------------------------------
-    # Vehicle
-    # ------------------------------------------------------------------
-
-    def get_vehicle_context(self, vehicle_id: int, user) -> VehicleContext:
-        """
-        Assemble full context for a single vehicle, including financials,
-        service history, and upgrade list.
-
-        Raises ContextServiceError if the vehicle doesn't exist or isn't
-        owned by the given user.
-        """
-        try:
-            vehicle = Vehicle.objects.select_related("owner").get(
-                id=vehicle_id, owner=user
-            )
-        except Vehicle.DoesNotExist:
-            raise ContextServiceError(f"Vehicle {vehicle_id} not found for user {user}")
-
-        build_summary = selectors.vehicle_get_build_summary(vehicle)
-        service_qs = selectors.vehicle_list_service_records(vehicle)
-        upgrades = selectors.vehicle_list_upgrades(vehicle)
-
-        service_records = [
-            ServiceRecordContext(
-                id=sr.id,
-                date=sr.date,
-                vendor=sr.vendor,
-                description=sr.description,
-                category=sr.category,
-                total_cost=sr.total_cost,
-                is_verified=sr.is_verified,
-            )
-            for sr in service_qs[:20]  # cap at 20 for context window budget
-        ]
-
-        upgrade_contexts = [
-            UpgradeContext(
-                id=u.id,
-                name=getattr(u, "part_name", None) or getattr(u, "name", ""),
-                brand=getattr(u, "brand", ""),
-                status=u.status,
-                cost=u.cost,
-                notes=getattr(u, "notes", ""),
-            )
-            for u in upgrades[:20]
-        ]
-
-        return VehicleContext(
-            id=vehicle.id,
-            make=vehicle.make,
-            model=vehicle.model,
-            year=vehicle.year,
-            trim=vehicle.trim,
-            vin=vehicle.vin,
-            exterior_color=vehicle.exterior_color,
-            interior_color=vehicle.interior_color,
-            transmission=vehicle.transmission,
-            mileage=vehicle.mileage,
-            purchase_price=vehicle.purchase_price,
-            purchase_date=vehicle.purchase_date,
-            current_market_value=vehicle.current_market_value,
-            specs=vehicle.specs or {},
-            features=vehicle.features or {},
-            notes=vehicle.notes,
-            total_maintenance_cost=build_summary["maintenance_total"],
-            total_upgrade_cost=build_summary["upgrade_total"],
-            total_investment=build_summary["total_investment"],
-            equity=build_summary["equity"],
-            is_profitable=build_summary["is_profitable"],
-            latest_condition_grade=build_summary["latest_grade"],
-            service_records=service_records,
-            upgrades=upgrade_contexts,
-        )
-
-    # ------------------------------------------------------------------
-    # Timepiece
-    # ------------------------------------------------------------------
-
-    def get_timepiece_context(self, timepiece_id: int, user) -> TimepieceContext:
-        """
-        Assemble context for a single timepiece.
-
-        Raises ContextServiceError if the timepiece doesn't exist or isn't
-        owned by the given user.
-        """
-        try:
-            timepiece = Timepiece.objects.get(id=timepiece_id, owner=user)
-        except Timepiece.DoesNotExist:
-            raise ContextServiceError(
-                f"Timepiece {timepiece_id} not found for user {user}"
-            )
-
-        return TimepieceContext(
-            id=timepiece.id,
-            brand=timepiece.brand,
-            model=timepiece.model,
-            reference_number=timepiece.reference_number,
-            serial_number=timepiece.serial_number,
-            year=timepiece.year,
-            movement_type=timepiece.movement_type,
-            case_material=timepiece.case_material,
-            dial_color=timepiece.dial_color,
-            complications=timepiece.complications or [],
-            has_box=timepiece.has_box,
-            has_papers=timepiece.has_papers,
-            condition_grade=timepiece.condition_grade,
-            purchase_price=timepiece.purchase_price,
-            purchase_date=timepiece.purchase_date,
-            current_market_value=timepiece.current_market_value,
-            notes=timepiece.notes,
-        )
 
     # ------------------------------------------------------------------
     # Collection item
@@ -219,15 +99,17 @@ class ContextService:
 
     def get_portfolio_summary(self, user) -> PortfolioSummary:
         """
-        Aggregate portfolio-level context across all asset types for a user.
+        Aggregate portfolio-level context across all collection items for a user.
         Used for the home dashboard and portfolio-level prompts.
         """
         from django.db.models import Sum
         from django.db.models.functions import Coalesce
 
-        vehicles = Vehicle.objects.filter(owner=user)
-        timepieces = Timepiece.objects.filter(owner=user)
-        collection_items = DynamicCollectionItem.objects.filter(owner=user)
+        _system_slugs = {"automobiles", "horology-salon"}
+        all_items = DynamicCollectionItem.objects.filter(owner=user)
+        automobiles = all_items.filter(collection_type__slug="automobiles")
+        horology = all_items.filter(collection_type__slug="horology-salon")
+        other_items = all_items.exclude(collection_type__slug__in=_system_slugs)
         collection_types = list(
             CollectionType.objects.filter(owner=user, is_active=True).values_list(
                 "name", flat=True
@@ -238,14 +120,14 @@ class ContextService:
             result = qs.aggregate(total=Coalesce(Sum(field), Decimal("0.00")))["total"]
             return result or Decimal("0.00")
 
-        vehicles_value = _sum_values(vehicles)
-        timepieces_value = _sum_values(timepieces)
-        collections_value = _sum_values(collection_items)
+        vehicles_value = _sum_values(automobiles)
+        timepieces_value = _sum_values(horology)
+        collections_value = _sum_values(other_items)
 
         return PortfolioSummary(
-            vehicle_count=vehicles.count(),
-            timepiece_count=timepieces.count(),
-            collection_item_count=collection_items.count(),
+            vehicle_count=automobiles.count(),
+            timepiece_count=horology.count(),
+            collection_item_count=all_items.count(),
             total_vehicles_value=vehicles_value,
             total_timepieces_value=timepieces_value,
             total_collections_value=collections_value,

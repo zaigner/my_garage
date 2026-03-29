@@ -4,100 +4,93 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
-from my_garage.models import Vehicle, ServiceRecord, Upgrade, ConditionReport
-from .serializers import (
-    VehicleSerializer,
-    ServiceRecordSerializer,
-    UpgradeSerializer,
-    ConditionReportSerializer,
+from my_garage.models import (
+    CollectionType,
+    DynamicCollectionItem,
+    GenericServiceRecord,
+    GenericValuationHistory,
+    GenericUpgrade,
 )
-from .services import vehicle_update_market_valuation
-from .selectors import vehicle_get_build_summary
-from ..tasks import task_update_market_valuation
+from .serializers import (
+    CollectionTypeSerializer,
+    DynamicCollectionItemSerializer,
+    GenericServiceRecordSerializer,
+    GenericValuationHistorySerializer,
+    GenericUpgradeSerializer,
+)
+from ..tasks import task_collection_item_refresh_valuation, task_collection_item_enrich
+from ..services.collection_services import get_collection_services
 
 
-class VehicleViewSet(viewsets.ModelViewSet):
-    """ViewSet for Vehicle CRUD operations."""
-
-    queryset = Vehicle.objects.all()
-    serializer_class = VehicleSerializer
+class CollectionTypeViewSet(viewsets.ModelViewSet):
+    serializer_class = CollectionTypeSerializer
     permission_classes = [IsAuthenticated]
-    filterset_fields = ['make', 'model', 'year', 'owner']
-    ordering_fields = '__all__'
+
+    def get_queryset(self):
+        return CollectionType.objects.filter(owner=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
+
+
+class DynamicCollectionItemViewSet(viewsets.ModelViewSet):
+    serializer_class = DynamicCollectionItemSerializer
+    permission_classes = [IsAuthenticated]
+    filterset_fields = ['collection_type']
     ordering = ['-created_at']
 
     def get_queryset(self):
-        """Filter to show only user's own vehicles."""
-        return self.queryset.filter(owner=self.request.user)
+        return DynamicCollectionItem.objects.filter(owner=self.request.user).select_related('collection_type')
 
     def perform_create(self, serializer):
-        """Set owner to current user on creation."""
         serializer.save(owner=self.request.user)
 
     @action(detail=True, methods=['post'])
     def refresh_valuation(self, request, pk=None):
-        """Refresh market valuation for a vehicle."""
-        vehicle = self.get_object()
-        try:
-            # Trigger background task
-            task_update_market_valuation.delay(vehicle.id)
-            return Response({
-                'message': 'Valuation update queued successfully'
-            })
-        except Exception as e:
-            return Response(
-                {'error': str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+        item = self.get_object()
+        provider = get_collection_services(item.collection_type.service_provider_key)
+        if not provider.supports_valuation_refresh():
+            return Response({'error': 'Valuation refresh not supported for this collection type.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        task_collection_item_refresh_valuation.delay(item.id)
+        return Response({'message': 'Valuation refresh queued.'})
 
-    @action(detail=True, methods=['get'])
-    def build_summary(self, request, pk=None):
-        """Get comprehensive build summary."""
-        vehicle = self.get_object()
-        summary = vehicle_get_build_summary(vehicle)
-        # Convert Decimal to string for JSON
-        summary_json = {k: str(v) if isinstance(v, type(summary['equity'])) else v
-                       for k, v in summary.items() if k != 'vehicle'}
-        return Response(summary_json)
+    @action(detail=True, methods=['post'])
+    def enrich(self, request, pk=None):
+        item = self.get_object()
+        provider = get_collection_services(item.collection_type.service_provider_key)
+        if not provider.supports_enrichment():
+            return Response({'error': 'Enrichment not supported for this collection type.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        task_collection_item_enrich.delay(item.id)
+        return Response({'message': 'Enrichment queued.'})
 
 
-class ServiceRecordViewSet(viewsets.ModelViewSet):
-    """ViewSet for ServiceRecord CRUD operations."""
-
-    queryset = ServiceRecord.objects.all()
-    serializer_class = ServiceRecordSerializer
+class GenericServiceRecordViewSet(viewsets.ModelViewSet):
+    serializer_class = GenericServiceRecordSerializer
     permission_classes = [IsAuthenticated]
-    filterset_fields = ['vehicle', 'category', 'is_verified']
+    filterset_fields = ['item', 'category', 'is_verified']
     ordering = ['-date']
 
     def get_queryset(self):
-        """Filter to show only records for user's vehicles."""
-        return self.queryset.filter(vehicle__owner=self.request.user)
+        return GenericServiceRecord.objects.filter(item__owner=self.request.user)
 
 
-class UpgradeViewSet(viewsets.ModelViewSet):
-    """ViewSet for Upgrade CRUD operations."""
-
-    queryset = Upgrade.objects.all()
-    serializer_class = UpgradeSerializer
+class GenericValuationHistoryViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = GenericValuationHistorySerializer
     permission_classes = [IsAuthenticated]
-    filterset_fields = ['vehicle', 'status']
-    ordering = ['-installation_date']
+    filterset_fields = ['item']
+    ordering = ['-date']
 
     def get_queryset(self):
-        """Filter to show only upgrades for user's vehicles."""
-        return self.queryset.filter(vehicle__owner=self.request.user)
+        return GenericValuationHistory.objects.filter(item__owner=self.request.user)
 
 
-class ConditionReportViewSet(viewsets.ModelViewSet):
-    """ViewSet for ConditionReport CRUD operations."""
-
-    queryset = ConditionReport.objects.all()
-    serializer_class = ConditionReportSerializer
+class GenericUpgradeViewSet(viewsets.ModelViewSet):
+    serializer_class = GenericUpgradeSerializer
     permission_classes = [IsAuthenticated]
-    filterset_fields = ['vehicle', 'area']
-    ordering = ['-created_at']
+    filterset_fields = ['status']
+    ordering = ['-completion_date']
 
     def get_queryset(self):
-        """Filter to show only reports for user's vehicles."""
-        return self.queryset.filter(vehicle__owner=self.request.user)
+        return GenericUpgrade.objects.filter(item__owner=self.request.user)

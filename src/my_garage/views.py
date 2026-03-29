@@ -8,441 +8,77 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.template import Context, Template
 from django.views.decorators.csrf import csrf_exempt
 
-# Import our custom Application Layer components
 from my_garage.models import (
     CollectionType,
     DynamicCollectionItem,
     GenericServiceRecord,
     GenericUpgrade,
-    ServiceRecord,
-    Timepiece,
-    ValuationHistory,
-    Vehicle,
 )
 
-from .api.selectors import (
-    global_search,
-    vehicle_get_build_summary,
-    vehicle_list_service_records,
-    vehicle_list_upgrades,
-    vehicle_list_wishlist_items,
-)
-from .api.services import service_record_create_from_ocr
+from .api.selectors import global_search
 from .forms import (
     CollectionTypeForm,
     DynamicCollectionItemForm,
     GenericServiceRecordForm,
     GenericUpgradeForm,
-    ServiceRecordForm,
-    TimepieceForm,
-    UpgradeForm,
-    VehicleForm,
 )
-from .skills.theme_generator import CollectionThemeGenerator
 from .services.collection_services import get_collection_services
+from .skills.theme_generator import CollectionThemeGenerator
 from .tasks import (
     task_collection_item_enrich,
     task_collection_item_refresh_valuation,
-    task_enrich_vehicle_data,
-    task_refresh_vehicle_photo,
-    task_update_market_valuation,
 )
 
 logger = logging.getLogger(__name__)
 
 
-@login_required
-def garage_view(request: HttpRequest) -> HttpResponse:
-    """
-    The 'My Garage' view showing the vehicle carousel (garage.html).
-    """
-    vehicles = request.user.vehicles.all()
-    return render(request, "my_garage/garage.html", {"vehicles": vehicles})
+# ── Legacy permalink redirects ────────────────────────────────────────────────
+# These handle bookmarked or externally-linked /garage/<id>/ and
+# /timepieces/<id>/ URLs.  If the legacy item was migrated to a
+# DynamicCollectionItem (identified by source_vehicle_id / source_timepiece_id
+# in custom_fields), we redirect transparently.  If not yet migrated, we
+# return a 404 rather than serving a broken legacy view.
 
 
 @login_required
-def garage_dashboard(request: HttpRequest) -> HttpResponse:
-    """
-    Primary dashboard showing all vehicles in the user's garage.
-    """
-    vehicles = request.user.vehicles.all()
-    timepieces = request.user.timepieces.all()
-
-    # We could enhance this with a selector that summarizes the whole garage
-    context = {
-        "vehicles": vehicles,
-        "timepieces": timepieces,
-        "total_garage_value": sum(v.current_market_value for v in vehicles),
-    }
-    return render(request, "my_garage/dashboard.html", context)
-
-
-@login_required
-def vehicle_add(request: HttpRequest) -> HttpResponse:
-    """
-    View to add a new vehicle to the garage.
-    """
-    if request.method == "POST":
-        form = VehicleForm(request.POST, request.FILES)
-        if form.is_valid():
-            vehicle = form.save(commit=False)
-            vehicle.owner = request.user
-            vehicle.save()
-
-            # Trigger background tasks for enrichment and valuation
-            if vehicle.vin:
-                transaction.on_commit(
-                    lambda: task_enrich_vehicle_data.delay(vehicle.id)
-                )
-
-            transaction.on_commit(
-                lambda: task_update_market_valuation.delay(vehicle.id)
-            )
-
-            messages.success(
-                request,
-                f"{vehicle.year} {vehicle.make} {vehicle.model} added to your garage! Data enrichment queued.",
-            )
-            return redirect("my_garage:garage_view")
-    else:
-        form = VehicleForm()
-
-    return render(
-        request,
-        "my_garage/vehicle_form.html",
-        {"form": form, "title": "Add New Vehicle"},
-    )
-
-
-@login_required
-def vehicle_detail(request: HttpRequest, vehicle_id: int) -> HttpResponse:
-    """
-    Detailed view for a single vehicle, allowing updates.
-    """
-    vehicle = get_object_or_404(Vehicle, pk=vehicle_id, owner=request.user)
-
-    if request.method == "POST":
-        # Capture old color to check for changes
-        old_color = vehicle.exterior_color
-
-        form = VehicleForm(request.POST, request.FILES, instance=vehicle)
-        if form.is_valid():
-            vehicle = form.save()
-
-            # Check if color changed and user didn't upload a new photo manually
-            if vehicle.exterior_color != old_color and "photo" not in request.FILES:
-                # Trigger photo refresh if color changed
-                transaction.on_commit(
-                    lambda: task_refresh_vehicle_photo.delay(vehicle.id)
-                )
-                messages.info(
-                    request, "Exterior color updated. Refreshing vehicle photo..."
-                )
-
-            messages.success(request, "Vehicle updated successfully.")
-            return redirect("my_garage:vehicle_detail", vehicle_id=vehicle.id)
-    else:
-        form = VehicleForm(instance=vehicle)
-
-    # Get related data
-    service_records = vehicle_list_service_records(vehicle)
-    upgrades = vehicle_list_upgrades(vehicle)
-    build_summary = vehicle_get_build_summary(vehicle)
-    wishlist = vehicle_list_wishlist_items(vehicle)
-
-    context = {
-        "vehicle": vehicle,
-        "form": form,
-        "service_records": service_records,
-        "upgrades": upgrades,
-        "financial_summary": build_summary,  # Renamed to match template
-        "wishlist": wishlist,
-    }
-    return render(request, "my_garage/vehicle_detail.html", context)
-
-
-@login_required
-def vehicle_delete(request: HttpRequest, vehicle_id: int) -> HttpResponse:
-    """
-    Delete a vehicle.
-    """
-    vehicle = get_object_or_404(Vehicle, pk=vehicle_id, owner=request.user)
-
-    if request.method == "POST":
-        vehicle.delete()
-        messages.success(
-            request, f"{vehicle.year} {vehicle.make} {vehicle.model} deleted."
-        )
-        return redirect("my_garage:garage_view")
-
-    return render(
-        request, "my_garage/confirm_delete.html", {"object": vehicle, "type": "Vehicle"}
-    )
-
-
-@login_required
-def service_record_add(request: HttpRequest, vehicle_id: int) -> HttpResponse:
-    """
-    Add a service record to a vehicle.
-    """
-    vehicle = get_object_or_404(Vehicle, pk=vehicle_id, owner=request.user)
-
-    if request.method == "POST":
-        form = ServiceRecordForm(request.POST, request.FILES)
-        if form.is_valid():
-            record = form.save(commit=False)
-            record.vehicle = vehicle
-
-            # If OCR data was processed in the frontend or via API, it might be handled here
-            # For now, standard form save
-            record.save()
-
-            messages.success(request, "Service record added.")
-            return redirect("my_garage:vehicle_detail", vehicle_id=vehicle.id)
-    else:
-        form = ServiceRecordForm()
-
-    return render(
-        request,
-        "my_garage/service_record_form.html",
-        {"form": form, "vehicle": vehicle, "title": "Add Service Record"},
-    )
-
-
-@login_required
-def service_record_edit(request: HttpRequest, record_id: int) -> HttpResponse:
-    """
-    Edit an existing service record.
-    """
-    record = get_object_or_404(ServiceRecord, pk=record_id, vehicle__owner=request.user)
-    vehicle = record.vehicle
-
-    if request.method == "POST":
-        form = ServiceRecordForm(request.POST, request.FILES, instance=record)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Service record updated.")
-            return redirect("my_garage:vehicle_detail", vehicle_id=vehicle.id)
-    else:
-        form = ServiceRecordForm(instance=record)
-
-    return render(
-        request,
-        "my_garage/service_record_form.html",
-        {
-            "form": form,
-            "vehicle": vehicle,
-            "title": "Edit Service Record",
-            "is_edit": True,
-        },
-    )
-
-
-@login_required
-def service_record_delete(request: HttpRequest, record_id: int) -> HttpResponse:
-    """
-    Delete a service record.
-    """
-    record = get_object_or_404(ServiceRecord, pk=record_id, vehicle__owner=request.user)
-    vehicle = record.vehicle
-
-    if request.method == "POST":
-        record.delete()
-        messages.success(request, "Service record deleted.")
-        return redirect("my_garage:vehicle_detail", vehicle_id=vehicle.id)
-
-    return render(
-        request,
-        "my_garage/confirm_delete.html",
-        {
-            "object": record,
-            "type": "Service Record",
-            "cancel_url": f"/garage/vehicle/{vehicle.id}/",
-        },
-    )
-
-
-@login_required
-def upgrade_add(request: HttpRequest, vehicle_id: int) -> HttpResponse:
-    """
-    Add an upgrade/modification project to a vehicle.
-    """
-    vehicle = get_object_or_404(Vehicle, pk=vehicle_id, owner=request.user)
-
-    if request.method == "POST":
-        form = UpgradeForm(request.POST)
-        if form.is_valid():
-            upgrade = form.save(commit=False)
-            upgrade.vehicle = vehicle
-            upgrade.save()
-
-            messages.success(request, f"Project '{upgrade.name}' started!")
-            return redirect("my_garage:vehicle_detail", vehicle_id=vehicle.id)
-    else:
-        form = UpgradeForm()
-
-    return render(
-        request,
-        "my_garage/upgrade_form.html",
-        {"form": form, "vehicle": vehicle, "title": "Start New Project"},
-    )
-
-
-@login_required
-def upgrade_edit(
-    request: HttpRequest, vehicle_id: int, upgrade_id: int
+def legacy_vehicle_detail_redirect(
+    request: HttpRequest, vehicle_id: int
 ) -> HttpResponse:
-    """
-    Edit an upgrade/modification project.
-    """
-    vehicle = get_object_or_404(Vehicle, pk=vehicle_id, owner=request.user)
-    upgrade = get_object_or_404(GenericUpgrade, pk=upgrade_id, vehicle=vehicle)
-
-    if request.method == "POST":
-        form = UpgradeForm(request.POST, instance=upgrade)
-        if form.is_valid():
-            form.save()
-            messages.success(request, f"Project '{upgrade.name}' updated.")
-            return redirect("my_garage:vehicle_detail", vehicle_id=vehicle.id)
-    else:
-        form = UpgradeForm(instance=upgrade)
-
-    return render(
-        request,
-        "my_garage/upgrade_form.html",
-        {"form": form, "vehicle": vehicle, "title": "Edit Project", "is_edit": True},
+    """Redirect /garage/<vehicle_id>/ to the corresponding collection item."""
+    item = DynamicCollectionItem.objects.filter(
+        owner=request.user,
+        collection_type__slug="automobiles",
+        custom_fields__source_vehicle_id=vehicle_id,
+    ).first()
+    if item is None:
+        from django.http import Http404
+        raise Http404(f"Vehicle {vehicle_id} has not been migrated to a collection item yet.")
+    return redirect(
+        "collections:collection_item_detail",
+        collection_slug="automobiles",
+        item_id=item.id,
     )
 
 
 @login_required
-def upgrade_delete(
-    request: HttpRequest, vehicle_id: int, upgrade_id: int
+def legacy_timepiece_detail_redirect(
+    request: HttpRequest, timepiece_id: int
 ) -> HttpResponse:
-    """
-    Delete an upgrade/modification project.
-    """
-    vehicle = get_object_or_404(Vehicle, pk=vehicle_id, owner=request.user)
-    upgrade = get_object_or_404(GenericUpgrade, pk=upgrade_id, vehicle=vehicle)
-
-    if request.method == "POST":
-        upgrade.delete()
-        messages.success(request, f"Project '{upgrade.name}' deleted.")
-        return redirect("my_garage:vehicle_detail", vehicle_id=vehicle.id)
-
-    return render(
-        request,
-        "my_garage/confirm_delete.html",
-        {
-            "object": upgrade,
-            "type": "Upgrade Project",
-            "cancel_url": f"/garage/vehicle/{vehicle.id}/",
-        },
+    """Redirect /timepieces/<timepiece_id>/ to the corresponding collection item."""
+    item = DynamicCollectionItem.objects.filter(
+        owner=request.user,
+        collection_type__slug="horology-salon",
+        custom_fields__source_timepiece_id=timepiece_id,
+    ).first()
+    if item is None:
+        from django.http import Http404
+        raise Http404(f"Timepiece {timepiece_id} has not been migrated to a collection item yet.")
+    return redirect(
+        "collections:collection_item_detail",
+        collection_slug="horology-salon",
+        item_id=item.id,
     )
 
-
-@login_required
-def timepiece_list(request: HttpRequest) -> HttpResponse:
-    """
-    List all timepieces in the user's collection.
-    """
-    timepieces = request.user.timepieces.all()
-    return render(request, "my_garage/timepiece_list.html", {"timepieces": timepieces})
-
-
-@login_required
-def timepiece_winder(request: HttpRequest) -> HttpResponse:
-    """
-    ChronoVault Winder View for timepieces.
-    """
-    timepieces = request.user.timepieces.all()
-
-    # Create virtual slots (e.g., 8 slots)
-    slots = []
-    for i in range(8):
-        slot = {"id": i + 1, "watch": None}
-        if i < len(timepieces):
-            slot["watch"] = timepieces[i]
-        slots.append(slot)
-
-    return render(
-        request,
-        "my_garage/timepiece_list_winder.html",
-        {"timepieces": timepieces, "slots": slots},
-    )
-
-
-@login_required
-def timepiece_add(request: HttpRequest) -> HttpResponse:
-    """
-    Add a new timepiece to the collection.
-    """
-    if request.method == "POST":
-        form = TimepieceForm(request.POST, request.FILES)
-        if form.is_valid():
-            timepiece = form.save(commit=False)
-            timepiece.owner = request.user
-            timepiece.save()
-            messages.success(
-                request,
-                f"{timepiece.brand} {timepiece.model} added to your collection!",
-            )
-            return redirect("timepieces:timepiece_list")
-    else:
-        form = TimepieceForm()
-
-    return render(
-        request,
-        "my_garage/timepiece_form.html",
-        {"form": form, "title": "Add New Timepiece"},
-    )
-
-
-@login_required
-def timepiece_detail(request: HttpRequest, timepiece_id: int) -> HttpResponse:
-    """
-    Detailed view for a single timepiece.
-    """
-    timepiece = get_object_or_404(Timepiece, pk=timepiece_id, owner=request.user)
-
-    if request.method == "POST":
-        # Handle photo update
-        if "photo" in request.FILES:
-            timepiece.photo = request.FILES["photo"]
-            timepiece.save()
-            messages.success(request, "Photo updated successfully.")
-            return redirect("timepieces:timepiece_detail", timepiece_id=timepiece.id)
-
-    return render(request, "my_garage/timepiece_detail.html", {"timepiece": timepiece})
-
-
-@login_required
-def timepiece_add_project(request: HttpRequest, timepiece_id: int) -> HttpResponse:
-    """
-    View to add a new project/upgrade to a timepiece.
-    """
-    timepiece = get_object_or_404(Timepiece, pk=timepiece_id, owner=request.user)
-
-    if request.method == "POST":
-        form = GenericUpgradeForm(request.POST)
-        if form.is_valid():
-            upgrade = form.save(commit=False)
-            upgrade.content_object = timepiece
-            upgrade.save()
-            messages.success(request, "Project started!")
-            return redirect("timepieces:timepiece_detail", timepiece_id=timepiece.id)
-    else:
-        form = GenericUpgradeForm()
-
-    return render(
-        request,
-        "my_garage/upgrade_form.html",
-        {
-            "form": form,
-            "vehicle": timepiece,  # Reusing template, might need adjustment
-            "title": "Start New Project",
-            "is_timepiece": True,  # Flag to indicate this is a timepiece
-        },
-    )
 
 
 # ============================================================================
@@ -933,6 +569,82 @@ def collection_item_delete(
 
 
 @login_required
+def collection_item_trigger_valuation(
+    request: HttpRequest, collection_slug: str, item_id: int
+) -> HttpResponse:
+    """
+    POST-only: queue a valuation refresh for a collection item.
+    """
+    if request.method != "POST":
+        return redirect(
+            "collections:collection_item_detail",
+            collection_slug=collection_slug,
+            item_id=item_id,
+        )
+
+    collection_type = get_object_or_404(
+        CollectionType, slug=collection_slug, owner=request.user
+    )
+    item = get_object_or_404(
+        DynamicCollectionItem,
+        id=item_id,
+        collection_type=collection_type,
+        owner=request.user,
+    )
+
+    provider = get_collection_services(collection_type.service_provider_key)
+    if provider.supports_valuation_refresh():
+        task_collection_item_refresh_valuation.delay(item.id)
+        messages.success(request, "Valuation refresh queued — check back shortly.")
+    else:
+        messages.warning(request, "Valuation refresh is not supported for this collection type.")
+
+    return redirect(
+        "collections:collection_item_detail",
+        collection_slug=collection_slug,
+        item_id=item_id,
+    )
+
+
+@login_required
+def collection_item_trigger_enrich(
+    request: HttpRequest, collection_slug: str, item_id: int
+) -> HttpResponse:
+    """
+    POST-only: queue an enrichment (e.g. VIN decode) for a collection item.
+    """
+    if request.method != "POST":
+        return redirect(
+            "collections:collection_item_detail",
+            collection_slug=collection_slug,
+            item_id=item_id,
+        )
+
+    collection_type = get_object_or_404(
+        CollectionType, slug=collection_slug, owner=request.user
+    )
+    item = get_object_or_404(
+        DynamicCollectionItem,
+        id=item_id,
+        collection_type=collection_type,
+        owner=request.user,
+    )
+
+    provider = get_collection_services(collection_type.service_provider_key)
+    if provider.supports_enrichment():
+        task_collection_item_enrich.delay(item.id)
+        messages.success(request, "Enrichment queued — check back shortly.")
+    else:
+        messages.warning(request, "Enrichment is not supported for this collection type.")
+
+    return redirect(
+        "collections:collection_item_detail",
+        collection_slug=collection_slug,
+        item_id=item_id,
+    )
+
+
+@login_required
 def all_services_view(request: HttpRequest) -> HttpResponse:
     """
     View all service records across ALL collections.
@@ -1334,123 +1046,3 @@ def button_test_view(request: HttpRequest) -> HttpResponse:
     return render(request, "my_garage/button_test.html", {})
 
 
-@login_required
-def trigger_valuation_refresh(request: HttpRequest, vehicle_id: int) -> HttpResponse:
-    """
-    Manually trigger a valuation refresh for a vehicle.
-    """
-    vehicle = get_object_or_404(Vehicle, pk=vehicle_id, owner=request.user)
-
-    # Trigger the background task
-    transaction.on_commit(lambda: task_update_market_valuation.delay(vehicle.id))
-
-    messages.success(
-        request,
-        f"Valuation refresh queued for {vehicle.year} {vehicle.make} {vehicle.model}.",
-    )
-    return redirect("my_garage:vehicle_detail", vehicle_id=vehicle.id)
-
-
-@login_required
-def trigger_vin_enrichment(request: HttpRequest, vehicle_id: int) -> HttpResponse:
-    """
-    Manually trigger VIN enrichment for a vehicle.
-    """
-    vehicle = get_object_or_404(Vehicle, pk=vehicle_id, owner=request.user)
-
-    if not vehicle.vin:
-        messages.error(request, "Vehicle has no VIN to enrich.")
-        return redirect("my_garage:vehicle_detail", vehicle_id=vehicle.id)
-
-    # Trigger the background task
-    transaction.on_commit(lambda: task_enrich_vehicle_data.delay(vehicle.id))
-
-    messages.success(
-        request,
-        f"Data enrichment queued for {vehicle.year} {vehicle.make} {vehicle.model}.",
-    )
-    return redirect("my_garage:vehicle_detail", vehicle_id=vehicle.id)
-
-
-@login_required
-def upload_service_receipt(request: HttpRequest, vehicle_id: int) -> HttpResponse:
-    """
-    Handle receipt upload for OCR processing.
-    """
-    vehicle = get_object_or_404(Vehicle, pk=vehicle_id, owner=request.user)
-
-    if request.method == "POST" and request.FILES.get("receipt_image"):
-        receipt_image = request.FILES["receipt_image"]
-
-        try:
-            # Process OCR (synchronously for now, or queue it)
-            # For this example, we'll assume a service handles it and returns a record
-            record = service_record_create_from_ocr(vehicle, receipt_image)
-
-            messages.success(
-                request, "Receipt processed successfully! Please verify the details."
-            )
-            return redirect("my_garage:edit_service_record", record_id=record.id)
-        except Exception as e:
-            logger.error(f"OCR processing failed: {e}")
-            messages.error(
-                request,
-                "Failed to process receipt. Please try again or enter details manually.",
-            )
-
-    return redirect("my_garage:vehicle_detail", vehicle_id=vehicle.id)
-
-
-@login_required
-def vehicle_projects_kanban(request: HttpRequest, vehicle_id: int) -> HttpResponse:
-    """
-    Kanban board view for a specific vehicle's projects.
-    """
-    vehicle = get_object_or_404(Vehicle, pk=vehicle_id, owner=request.user)
-
-    upgrades = vehicle.projects.all().order_by(
-        "status", "-ordered_date", "-completion_date"
-    )
-
-    # Group upgrades by status
-    wishlist = upgrades.filter(status="WISHLIST")
-    ordered = upgrades.filter(status="ORDERED")
-    in_progress = upgrades.filter(status="IN_PROGRESS")
-    completed = upgrades.filter(status="COMPLETED")
-    cancelled = upgrades.filter(status="CANCELLED")
-
-    return render(
-        request,
-        "my_garage/vehicle_projects_kanban.html",
-        {
-            "vehicle": vehicle,
-            "wishlist": wishlist,
-            "ordered": ordered,
-            "in_progress": in_progress,
-            "completed": completed,
-            "cancelled": cancelled,
-        },
-    )
-
-
-@login_required
-def view_ocr_debug(request: HttpRequest, record_id: int) -> HttpResponse:
-    """
-    View debug information for an OCR-processed service record.
-    """
-    record = get_object_or_404(ServiceRecord, pk=record_id, vehicle__owner=request.user)
-
-    # Assuming there's some debug info stored or we just show raw fields
-    return render(request, "my_garage/ocr_debug.html", {"record": record})
-
-
-@login_required
-def view_valuation_debug(request: HttpRequest, history_id: int) -> HttpResponse:
-    """
-    View debug information for a valuation history entry.
-    """
-    history = get_object_or_404(
-        ValuationHistory, pk=history_id, vehicle__owner=request.user
-    )
-
-    return render(request, "my_garage/valuation_debug.html", {"history": history})

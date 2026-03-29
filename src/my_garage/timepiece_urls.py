@@ -1,13 +1,14 @@
+"""Legacy timepiece URL patterns (Phase 5).
+
+The list route (/timepieces/) is redirected in config/urls.py.
+The only route that remains here is the smart permalink redirect.
+"""
 from django.urls import path
 from . import views
 
 app_name = "timepieces"
 
 urlpatterns = [
-    # Timepieces
-    path("", views.timepiece_list, name="timepiece_list"),
-    path("winder/", views.timepiece_winder, name="timepiece_winder"),
-    path("add/", views.timepiece_add, name="timepiece_add"),
-    path("<int:timepiece_id>/", views.timepiece_detail, name="timepiece_detail"),
-    path("<int:timepiece_id>/add-project/", views.timepiece_add_project, name="timepiece_add_project"),
+    # Smart permalink redirect for migrated timepieces
+    path("<int:timepiece_id>/", views.legacy_timepiece_detail_redirect, name="timepiece_detail"),
 ]

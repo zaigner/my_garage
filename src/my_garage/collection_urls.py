@@ -23,6 +23,8 @@ urlpatterns = [
     path("<slug:collection_slug>/items/add/", views.collection_item_add, name="collection_item_add"),
     path("<slug:collection_slug>/items/<int:item_id>/", views.collection_item_detail, name="collection_item_detail"),
     path("<slug:collection_slug>/items/<int:item_id>/delete/", views.collection_item_delete, name="collection_item_delete"),
+    path("<slug:collection_slug>/items/<int:item_id>/refresh-valuation/", views.collection_item_trigger_valuation, name="collection_item_trigger_valuation"),
+    path("<slug:collection_slug>/items/<int:item_id>/enrich/", views.collection_item_trigger_enrich, name="collection_item_trigger_enrich"),
 
     # Dynamic Collections - Service Records
     path("<slug:collection_slug>/items/<int:item_id>/add-service/", views.collection_item_add_service, name="collection_item_add_service"),

@@ -1,5 +1,5 @@
 """
-Eval tests: Vehicle and Timepiece context assembly.
+Eval tests: Collection item context assembly (Phase 5 — unified DynamicCollectionItem).
 Validates against the golden dataset to catch regressions in context structure.
 """
 from __future__ import annotations
@@ -19,7 +19,7 @@ class TestVehicleContextGoldenDataset:
         self, golden_dataset, context_service, eval_vehicle, eval_user
     ):
         case = next(c for c in golden_dataset if c["id"] == "vehicle_context_basic")
-        ctx = context_service.get_vehicle_context(eval_vehicle.id, eval_user)
+        ctx = context_service.get_collection_item_context(eval_vehicle.id, eval_user)
         d = ContextService.to_dict(ctx)
 
         for key in case["expected_keys"]:
@@ -29,7 +29,7 @@ class TestVehicleContextGoldenDataset:
         self, golden_dataset, context_service, eval_vehicle, eval_user
     ):
         case = next(c for c in golden_dataset if c["id"] == "vehicle_context_basic")
-        ctx = context_service.get_vehicle_context(eval_vehicle.id, eval_user)
+        ctx = context_service.get_collection_item_context(eval_vehicle.id, eval_user)
         d = ContextService.to_dict(ctx)
 
         for key, expected in case["expected_values"].items():
@@ -41,15 +41,8 @@ class TestVehicleContextGoldenDataset:
         case = next(
             c for c in golden_dataset if c["id"] == "vehicle_service_records_populated"
         )
-        ctx = context_service.get_vehicle_context(eval_vehicle.id, eval_user)
-        d = ContextService.to_dict(ctx)
-
-        nested = case["expected_nested"]["service_records"]
-        assert len(d["service_records"]) >= nested["min_length"]
-        for item_key in nested["item_keys"]:
-            assert (
-                item_key in d["service_records"][0]
-            ), f"Service record missing: {item_key}"
+        ctx = context_service.get_collection_item_context(eval_vehicle.id, eval_user)
+        assert ctx.service_record_count >= case["expected_service_record_count_min"]
 
     def test_financial_aggregates(
         self, golden_dataset, context_service, eval_vehicle, eval_user
@@ -57,20 +50,15 @@ class TestVehicleContextGoldenDataset:
         case = next(
             c for c in golden_dataset if c["id"] == "vehicle_financial_aggregates"
         )
-        ctx = context_service.get_vehicle_context(eval_vehicle.id, eval_user)
-
+        ctx = context_service.get_collection_item_context(eval_vehicle.id, eval_user)
         financials = case["expected_financials"]
-        assert ctx.total_maintenance_cost >= Decimal(
-            financials["total_maintenance_cost_min"]
-        )
         assert str(ctx.purchase_price) == financials["purchase_price"]
         assert str(ctx.current_market_value) == financials["current_market_value"]
 
     def test_context_serializes_to_dict(self, context_service, eval_vehicle, eval_user):
-        ctx = context_service.get_vehicle_context(eval_vehicle.id, eval_user)
+        ctx = context_service.get_collection_item_context(eval_vehicle.id, eval_user)
         d = ContextService.to_dict(ctx)
         assert isinstance(d, dict)
-        # All Decimal fields must be JSON-safe strings
         assert isinstance(d["purchase_price"], str)
         assert isinstance(d["current_market_value"], str)
 
@@ -79,7 +67,7 @@ class TestVehicleContextGoldenDataset:
 
         other = get_user_model().objects.create_user(username="intruder", password="x")
         with pytest.raises(ContextServiceError):
-            context_service.get_vehicle_context(eval_vehicle.id, other)
+            context_service.get_collection_item_context(eval_vehicle.id, other)
 
 
 class TestTimepieceContextGoldenDataset:
@@ -87,7 +75,7 @@ class TestTimepieceContextGoldenDataset:
         self, golden_dataset, context_service, eval_timepiece, eval_user
     ):
         case = next(c for c in golden_dataset if c["id"] == "timepiece_context_basic")
-        ctx = context_service.get_timepiece_context(eval_timepiece.id, eval_user)
+        ctx = context_service.get_collection_item_context(eval_timepiece.id, eval_user)
         d = ContextService.to_dict(ctx)
 
         for key in case["expected_keys"]:
@@ -97,11 +85,19 @@ class TestTimepieceContextGoldenDataset:
         self, golden_dataset, context_service, eval_timepiece, eval_user
     ):
         case = next(c for c in golden_dataset if c["id"] == "timepiece_context_basic")
-        ctx = context_service.get_timepiece_context(eval_timepiece.id, eval_user)
+        ctx = context_service.get_collection_item_context(eval_timepiece.id, eval_user)
         d = ContextService.to_dict(ctx)
 
         for key, expected in case["expected_values"].items():
             assert d[key] == expected, f"Key {key}: expected {expected}, got {d[key]}"
+
+    def test_horology_custom_fields_present(
+        self, golden_dataset, context_service, eval_timepiece, eval_user
+    ):
+        case = next(c for c in golden_dataset if c["id"] == "timepiece_context_basic")
+        ctx = context_service.get_collection_item_context(eval_timepiece.id, eval_user)
+        for field_key in case["expected_custom_field_keys"]:
+            assert field_key in ctx.custom_fields, f"Missing custom field: {field_key}"
 
 
 class TestCollectionItemContextGoldenDataset:

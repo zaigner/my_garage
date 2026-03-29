@@ -3,19 +3,19 @@ from rest_framework.routers import DefaultRouter, SimpleRouter
 from django.conf import settings
 
 from my_garage.api.views import (
-    VehicleViewSet,
-    ServiceRecordViewSet,
-    UpgradeViewSet,
-    ConditionReportViewSet,
+    CollectionTypeViewSet,
+    DynamicCollectionItemViewSet,
+    GenericServiceRecordViewSet,
+    GenericValuationHistoryViewSet,
+    GenericUpgradeViewSet,
 )
 
-# Use DefaultRouter for development (browsable API), SimpleRouter for production
 router = DefaultRouter() if settings.DEBUG else SimpleRouter()
 
-# Register ViewSets
-router.register("vehicles", VehicleViewSet)
-router.register("service-records", ServiceRecordViewSet)
-router.register("upgrades", UpgradeViewSet)
-router.register("condition-reports", ConditionReportViewSet)
+router.register("collection-types", CollectionTypeViewSet, basename="collectiontype")
+router.register("items", DynamicCollectionItemViewSet, basename="collectionitem")
+router.register("service-records", GenericServiceRecordViewSet, basename="servicerecord")
+router.register("valuation-history", GenericValuationHistoryViewSet, basename="valuationhistory")
+router.register("upgrades", GenericUpgradeViewSet, basename="upgrade")
 
 urlpatterns = router.urls
