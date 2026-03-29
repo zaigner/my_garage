@@ -235,8 +235,27 @@ class CollectionType(models.Model):
     
     # UI Customization
     ui_theme_html = models.TextField(
-        blank=True, 
+        blank=True,
         help_text="Custom UI component HTML for this collection"
+    )
+
+    # Service Provider — drives specialised enrichment/valuation behaviour
+    SERVICE_PROVIDER_CHOICES = [
+        ('default', 'Default'),
+        ('vehicle', 'Automobile'),
+        ('timepiece', 'Timepiece / Horology'),
+    ]
+    service_provider_key = models.CharField(
+        max_length=50,
+        choices=SERVICE_PROVIDER_CHOICES,
+        default='default',
+        help_text="Pluggable service provider for enrichment and valuation",
+    )
+
+    # System flag — prevents deletion/rename through the UI
+    is_system = models.BooleanField(
+        default=False,
+        help_text="System-managed collection; not editable or deletable by users",
     )
 
     # Metadata
@@ -352,6 +371,27 @@ class DynamicCollectionItem(models.Model):
     def get_display_name(self):
         """Get a display-friendly name for this item"""
         return self.name
+
+
+class GenericValuationHistory(models.Model):
+    """
+    Immutable audit trail of market valuations for any DynamicCollectionItem.
+    Replaces the Vehicle-specific ValuationHistory for the unified collections model.
+    """
+    item = models.ForeignKey(
+        DynamicCollectionItem,
+        on_delete=models.CASCADE,
+        related_name="valuation_history",
+    )
+    date = models.DateTimeField(auto_now_add=True)
+    value = models.DecimalField(max_digits=12, decimal_places=2)
+    raw_data = models.JSONField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-date']
+
+    def __str__(self):
+        return f"{self.item.name} valued at {self.value} on {self.date.date()}"
 
 
 class GenericServiceRecord(models.Model):

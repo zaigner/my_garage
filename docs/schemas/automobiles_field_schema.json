@@ -1,0 +1,126 @@
+{
+  "_meta": {
+    "collection_name": "Automobiles",
+    "slug": "automobiles",
+    "service_provider_key": "vehicle",
+    "list_display_fields": ["year", "make", "model", "trim", "mileage", "exterior_color"],
+    "name_template": "{year} {make} {model}",
+    "notes": [
+      "purchase_price, purchase_date, current_market_value, photo, notes live on DynamicCollectionItem — NOT in custom_fields.",
+      "Fields with system=true are written by VehicleCollectionServices, not by user forms. The form renderer must skip them.",
+      "VIN uniqueness is enforced at the service layer by VehicleCollectionServices.run_enrichment(), not by the schema.",
+      "New field types introduced: 'select', 'system_json' — requires template renderer update (Phase 3)."
+    ]
+  },
+  "fields": [
+    {
+      "name": "make",
+      "type": "text",
+      "label": "Make",
+      "required": true,
+      "help_text": "Manufacturer (e.g. Porsche, Toyota, Ford)"
+    },
+    {
+      "name": "model",
+      "type": "text",
+      "label": "Model",
+      "required": true,
+      "help_text": "Model name (e.g. 911, Supra, Mustang)"
+    },
+    {
+      "name": "year",
+      "type": "number",
+      "label": "Model Year",
+      "required": true,
+      "help_text": "Four-digit model year",
+      "min": 1885,
+      "max": 2100
+    },
+    {
+      "name": "trim",
+      "type": "text",
+      "label": "Trim / Edition",
+      "required": false,
+      "help_text": "e.g. GT3 RS, TRD Pro, Shelby GT500"
+    },
+    {
+      "name": "vin",
+      "type": "text",
+      "label": "VIN",
+      "required": false,
+      "help_text": "17-character Vehicle Identification Number — enables VIN decode",
+      "max_length": 17
+    },
+    {
+      "name": "license_plate",
+      "type": "text",
+      "label": "License Plate",
+      "required": false,
+      "help_text": "Current registration plate",
+      "max_length": 20
+    },
+    {
+      "name": "transmission",
+      "type": "select",
+      "label": "Transmission",
+      "required": false,
+      "help_text": "Gearbox type",
+      "choices": [
+        {"value": "manual_4",    "label": "4-Speed Manual"},
+        {"value": "manual_5",    "label": "5-Speed Manual"},
+        {"value": "manual_6",    "label": "6-Speed Manual"},
+        {"value": "manual_7",    "label": "7-Speed Manual"},
+        {"value": "auto_4",      "label": "4-Speed Automatic"},
+        {"value": "auto_6",      "label": "6-Speed Automatic"},
+        {"value": "auto_7",      "label": "7-Speed Automatic"},
+        {"value": "auto_8",      "label": "8-Speed Automatic"},
+        {"value": "auto_10",     "label": "10-Speed Automatic"},
+        {"value": "dct_6",       "label": "6-Speed DCT"},
+        {"value": "dct_7",       "label": "7-Speed DCT"},
+        {"value": "dct_8",       "label": "8-Speed DCT"},
+        {"value": "pdk",         "label": "PDK (Porsche)"},
+        {"value": "cvt",         "label": "CVT"},
+        {"value": "single_speed","label": "Single Speed (EV)"},
+        {"value": "other",       "label": "Other"}
+      ]
+    },
+    {
+      "name": "exterior_color",
+      "type": "text",
+      "label": "Exterior Color",
+      "required": false,
+      "help_text": "Specific paint name or factory code (e.g. Guards Red, 1B3)"
+    },
+    {
+      "name": "interior_color",
+      "type": "text",
+      "label": "Interior Color",
+      "required": false,
+      "help_text": "e.g. Black leather, Cognac Alcantara"
+    },
+    {
+      "name": "mileage",
+      "type": "number",
+      "label": "Odometer (miles)",
+      "required": false,
+      "help_text": "Current mileage reading — used in market valuation",
+      "min": 0
+    },
+    {
+      "name": "specs",
+      "type": "system_json",
+      "label": "Technical Specs",
+      "required": false,
+      "system": true,
+      "help_text": "Auto-populated by VIN decoder — engine, drivetrain, body style, etc."
+    },
+    {
+      "name": "features",
+      "type": "system_json",
+      "label": "Factory Features",
+      "required": false,
+      "system": true,
+      "help_text": "Auto-populated by VIN decoder — optional equipment list"
+    }
+  ]
+}

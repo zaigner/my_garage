@@ -39,7 +39,10 @@ from .forms import (
     VehicleForm,
 )
 from .skills.theme_generator import CollectionThemeGenerator
+from .services.collection_services import get_collection_services
 from .tasks import (
+    task_collection_item_enrich,
+    task_collection_item_refresh_valuation,
     task_enrich_vehicle_data,
     task_refresh_vehicle_photo,
     task_update_market_valuation,
@@ -877,6 +880,10 @@ def collection_item_detail(
     else:
         form = DynamicCollectionItemForm(instance=item, collection_type=collection_type)
 
+    # Inject provider-specific context (buttons, winder_items, valuation_history, etc.)
+    provider = get_collection_services(collection_type.service_provider_key)
+    provider_context = provider.get_detail_context(item)
+
     return render(
         request,
         "my_garage/collection_item_detail.html",
@@ -889,6 +896,7 @@ def collection_item_detail(
             "attachments": attachments,
             "relationships_from": relationships_from,
             "relationships_to": relationships_to,
+            **provider_context,
         },
     )
 

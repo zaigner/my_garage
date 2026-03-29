@@ -121,6 +121,56 @@ def task_refresh_vehicle_photo(self, vehicle_id: int):
         raise self.retry(exc=exc)
 
 
+@celery_app.task(bind=True, name="my_garage.collection_item_refresh_valuation", **RETRY_KWARGS)
+def task_collection_item_refresh_valuation(self, item_id: int):
+    """
+    Background task: refresh market valuation for a DynamicCollectionItem
+    using the service provider registered for its CollectionType.
+    """
+    from my_garage.models import DynamicCollectionItem
+    from my_garage.services.collection_services import get_collection_services
+
+    try:
+        item = DynamicCollectionItem.objects.select_related("collection_type").get(pk=item_id)
+        provider = get_collection_services(item.collection_type.service_provider_key)
+        if provider.supports_valuation_refresh():
+            new_value = provider.run_valuation(item)
+            logger.info("Valuation updated for item %s: %s", item, new_value)
+            return str(new_value)
+        logger.warning("Item %s provider does not support valuation refresh", item)
+        return None
+    except DynamicCollectionItem.DoesNotExist:
+        logger.error("DynamicCollectionItem %s not found.", item_id)
+    except Exception as exc:
+        logger.error("Valuation failed for item %s: %s", item_id, exc)
+        raise self.retry(exc=exc)
+
+
+@celery_app.task(bind=True, name="my_garage.collection_item_enrich", **RETRY_KWARGS)
+def task_collection_item_enrich(self, item_id: int):
+    """
+    Background task: run provider enrichment (e.g. VIN decode) for a
+    DynamicCollectionItem.
+    """
+    from my_garage.models import DynamicCollectionItem
+    from my_garage.services.collection_services import get_collection_services
+
+    try:
+        item = DynamicCollectionItem.objects.select_related("collection_type").get(pk=item_id)
+        provider = get_collection_services(item.collection_type.service_provider_key)
+        if provider.supports_enrichment():
+            data = provider.run_enrichment(item)
+            logger.info("Enrichment complete for item %s", item)
+            return bool(data)
+        logger.warning("Item %s provider does not support enrichment", item)
+        return False
+    except DynamicCollectionItem.DoesNotExist:
+        logger.error("DynamicCollectionItem %s not found.", item_id)
+    except Exception as exc:
+        logger.error("Enrichment failed for item %s: %s", item_id, exc)
+        raise self.retry(exc=exc)
+
+
 @celery_app.task(name="my_garage.tasks.task_refresh_bmad_context")
 def task_refresh_bmad_context():
     """

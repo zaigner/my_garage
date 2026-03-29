@@ -1,0 +1,138 @@
+{
+  "_meta": {
+    "collection_name": "Horology Salon",
+    "slug": "horology-salon",
+    "service_provider_key": "timepiece",
+    "list_display_fields": ["brand", "reference_number", "watch_model", "movement_type", "condition_grade"],
+    "name_template": "{brand} {watch_model} ({reference_number})",
+    "notes": [
+      "purchase_price, purchase_date, current_market_value, photo, notes live on DynamicCollectionItem — NOT in custom_fields.",
+      "The 'model' field from Timepiece is stored as 'watch_model' to avoid collision with Python/ORM model naming conventions.",
+      "New field types introduced: 'select', 'boolean', 'json_list' — requires template renderer update (Phase 3).",
+      "Valuation uses TimepieceCollectionServices which calls watch_valuation.py MCP tool.",
+      "Valuation inputs: brand, reference_number, year (from custom_fields) + has_box, has_papers, condition_grade."
+    ]
+  },
+  "fields": [
+    {
+      "name": "brand",
+      "type": "text",
+      "label": "Brand / Manufacture",
+      "required": true,
+      "help_text": "e.g. Patek Philippe, Rolex, A. Lange & Söhne"
+    },
+    {
+      "name": "reference_number",
+      "type": "text",
+      "label": "Reference Number",
+      "required": true,
+      "help_text": "Manufacturer reference (e.g. 5711/1A-014) — primary valuation key",
+      "max_length": 100
+    },
+    {
+      "name": "watch_model",
+      "type": "text",
+      "label": "Model Name",
+      "required": true,
+      "help_text": "e.g. Nautilus, Submariner, Saxonia"
+    },
+    {
+      "name": "serial_number",
+      "type": "text",
+      "label": "Serial Number",
+      "required": false,
+      "help_text": "Private identifier — not shared in valuations",
+      "max_length": 100
+    },
+    {
+      "name": "year",
+      "type": "number",
+      "label": "Year of Production",
+      "required": false,
+      "help_text": "Year the watch was manufactured",
+      "min": 1700,
+      "max": 2100
+    },
+    {
+      "name": "movement_type",
+      "type": "select",
+      "label": "Movement Type",
+      "required": false,
+      "help_text": "The power source and escapement",
+      "choices": [
+        {"value": "AUTOMATIC",    "label": "Automatic (Self-Winding)"},
+        {"value": "MANUAL",       "label": "Manual Wind"},
+        {"value": "QUARTZ",       "label": "Quartz"},
+        {"value": "SPRING_DRIVE", "label": "Spring Drive (Grand Seiko)"},
+        {"value": "COAXIAL",      "label": "Co-Axial Escapement"},
+        {"value": "TOURBILLON",   "label": "Tourbillon"},
+        {"value": "OTHER",        "label": "Other"}
+      ]
+    },
+    {
+      "name": "case_material",
+      "type": "text",
+      "label": "Case Material",
+      "required": false,
+      "help_text": "e.g. 18k Rose Gold, Oystersteel, Platinum, Titanium"
+    },
+    {
+      "name": "dial_color",
+      "type": "text",
+      "label": "Dial Color",
+      "required": false,
+      "help_text": "e.g. Sunburst Blue, Panda White, Salmon"
+    },
+    {
+      "name": "complications",
+      "type": "json_list",
+      "label": "Complications",
+      "required": false,
+      "help_text": "Enter complications separated by commas: Chronograph, GMT, Moonphase",
+      "suggestions": [
+        "Chronograph",
+        "GMT / Dual Time",
+        "Annual Calendar",
+        "Perpetual Calendar",
+        "Moonphase",
+        "Tourbillon",
+        "Minute Repeater",
+        "Power Reserve Indicator",
+        "World Time",
+        "Flyback",
+        "Rattrapante",
+        "Alarm"
+      ]
+    },
+    {
+      "name": "has_box",
+      "type": "boolean",
+      "label": "Original Box",
+      "required": false,
+      "help_text": "Includes the manufacturer's original box (+10% valuation)"
+    },
+    {
+      "name": "has_papers",
+      "type": "boolean",
+      "label": "Original Papers",
+      "required": false,
+      "help_text": "Includes warranty card and documentation (+10% valuation)"
+    },
+    {
+      "name": "condition_grade",
+      "type": "select",
+      "label": "Condition Grade",
+      "required": false,
+      "help_text": "Overall state of the watch — used in valuation calculation",
+      "choices": [
+        {"value": "UNWORN",    "label": "Unworn / New Old Stock (NOS)"},
+        {"value": "MINT",      "label": "Mint — no visible wear"},
+        {"value": "EXCELLENT", "label": "Excellent — light micro-scratches only"},
+        {"value": "VERY_GOOD", "label": "Very Good — minor service marks"},
+        {"value": "GOOD",      "label": "Good — visible wear, fully functional"},
+        {"value": "FAIR",      "label": "Fair — heavy wear or polished"},
+        {"value": "POOR",      "label": "Poor — significant damage or non-running"}
+      ]
+    }
+  ]
+}
