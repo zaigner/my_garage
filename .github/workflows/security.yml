@@ -33,7 +33,7 @@ jobs:
 
       # Scan PyPI and conda packages against OSV database
       - name: OSV Scanner
-        uses: google/osv-scanner-action@9b4b98c2e8e666a89ccf0e5e92d5d1f3a12b4aea  # v1.9.1
+        uses: google/osv-scanner-action@c51854704019a247608d928f370c98740469d4b5  # v2.3.5
         with:
           scan-args: |-
             --lockfile=pixi.lock
