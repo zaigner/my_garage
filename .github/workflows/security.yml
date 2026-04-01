@@ -49,7 +49,7 @@ jobs:
         run: curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
 
       - name: Grype vulnerability scan
-        run: grype dir:. --severity high --output table
+        run: grype dir:. --fail-on high --output table
         continue-on-error: true
 
       # Generate SBOM with Syft
