@@ -42,9 +42,7 @@ jobs:
 
       # Scan PyPI packages specifically via PyPA advisory database
       - name: pip-audit
-        run: |
-          pixi run python -m pip install pip-audit --quiet
-          pixi run pip-audit --desc on 2>&1 || true
+        run: pixi run pip-audit --desc on 2>&1 || true
 
       # Grype for comprehensive CVE scanning (Trivy replacement)
       - name: Install Grype

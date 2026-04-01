@@ -1,4 +1,4 @@
-[project]
+[workspace]
 name = "my-garage"
 version = "0.1.0"
 description = "Automotive asset management and valuation platform"
@@ -74,6 +74,7 @@ faker = ">=19.0,<20.0"
 ipython = ">=8.0"
 ruff = ">=0.1.0"
 pre-commit = ">=3.5.0"
+pip-audit = ">=2.7"
 
 [environments]
 default = ["dev"]
