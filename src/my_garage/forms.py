@@ -72,7 +72,19 @@ class DynamicCollectionItemForm(forms.ModelForm):
         fields_list = schema.get('fields', [])
 
         for field_def in fields_list:
+            # Skip system-managed fields — written by service providers, not user forms.
+            if field_def.get('system') or field_def.get('type') == 'system_json':
+                continue
+
             field_name = field_def.get('name')
+
+            # Also skip if the stored value is a complex type (dict/list), regardless
+            # of whether the schema flags are set correctly in the DB.
+            if self.instance and self.instance.pk:
+                existing = self.instance.custom_fields.get(field_name)
+                if isinstance(existing, (dict, list)):
+                    continue
+
             field_type = field_def.get('type')
             label = field_def.get('label', field_name.replace('_', ' ').title())
             required = field_def.get('required', False)
@@ -136,8 +148,11 @@ class DynamicCollectionItemForm(forms.ModelForm):
     def save(self, commit=True):
         instance = super().save(commit=False)
 
-        # Extract custom fields from form data
-        custom_data = {}
+        # Start from existing custom_fields so system-managed data (specs, features, etc.)
+        # written by service providers is preserved across form saves.
+        custom_data = dict(instance.custom_fields) if instance.custom_fields else {}
+
+        # Overwrite only the fields actually present in this form (user-editable fields).
         for field_name in self.fields:
             if field_name.startswith('custom_'):
                 actual_field_name = field_name.replace('custom_', '')

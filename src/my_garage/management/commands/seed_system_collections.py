@@ -324,8 +324,8 @@ SYSTEM_COLLECTIONS = [
         "slug": "horology-salon",
         "icon": "fa-clock",
         "description": (
-            "Fine timepiece gallery. Supports watch valuation with brand multipliers, "
-            "completeness scoring, and the ChronoVault winder view."
+            "Fine timepiece gallery. Supports watch valuation with brand multipliers "
+            "and completeness scoring."
         ),
         "service_provider_key": "timepiece",
         "field_schema": HOROLOGY_SCHEMA,

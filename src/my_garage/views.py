@@ -520,6 +520,15 @@ def collection_item_detail(
     provider = get_collection_services(collection_type.service_provider_key)
     provider_context = provider.get_detail_context(item)
 
+    # Build set of form field names that are system-managed and must not be rendered
+    # as editable inputs. Catches both "system": true flag and "system_json" type,
+    # regardless of how the DB schema was seeded.
+    system_field_names = {
+        f'custom_{field["name"]}'
+        for field in collection_type.field_schema.get("fields", [])
+        if field.get("system") or field.get("type") == "system_json"
+    }
+
     return render(
         request,
         "my_garage/collection_item_detail.html",
@@ -532,6 +541,7 @@ def collection_item_detail(
             "attachments": attachments,
             "relationships_from": relationships_from,
             "relationships_to": relationships_to,
+            "system_field_names": system_field_names,
             **provider_context,
         },
     )
