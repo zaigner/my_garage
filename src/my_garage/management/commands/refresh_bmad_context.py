@@ -24,7 +24,7 @@ from django.core.management.base import BaseCommand
 from django.db.models import Sum
 from django.db.models.functions import Coalesce
 
-from my_garage.models import CollectionType, DynamicCollectionItem, Timepiece, Vehicle
+from my_garage.models import CollectionType, DynamicCollectionItem
 
 User = get_user_model()
 
@@ -78,13 +78,9 @@ class Command(BaseCommand):
             result = qs.aggregate(total=Coalesce(Sum(field), Decimal("0.00")))["total"]
             return result or Decimal("0.00")
 
-        vehicles = Vehicle.objects.all()
-        timepieces = Timepiece.objects.all()
         items = DynamicCollectionItem.objects.all()
         collection_types = CollectionType.objects.filter(is_active=True)
 
-        vehicles_val = _sum(vehicles)
-        timepieces_val = _sum(timepieces)
         items_val = _sum(items)
 
         type_names = list(
@@ -92,14 +88,10 @@ class Command(BaseCommand):
         )
 
         return {
-            "vehicle_count": vehicles.count(),
-            "timepiece_count": timepieces.count(),
             "collection_type_count": collection_types.count(),
             "collection_item_count": items.count(),
-            "total_vehicles_value": vehicles_val,
-            "total_timepieces_value": timepieces_val,
             "total_collections_value": items_val,
-            "total_portfolio_value": vehicles_val + timepieces_val + items_val,
+            "total_portfolio_value": items_val,
             "collection_types": type_names,
             "refreshed_at": datetime.now(tz=timezone.utc).strftime(
                 "%Y-%m-%d %H:%M UTC"
@@ -119,12 +111,8 @@ class Command(BaseCommand):
             f"Last updated: {stats['refreshed_at']}\n\n"
             "| Metric | Value |\n"
             "|---|---|\n"
-            f"| Vehicles | {stats['vehicle_count']} |\n"
-            f"| Timepieces | {stats['timepiece_count']} |\n"
             f"| Collection types | {stats['collection_type_count']} ({types_str}) |\n"
             f"| Collection items | {stats['collection_item_count']} |\n"
-            f"| Vehicles value | ${stats['total_vehicles_value']:,.2f} |\n"
-            f"| Timepieces value | ${stats['total_timepieces_value']:,.2f} |\n"
             f"| Collections value | ${stats['total_collections_value']:,.2f} |\n"
             f"| **Total portfolio value** | **${stats['total_portfolio_value']:,.2f}** |\n"
             f"| Last refresh | {stats['refreshed_at']} |\n"

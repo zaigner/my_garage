@@ -6,23 +6,23 @@ build-backend = "setuptools.build_meta"
 name = "my-garage"
 version = "0.1.0"
 description = "Automotive asset management and valuation platform"
-requires-python = ">=3.12"
+requires-python = ">=3.12,<3.13"
 dependencies = [
-    "django>=5.2,<5.3",
+    "django>=5.2.11,<5.3",
     "djangorestframework>=3.14,<4.0",
     "django-cors-headers>=4.0,<5.0",
     "django-debug-toolbar>=4.2,<5.0",
     "fastapi>=0.104,<1.0",
     "uvicorn[standard]>=0.24,<1.0",
-    "requests>=2.31,<3.0",
+    "requests>=2.33.0,<3.0",
     "pydantic>=2.0,<3.0",
     "psycopg2-binary>=2.9,<3.0",
-    "pillow>=10.0,<11.0",
+    "pillow>=12.1.1,<13.0",
     "celery>=5.3,<6.0",
     "redis>=5.0,<6.0",
     "beautifulsoup4>=4.12,<5.0",
     "pytesseract>=0.3,<0.4",
-    "python-multipart>=0.0.7,<0.1.0",
+    "python-multipart>=0.0.22,<0.1.0",
 ]
 
 [project.optional-dependencies]

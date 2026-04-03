@@ -53,9 +53,6 @@
                 <!-- Header -->
                 <div class="flex flex-col md:flex-row justify-between items-center mb-12 border-b border-white/10 pb-6">
                     <div>
-                        <a href="{% url 'collections:collection_type_list' %}" class="text-gray-400 hover:text-luxury-gold text-xs uppercase tracking-widest transition-colors mb-4 inline-block">
-                            ← Back to Collections
-                        </a>
                         <h1 class="text-4xl md:text-5xl font-bold salon-font text-luxury-gold mb-2">
                             <i class="{{ collection_type.icon }} mr-3"></i>
                             {{ collection_type.name }}
@@ -64,11 +61,11 @@
                             <p class="text-gray-400 text-sm uppercase tracking-widest">{{ collection_type.description }}</p>
                         {% endif %}
                     </div>
-                    <div class="mt-6 md:mt-0 flex gap-4">
-                        <a href="{% url 'collections:collection_type_list' %}" class="px-6 py-2 border border-white/20 text-white/70 hover:text-white hover:border-white/50 rounded-sm uppercase text-xs tracking-widest transition-colors">
-                            Back to All Collections
+                    <div class="mt-6 md:mt-0 flex flex-wrap gap-2">
+                        <a href="{% url 'collections:collection_type_list' %}" class="px-4 py-2 border border-white/20 text-white/70 hover:text-white hover:border-white/50 rounded-sm uppercase text-xs tracking-widest transition-colors whitespace-nowrap">
+                            ← All Collections
                         </a>
-                        <a href="{% url 'collections:collection_item_add' collection_type.slug %}" class="px-6 py-2 bg-luxury-gold text-black font-bold rounded-sm uppercase text-xs tracking-widest hover:bg-yellow-600 transition-colors">
+                        <a href="{% url 'collections:collection_item_add' collection_type.slug %}" class="px-4 py-2 bg-luxury-gold text-black font-bold rounded-sm uppercase text-xs tracking-widest hover:bg-yellow-600 transition-colors whitespace-nowrap">
                             + Add Item
                         </a>
                     </div>
@@ -76,50 +73,43 @@
 
                 {% if items %}
                     <!-- Grid -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {% for item in items %}
                             <a href="{% url 'collections:collection_item_detail' collection_type.slug item.id %}" class="block group">
-                                <div class="item-card bg-[#151b33] border border-white/5 rounded-lg overflow-hidden relative">
+                                <div class="item-card bg-[#151b33] border border-white/5 rounded-lg overflow-hidden">
                                     <!-- Image Container -->
-                                    <div class="aspect-[4/5] overflow-hidden bg-gray-900 relative">
+                                    <div class="aspect-[3/2] overflow-hidden bg-gray-900 relative">
                                         {% if item.photo %}
                                             <img src="{{ item.photo.url }}" alt="{{ item.name }}" class="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700">
                                         {% else %}
                                             <div class="w-full h-full flex items-center justify-center text-white/20">
-                                                <i class="{{ collection_type.icon }} text-6xl"></i>
+                                                <i class="{{ collection_type.icon }} text-4xl"></i>
                                             </div>
                                         {% endif %}
-
-                                        <!-- Overlay Gradient -->
-                                        <div class="absolute inset-0 bg-gradient-to-t from-[#151b33] via-transparent to-transparent opacity-80"></div>
                                     </div>
 
                                     <!-- Details -->
-                                    <div class="p-6 relative -mt-12 z-10">
-                                        <h3 class="text-2xl salon-font text-white mb-4">{{ item.name }}</h3>
-
-                                        <!-- Display custom fields -->
-                                        <div class="space-y-2 mb-4">
+                                    <div class="px-4 py-3 flex items-center justify-between border-t border-white/5">
+                                        <div class="min-w-0 mr-4">
+                                            <h3 class="text-base salon-font text-white truncate">{{ item.name }}</h3>
+                                            <!-- Show first display field as subtitle if present -->
                                             {% for field_name in collection_type.list_display_fields %}
-                                                {% with value=item.custom_fields|get_item:field_name %}
-                                                    {% if value %}
-                                                        <p class="text-xs text-gray-400">
-                                                            <span class="uppercase tracking-widest text-[10px] text-gray-600">{{ field_name|title }}:</span>
-                                                            <span class="text-gray-300 ml-2">{{ value }}</span>
-                                                        </p>
-                                                    {% endif %}
-                                                {% endwith %}
+                                                {% if forloop.first %}
+                                                    {% with value=item.custom_fields|get_item:field_name %}
+                                                        {% if value %}
+                                                            <p class="text-luxury-gold text-xs uppercase tracking-wider truncate">{{ value }}</p>
+                                                        {% endif %}
+                                                    {% endwith %}
+                                                {% endif %}
                                             {% endfor %}
                                         </div>
-
-                                        <!-- Financial info -->
-                                        <div class="border-t border-white/10 pt-4">
+                                        <div class="text-right shrink-0">
                                             {% if item.current_market_value %}
-                                                <span class="block uppercase tracking-widest text-[10px] text-gray-600 mb-1">Current Value</span>
-                                                <span class="font-mono text-white text-xl">${{ item.current_market_value|floatformat:2 }}</span>
+                                                <span class="block uppercase tracking-widest text-[10px] text-gray-600 mb-0.5">Value</span>
+                                                <span class="font-mono text-white text-sm">${{ item.current_market_value|floatformat:0 }}</span>
                                             {% elif item.purchase_price %}
-                                                <span class="block uppercase tracking-widest text-[10px] text-gray-600 mb-1">Purchase Price</span>
-                                                <span class="font-mono text-gray-300 text-xl">${{ item.purchase_price|floatformat:2 }}</span>
+                                                <span class="block uppercase tracking-widest text-[10px] text-gray-600 mb-0.5">Paid</span>
+                                                <span class="font-mono text-gray-300 text-sm">${{ item.purchase_price|floatformat:0 }}</span>
                                             {% endif %}
                                         </div>
                                     </div>

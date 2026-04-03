@@ -16,11 +16,6 @@ DATABASES = {
 # CORS for development
 CORS_ALLOW_ALL_ORIGINS = True
 
-# Celery - Use eager for development (synchronous)
-# WARNING: This causes tasks to run in the web request thread.
-# If external services (FastAPI) are down, the web request will hang/fail.
-CELERY_TASK_ALWAYS_EAGER = True
-CELERY_TASK_EAGER_PROPAGATES = True
 
 # Email backend for development
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
