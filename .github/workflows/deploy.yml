@@ -24,7 +24,7 @@ jobs:
 
       # SSH to aignerpi-2 (K3s control plane at 192.168.1.124) and roll out
       # the new image. kubectl is already available there via K3s installation.
-      #
+      # need to set up a Tailscale implementation to deploy from github 
       # GitHub Secrets required:
       #   SSH_USER         → your Pi username (e.g. zaigner77)
       #   SSH_PRIVATE_KEY  → private key for SSH access to aignerpi-2
