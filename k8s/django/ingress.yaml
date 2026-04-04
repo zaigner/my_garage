@@ -1,0 +1,32 @@
+# Traefik (K3s default ingress) routes:
+#   /api/mcp  →  fastapi:8001   (MCP + FastAPI endpoints)
+#   /         →  django:8000    (everything else)
+#
+# Internal DNS: add "192.168.1.202 my-garage.local" to your router or Pi-hole.
+# MetalLB will assign an IP from the 192.168.1.200-210 pool (.202+ is free).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: my-garage
+  namespace: my-garage
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+spec:
+  rules:
+    - host: my-garage.local
+      http:
+        paths:
+          - path: /api/mcp
+            pathType: Prefix
+            backend:
+              service:
+                name: fastapi
+                port:
+                  number: 8001
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: django
+                port:
+                  number: 8000

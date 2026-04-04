@@ -1,0 +1,12 @@
+# ClusterIP — Traefik routes external traffic to this service via the Ingress.
+apiVersion: v1
+kind: Service
+metadata:
+  name: django
+  namespace: my-garage
+spec:
+  selector:
+    app: django
+  ports:
+    - port: 8000
+      targetPort: 8000

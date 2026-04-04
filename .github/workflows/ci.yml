@@ -1,0 +1,89 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+# Cancel in-progress runs for the same branch on new push
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: prefix-dev/setup-pixi@v0.9.4
+        with:
+          pixi-version: latest
+          environments: default
+
+      - name: Ruff check (linting)
+        run: pixi run lint
+
+      - name: Ruff format check
+        # Does not auto-fix — fails if any file needs formatting
+        run: pixi run -- ruff format --check .
+
+  test-unit:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    env:
+      DJANGO_SECRET_KEY: ci-placeholder-not-for-production
+      DJANGO_SETTINGS_MODULE: config.settings.test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: prefix-dev/setup-pixi@v0.9.4
+        with:
+          pixi-version: latest
+          environments: default
+
+      - name: Run unit tests
+        run: pixi run pytest tests/unit/ -x -q
+
+  test-functional:
+    name: Functional Tests
+    runs-on: ubuntu-latest
+    env:
+      DJANGO_SECRET_KEY: ci-placeholder-not-for-production
+      DJANGO_SETTINGS_MODULE: config.settings.test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: prefix-dev/setup-pixi@v0.9.4
+        with:
+          pixi-version: latest
+          environments: default
+
+      - name: Run functional tests
+        # Uses in-memory SQLite + test settings — no external services needed
+        run: pixi run pytest tests/functional/ -x -q
+
+  test-fastapi:
+    name: FastAPI Tests
+    runs-on: ubuntu-latest
+    env:
+      DJANGO_SECRET_KEY: ci-placeholder-not-for-production
+      DJANGO_SETTINGS_MODULE: config.settings.test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: prefix-dev/setup-pixi@v0.9.4
+        with:
+          pixi-version: latest
+          environments: default
+
+      - name: Run FastAPI tests
+        # Uses TestClient — no external services or API keys needed
+        run: pixi run pytest tests/fastapi/ -x -q
+
+  # Eval tests (tests/eval/) are intentionally excluded from CI — they hit real
+  # external APIs (Gemini, Marketcheck) and require API keys. Run them manually:
+  #   pixi run pytest tests/eval/ -v
+  # or add a separate scheduled workflow with repository secrets.

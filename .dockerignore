@@ -1,0 +1,64 @@
+# Secrets — never copy into image
+.env
+.env.*
+!.env.example
+
+# Pixi local cache (large, platform-specific — rebuilt in image)
+.pixi/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+
+# Test and dev artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Local databases and runtime data
+db.sqlite3
+.mongo_data/
+logs/
+
+# Media uploads (mounted at runtime via PVC / volume)
+media/
+
+# Static files (collected separately)
+staticfiles/
+
+# Large data files (Jupyter/analysis CSVs — not part of the app)
+*.csv
+*.parquet
+
+# Jupyter notebooks
+*.ipynb
+.ipynb_checkpoints/
+
+# Git
+.git/
+.gitignore
+.github/
+
+# Documentation and planning
+docs/
+*.md
+!requirements*.txt
+
+# IDE and OS
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# BMAD context (runtime-generated, not deployed)
+_bmad/

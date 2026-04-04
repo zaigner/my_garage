@@ -7,6 +7,9 @@ DEBUG = False
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',')
 
 # Security settings
+# Trust X-Forwarded-Proto header from Traefik — prevents redirect loops when
+# Traefik terminates HTTPS and forwards plain HTTP internally to Django.
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SECURE_SSL_REDIRECT = True
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True

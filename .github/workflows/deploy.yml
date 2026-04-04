@@ -1,0 +1,53 @@
+name: Deploy to K3s
+
+# Triggers after a successful Build workflow run on main.
+# Flow: CI (ci.yml) → Build (build.yml) → Deploy (this file)
+on:
+  workflow_run:
+    workflows: [Build]
+    types: [completed]
+    branches: [main]
+
+jobs:
+  deploy:
+    name: Deploy to K3s Homelab
+    runs-on: ubuntu-latest
+    # Only deploy if the Build workflow succeeded
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - name: Resolve image tag
+        id: tag
+        run: |
+          # Use the short SHA of the commit that triggered the Build workflow
+          echo "sha=$(echo ${{ github.event.workflow_run.head_sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
+
+      # SSH to aignerpi-2 (K3s control plane at 192.168.1.124) and roll out
+      # the new image. kubectl is already available there via K3s installation.
+      #
+      # GitHub Secrets required:
+      #   SSH_USER         → your Pi username (e.g. zaigner77)
+      #   SSH_PRIVATE_KEY  → private key for SSH access to aignerpi-2
+      #                      Generate: ssh-keygen -t ed25519 -C "github-actions"
+      #                      Add public key to: ~/.ssh/authorized_keys on aignerpi-2
+      - name: Roll out new image via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: 192.168.1.124
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            IMAGE="ghcr.io/${{ github.repository_owner }}/my-garage:${{ steps.tag.outputs.sha }}"
+            echo "Deploying image: $IMAGE"
+
+            # Update each application Deployment with the new image
+            kubectl set image deployment/django    django=$IMAGE    -n my-garage
+            kubectl set image deployment/fastapi   fastapi=$IMAGE   -n my-garage
+            kubectl set image deployment/celery-worker worker=$IMAGE -n my-garage
+            kubectl set image deployment/celery-beat   beat=$IMAGE   -n my-garage
+
+            # Wait for Django rollout to complete (primary service)
+            kubectl rollout status deployment/django -n my-garage --timeout=120s
+
+            echo "Deploy complete: $IMAGE"

@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: celery-worker
+  namespace: my-garage
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: celery-worker
+  template:
+    metadata:
+      labels:
+        app: celery-worker
+    spec:
+      containers:
+        - name: worker
+          image: ghcr.io/zaigner/my-garage:latest  # Replace OWNER with your GitHub username
+          command: ["celery", "-A", "config.celery_app", "worker", "-l", "info"]
+          envFrom:
+            - secretRef:
+                name: my-garage-secrets
+            - configMapRef:
+                name: my-garage-config
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"

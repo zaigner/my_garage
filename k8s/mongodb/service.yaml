@@ -1,0 +1,14 @@
+# Headless service — stable DNS for the StatefulSet pod.
+# MONGO_URI=mongodb://mongodb:27017/ resolves via headless DNS.
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb
+  namespace: my-garage
+spec:
+  clusterIP: None
+  selector:
+    app: mongodb
+  ports:
+    - port: 27017
+      targetPort: 27017

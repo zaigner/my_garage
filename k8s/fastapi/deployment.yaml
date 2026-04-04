@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fastapi
+  namespace: my-garage
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fastapi
+  template:
+    metadata:
+      labels:
+        app: fastapi
+    spec:
+      containers:
+        - name: fastapi
+          # Same image as Django — CMD override runs FastAPI instead
+          image: ghcr.io/zaigner/my-garage:latest  # Replace OWNER with your GitHub username
+          command: ["uvicorn", "fastapi_services.main:app", "--host", "0.0.0.0", "--port", "8001", "--workers", "2"]
+          envFrom:
+            - secretRef:
+                name: my-garage-secrets
+            - configMapRef:
+                name: my-garage-config
+          ports:
+            - containerPort: 8001
+          readinessProbe:
+            tcpSocket:
+              port: 8001
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"

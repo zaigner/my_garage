@@ -1,0 +1,169 @@
+# docker-compose.yml — Infrastructure services for local development
+#
+# Primary use: spin up PostgreSQL, Redis, and MongoDB locally so you can
+# run the application services via pixi (your normal dev workflow):
+#
+#   docker compose up postgres redis mongodb -d
+#   pixi run server      # Django on :8000
+#   pixi run fastapi     # FastAPI on :8001
+#   pixi run worker      # Celery worker
+#   pixi run mongo       # ← skip this; mongodb container handles it
+#
+# Full containerized stack (for testing the Docker image before K8s):
+#   docker compose up         # starts everything including app services
+#   docker compose up --build # rebuild image first
+#
+# Switch Django to use Postgres instead of SQLite for the compose stack
+# by setting DJANGO_SETTINGS_MODULE=config.settings.production in .env
+
+services:
+
+  # ── Infrastructure ─────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: my_garage
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mongodb:
+    image: mongo:6
+    volumes:
+      - mongo_data:/data/db
+    ports:
+      - "27017:27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.runCommand('ping').ok", "--quiet"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Application (full containerized stack) ──────────────────────
+  # These services use the Dockerfile image. They are separate from
+  # your normal pixi-based dev workflow — use them to test the image.
+  #
+  # NOTE: production.py enforces SECURE_SSL_REDIRECT=True. Until you
+  # add SECURE_PROXY_SSL_HEADER to production.py, the Django container
+  # will redirect all HTTP requests. See Dockerfile for details.
+
+  django:
+    build: .
+    command: uvicorn config.asgi:application --host 0.0.0.0 --port 8000 --workers 1 --reload
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.production
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: my_garage
+      DB_USER: postgres
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-compose-dev-secret-change-me}
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      MONGO_URI: mongodb://mongodb:27017/
+      MONGO_DB_NAME: my_garage_docs
+      FASTAPI_BASE_URL: http://fastapi:8001
+      ALLOWED_HOSTS: localhost,127.0.0.1
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+      MARKETCHECK_API_KEY: ${MARKETCHECK_API_KEY:-}
+    volumes:
+      - ./src:/app/src          # live code reload
+      - ./templates:/app/templates
+      - ./static:/app/static
+      - media_files:/app/media
+    profiles: [app]             # only starts with: docker compose --profile app up
+
+  fastapi:
+    build: .
+    command: uvicorn fastapi_services.main:app --host 0.0.0.0 --port 8001 --reload
+    ports:
+      - "8001:8001"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    environment:
+      MONGO_URI: mongodb://mongodb:27017/
+      MONGO_DB_NAME: my_garage_docs
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+      MARKETCHECK_API_KEY: ${MARKETCHECK_API_KEY:-}
+    volumes:
+      - ./src:/app/src
+    profiles: [app]
+
+  worker:
+    build: .
+    command: celery -A config.celery_app worker -l info
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.production
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: my_garage
+      DB_USER: postgres
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-compose-dev-secret-change-me}
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      MONGO_URI: mongodb://mongodb:27017/
+    volumes:
+      - ./src:/app/src
+    profiles: [app]
+
+  beat:
+    build: .
+    # Beat schedules periodic tasks — must be exactly 1 replica (never scale)
+    command: celery -A config.celery_app beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.production
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: my_garage
+      DB_USER: postgres
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-compose-dev-secret-change-me}
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+    volumes:
+      - ./src:/app/src
+    profiles: [app]
+
+volumes:
+  postgres_data:
+  mongo_data:
+  media_files:

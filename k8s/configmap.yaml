@@ -1,0 +1,28 @@
+# Non-secret environment variables shared across all my-garage services.
+# Apply with: kubectl apply -f k8s/configmap.yaml
+# Service hostnames use K8s internal DNS: <service-name> resolves within the namespace.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-garage-config
+  namespace: my-garage
+data:
+  DJANGO_SETTINGS_MODULE: config.settings.production
+  ALLOWED_HOSTS: my-garage.local        # Update when you have a real domain
+
+  # PostgreSQL
+  DB_HOST: postgres
+  DB_PORT: "5432"
+  DB_NAME: my_garage
+  DB_USER: postgres
+
+  # Redis (Celery broker + result backend)
+  CELERY_BROKER_URL: redis://redis:6379/0
+  CELERY_RESULT_BACKEND: redis://redis:6379/0
+
+  # MongoDB
+  MONGO_URI: mongodb://mongodb:27017/
+  MONGO_DB_NAME: my_garage_docs
+
+  # Internal service URL (Django → FastAPI)
+  FASTAPI_BASE_URL: http://fastapi:8001

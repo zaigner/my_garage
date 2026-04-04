@@ -1,0 +1,49 @@
+# PREREQUISITE: Before first deploy, run migrations manually:
+#   kubectl exec -it deploy/django -n my-garage -- python manage.py migrate
+#   kubectl exec -it deploy/django -n my-garage -- python manage.py collectstatic --noinput
+#
+# REQUIRED: Add to src/config/settings/production.py to avoid redirect loops behind Traefik:
+#   SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: django
+  namespace: my-garage
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: django
+  template:
+    metadata:
+      labels:
+        app: django
+    spec:
+      containers:
+        - name: django
+          # deploy.yml updates this image tag on every merge to main
+          image: ghcr.io/zaigner/my-garage:latest  # Replace OWNER with your GitHub username
+          envFrom:
+            - secretRef:
+                name: my-garage-secrets
+            - configMapRef:
+                name: my-garage-config
+          ports:
+            - containerPort: 8000
+          readinessProbe:
+            tcpSocket:
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
