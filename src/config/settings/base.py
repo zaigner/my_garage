@@ -3,6 +3,8 @@ import os
 import sys
 from pathlib import Path
 
+from django.core.exceptions import ImproperlyConfigured
+
 from celery.schedules import crontab
 from dotenv import load_dotenv
 
@@ -18,9 +20,9 @@ load_dotenv(BASE_DIR / ".env")
 sys.path.append(str(BASE_DIR / "src"))
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get(
-    "DJANGO_SECRET_KEY", "django-insecure-CHANGE-THIS-IN-PRODUCTION-my-garage-2024"
-)
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
+if not SECRET_KEY:
+    raise ImproperlyConfigured("DJANGO_SECRET_KEY is not set in environment")
 
 # Application definition
 INSTALLED_APPS = [
