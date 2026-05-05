@@ -143,6 +143,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "my_garage.tasks.task_refresh_bmad_context",
         "schedule": crontab(hour=0, minute=0),  # Daily at midnight
     },
+    "take_portfolio_snapshot": {
+        "task": "my_garage.tasks.task_take_portfolio_snapshot",
+        "schedule": crontab(hour=0, minute=5),  # Daily at 00:05 (after context refresh)
+    },
 }
 
 # FastAPI Service URL (separate service)

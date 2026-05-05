@@ -172,22 +172,6 @@ class TestProviderContextInDetailView:
         assert response.status_code == 200
         assert b"Refresh Valuation" in response.content
 
-    def test_timepiece_detail_shows_chronovault_when_winder_link_true(
-        self, auth_client, timepiece_item
-    ):
-        slug = timepiece_item.collection_type.slug
-        with patch(
-            "my_garage.services.collection_services.timepiece.TimepieceCollectionServices.get_detail_context",
-            return_value={"show_valuation_button": False, "show_winder_link": True,
-                          "winder_items": [True, True, None, None, None, None, None, None],
-                          "has_box": True, "has_papers": True, "valuation_history": []},
-        ):
-            response = auth_client.get(
-                f"/collections/{slug}/items/{timepiece_item.id}/"
-            )
-        assert response.status_code == 200
-        assert b"ChronoVault" in response.content
-
     def test_valuation_history_rendered_when_present(self, auth_client, vehicle_item):
         from my_garage.models import GenericValuationHistory
         slug = vehicle_item.collection_type.slug

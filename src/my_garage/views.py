@@ -529,6 +529,14 @@ def collection_item_detail(
         if field.get("system") or field.get("type") == "system_json"
     }
 
+    # Non-system custom fields formatted for view-mode display
+    display_custom_fields = [
+        (key.replace("_", " ").title(), value)
+        for key, value in (item.custom_fields or {}).items()
+        if f"custom_{key}" not in system_field_names
+        and value not in (None, "", [], {})
+    ]
+
     return render(
         request,
         "my_garage/collection_item_detail.html",
@@ -542,6 +550,7 @@ def collection_item_detail(
             "relationships_from": relationships_from,
             "relationships_to": relationships_to,
             "system_field_names": system_field_names,
+            "display_custom_fields": display_custom_fields,
             **provider_context,
         },
     )

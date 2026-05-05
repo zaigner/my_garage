@@ -1,7 +1,9 @@
 import logging
+from datetime import date
+from decimal import Decimal
 
 from config.celery_app import app as celery_app
-from my_garage.models import DynamicCollectionItem
+from my_garage.models import DynamicCollectionItem, PortfolioSnapshot
 
 from .services.collection_services import get_collection_services
 
@@ -73,6 +75,32 @@ def task_refresh_bmad_context():
     except Exception as e:
         logger.error(f"Failed to refresh BMAD context: {e}")
         return f"Failed: {e}"
+
+
+@celery_app.task(name="my_garage.tasks.task_take_portfolio_snapshot")
+def task_take_portfolio_snapshot():
+    """
+    Daily periodic task: snapshot total portfolio value for every user with assets.
+    Creates or updates one PortfolioSnapshot row per (user, today).
+    """
+    from django.contrib.auth import get_user_model
+
+    User = get_user_model()
+    today = date.today()
+    snapped = 0
+
+    for user in User.objects.all():
+        items = DynamicCollectionItem.objects.filter(owner=user)
+        total = sum(i.current_market_value for i in items if i.current_market_value) or Decimal("0")
+        PortfolioSnapshot.objects.update_or_create(
+            user=user,
+            date=today,
+            defaults={"total_value": total},
+        )
+        snapped += 1
+
+    logger.info("Portfolio snapshots taken for %d users on %s", snapped, today)
+    return f"Snapped {snapped} portfolios."
 
 
 @celery_app.task(name="my_garage.tasks.task_bulk_valuation_refresh")

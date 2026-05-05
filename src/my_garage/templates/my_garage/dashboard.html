@@ -87,11 +87,11 @@
                         <div class="border-t border-white/10 my-1"></div>
 
                         <!-- Main Sections -->
-                        <a href="{% url 'my_garage:garage_view' %}" class="block px-4 py-3 hover:bg-white/5 flex items-center text-luxury-white">
+                        <a href="{% url 'collections:collection_list' collection_slug='automobiles' %}" class="block px-4 py-3 hover:bg-white/5 flex items-center text-luxury-white">
                             <i class="fas fa-car w-6 text-luxury-gold"></i>
                             <span class="font-serif italic">Garage</span>
                         </a>
-                        <a href="{% url 'timepieces:timepiece_list' %}" class="block px-4 py-3 hover:bg-white/5 flex items-center text-luxury-white">
+                        <a href="{% url 'collections:collection_list' collection_slug='horology-salon' %}" class="block px-4 py-3 hover:bg-white/5 flex items-center text-luxury-white">
                             <i class="fas fa-clock w-6 text-luxury-gold"></i>
                             <span class="font-serif italic">Horology Salon</span>
                         </a>
@@ -198,7 +198,7 @@
             <div class="group relative p-8 rounded-xl bg-luxury-card border border-white/5 hover:border-luxury-gold/50 transition-all duration-500 hover:shadow-[0_0_30px_-5px_rgba(212,175,55,0.15)]">
                 <div class="flex justify-between items-start mb-6">
                     <h3 class="font-serif text-2xl text-luxury-white italic">Timepieces</h3>
-                    <a href="{% url 'timepieces:timepiece_list' %}" class="text-luxury-gold font-script text-2xl hover:text-white transition-colors cursor-pointer">
+                    <a href="{% url 'collections:collection_list' collection_slug='horology-salon' %}" class="text-luxury-gold font-script text-2xl hover:text-white transition-colors cursor-pointer">
                         {{ timepieces.count }} items &rarr;
                     </a>
                 </div>
@@ -211,7 +211,7 @@
             <div class="group relative p-8 rounded-xl bg-luxury-card border border-white/5 hover:border-luxury-gold/50 transition-all duration-500 hover:shadow-[0_0_30px_-5px_rgba(212,175,55,0.15)]">
                 <div class="flex justify-between items-start mb-6">
                     <h3 class="font-serif text-2xl text-luxury-white italic">Automobiles</h3>
-                    <a href="{% url 'my_garage:garage_view' %}" class="text-luxury-gold font-script text-2xl hover:text-white transition-colors cursor-pointer">
+                    <a href="{% url 'collections:collection_list' collection_slug='automobiles' %}" class="text-luxury-gold font-script text-2xl hover:text-white transition-colors cursor-pointer">
                         {{ vehicles.count }} items &rarr;
                     </a>
                 </div>

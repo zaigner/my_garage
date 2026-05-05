@@ -92,7 +92,7 @@
                 <li>
                     <div class="flex items-center">
                         <span class="mx-2">/</span>
-                        <a href="{% url 'my_garage:garage_view' %}" class="hover:text-white transition-colors">
+                        <a href="{% url 'collections:collection_list' collection_slug='automobiles' %}" class="hover:text-white transition-colors">
                             Garage
                         </a>
                     </div>
@@ -118,18 +118,92 @@
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <!-- Left Column: Details Form -->
+            <!-- Left Column: Details -->
             <div class="lg:col-span-2">
-                <div class="cabinet-finish p-6 rounded-lg mb-6">
-                    <div class="flex items-center mb-6 border-b border-gray-700 pb-2">
-                        <div class="w-1 h-6 bg-red-600 mr-3"></div>
-                        <h2 class="text-xl font-bold porsche-font text-gray-100">Vehicle Data</h2>
+                <div class="cabinet-finish p-6 rounded-lg mb-6" x-data="{ editing: false }">
+                    <div class="flex items-center justify-between mb-6 border-b border-gray-700 pb-2">
+                        <div class="flex items-center">
+                            <div class="w-1 h-6 bg-red-600 mr-3"></div>
+                            <h2 class="text-xl font-bold porsche-font text-gray-100">Vehicle Data</h2>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button x-show="!editing" @click="editing = true"
+                                    class="px-4 py-2 border border-gray-500 text-gray-300 hover:border-red-500 hover:text-red-400 transition-colors uppercase text-xs tracking-widest font-bold rounded"
+                                    aria-label="Edit vehicle details">
+                                Edit
+                            </button>
+                            <button x-show="editing" @click="editing = false" x-cloak
+                                    class="px-4 py-2 border border-gray-700 text-gray-500 hover:border-gray-500 hover:text-gray-300 transition-colors uppercase text-xs tracking-widest rounded"
+                                    aria-label="Cancel editing">
+                                Cancel
+                            </button>
+                        </div>
                     </div>
 
-                    <form method="post" enctype="multipart/form-data">
+                    <!-- View Mode: vehicle fields as text -->
+                    <div x-show="!editing">
+                        <dl class="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4">
+                            <div>
+                                <dt class="text-[10px] uppercase tracking-widest text-gray-500 mb-1">Year</dt>
+                                <dd class="text-gray-100 font-mono">{{ vehicle.year|default:"--" }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-[10px] uppercase tracking-widest text-gray-500 mb-1">Make</dt>
+                                <dd class="text-gray-100 font-mono">{{ vehicle.make|default:"--" }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-[10px] uppercase tracking-widest text-gray-500 mb-1">Model</dt>
+                                <dd class="text-gray-100 font-mono">{{ vehicle.model|default:"--" }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-[10px] uppercase tracking-widest text-gray-500 mb-1">Trim</dt>
+                                <dd class="text-gray-100 font-mono">{{ vehicle.trim|default:"--" }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-[10px] uppercase tracking-widest text-gray-500 mb-1">Transmission</dt>
+                                <dd class="text-gray-100 font-mono">{{ vehicle.transmission|default:"--" }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-[10px] uppercase tracking-widest text-gray-500 mb-1">License Plate</dt>
+                                <dd class="text-gray-100 font-mono">{{ vehicle.license_plate|default:"--" }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-[10px] uppercase tracking-widest text-gray-500 mb-1">Exterior</dt>
+                                <dd class="text-gray-100 font-mono">{{ vehicle.exterior_color|default:"--" }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-[10px] uppercase tracking-widest text-gray-500 mb-1">Interior</dt>
+                                <dd class="text-gray-100 font-mono">{{ vehicle.interior_color|default:"--" }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-[10px] uppercase tracking-widest text-gray-500 mb-1">VIN</dt>
+                                <dd class="text-gray-100 font-mono text-sm break-all">{{ vehicle.vin|default:"--" }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-[10px] uppercase tracking-widest text-gray-500 mb-1">Mileage</dt>
+                                <dd class="text-gray-100 font-mono">{{ vehicle.mileage|default:"--" }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-[10px] uppercase tracking-widest text-gray-500 mb-1">Purchase Price</dt>
+                                <dd class="text-gray-100 font-mono">{% if vehicle.purchase_price %}${{ vehicle.purchase_price|floatformat:0 }}{% else %}--{% endif %}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-[10px] uppercase tracking-widest text-gray-500 mb-1">Purchase Date</dt>
+                                <dd class="text-gray-100 font-mono">{{ vehicle.purchase_date|default:"--" }}</dd>
+                            </div>
+                        </dl>
+                        {% if vehicle.notes %}
+                        <div class="mt-4 pt-4 border-t border-gray-700">
+                            <dt class="text-[10px] uppercase tracking-widest text-gray-500 mb-2">Provenance</dt>
+                            <dd class="text-gray-300 text-sm leading-relaxed italic">{{ vehicle.notes }}</dd>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Edit Mode: form -->
+                    <form method="post" enctype="multipart/form-data" x-show="editing" x-cloak>
                         {% csrf_token %}
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <!-- Basic Info -->
                             <div class="space-y-1">
                                 <label>Year</label>
                                 {{ form.year }}
@@ -146,8 +220,6 @@
                                 <label>Trim</label>
                                 {{ form.trim }}
                             </div>
-
-                            <!-- Collector Specs -->
                             <div class="space-y-1">
                                 <label>Transmission</label>
                                 {{ form.transmission }}
@@ -164,8 +236,6 @@
                                 <label>Interior Color</label>
                                 {{ form.interior_color }}
                             </div>
-
-                            <!-- Financials & Metadata -->
                             <div class="space-y-1">
                                 <label>VIN</label>
                                 {{ form.vin }}
@@ -194,9 +264,15 @@
                             <div class="text-gray-400 text-sm bg-gray-800 p-2 rounded border border-gray-700">{{ form.photo }}</div>
                         </div>
 
-                        <button type="submit" class="mt-8 w-full px-6 py-3 bg-red-700 text-white uppercase tracking-widest font-bold hover:bg-red-600 transition-colors border border-red-800 shadow-lg rounded">
-                            Save Configuration
-                        </button>
+                        <div class="flex gap-3 mt-8">
+                            <button type="submit" class="flex-1 px-6 py-3 bg-red-700 text-white uppercase tracking-widest font-bold hover:bg-red-600 transition-colors border border-red-800 shadow-lg rounded">
+                                Save Configuration
+                            </button>
+                            <button type="button" @click="editing = false"
+                                    class="px-6 py-3 border border-gray-700 text-gray-400 hover:border-gray-500 hover:text-gray-300 transition-colors uppercase text-xs tracking-widest rounded">
+                                Cancel
+                            </button>
+                        </div>
                     </form>
                 </div>
             </div>

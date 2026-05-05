@@ -30,7 +30,7 @@
 
         <!-- Navigation -->
         <div class="mb-8 flex justify-between items-center">
-            <a href="{% url 'timepieces:timepiece_list' %}" class="text-gray-400 hover:text-luxury-gold text-xs uppercase tracking-widest transition-colors">
+            <a href="{% url 'collections:collection_list' collection_slug='horology-salon' %}" class="text-gray-400 hover:text-luxury-gold text-xs uppercase tracking-widest transition-colors">
                 &larr; Back to Salon
             </a>
             <a href="{% url 'timepieces:timepiece_add_project' timepiece.id %}" class="px-4 py-2 border border-luxury-gold text-luxury-gold hover:bg-luxury-gold hover:text-black text-xs uppercase tracking-widest font-bold rounded transition-colors">

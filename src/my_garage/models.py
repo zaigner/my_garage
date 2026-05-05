@@ -419,3 +419,24 @@ class CollectionItemRelationship(models.Model):
     def __str__(self):
         label = self.custom_label if self.relationship_type == 'CUSTOM' else self.get_relationship_type_display()
         return f"{self.from_item.name} {label} {self.to_item.name}"
+
+
+class PortfolioSnapshot(models.Model):
+    """
+    Daily total portfolio value per user. One row per (user, date).
+    Used to compute year-over-year % change on the dashboard.
+    """
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="portfolio_snapshots",
+    )
+    date = models.DateField()
+    total_value = models.DecimalField(max_digits=14, decimal_places=2)
+
+    class Meta:
+        unique_together = [["user", "date"]]
+        ordering = ["-date"]
+
+    def __str__(self):
+        return f"{self.user.username} portfolio on {self.date}: {self.total_value}"

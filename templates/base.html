@@ -20,10 +20,10 @@
                         <a href="{% url 'home' %}" class="inline-flex items-center px-1 pt-1 text-gray-900 hover:text-indigo-600">
                             Home
                         </a>
-                        <a href="{% url 'my_garage:garage_view' %}" class="inline-flex items-center px-1 pt-1 text-gray-900 hover:text-indigo-600">
+                        <a href="{% url 'collections:collection_list' collection_slug='automobiles' %}" class="inline-flex items-center px-1 pt-1 text-gray-900 hover:text-indigo-600">
                             Vehicles
                         </a>
-                        <a href="{% url 'timepieces:timepiece_list' %}" class="inline-flex items-center px-1 pt-1 text-gray-900 hover:text-indigo-600">
+                        <a href="{% url 'collections:collection_list' collection_slug='horology-salon' %}" class="inline-flex items-center px-1 pt-1 text-gray-900 hover:text-indigo-600">
                             Timepieces
                         </a>
                         <a href="{% url 'collections:collection_type_list' %}" class="inline-flex items-center px-1 pt-1 text-gray-900 hover:text-indigo-600">

@@ -1,10 +1,13 @@
-from django.shortcuts import render, redirect
-from django.http import HttpRequest, HttpResponse
-from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth import login
-from django.contrib import messages
-from my_garage.models import DynamicCollectionItem, CollectionType
 from datetime import datetime
+
+from django.contrib import messages
+from django.contrib.auth import login
+from django.contrib.auth.forms import UserCreationForm
+from django.http import HttpRequest, HttpResponse
+from django.shortcuts import render, redirect
+
+from my_garage.api.selectors import portfolio_get_yoy_change
+from my_garage.models import CollectionType, DynamicCollectionItem
 
 
 def get_sort_date(item):
@@ -67,6 +70,8 @@ def home(request: HttpRequest) -> HttpResponse:
             reverse=True,
         )[:3]
 
+        yoy_pct_change, yoy_source = portfolio_get_yoy_change(request.user)
+
         context.update({
             "automobiles_count": automobiles_count,
             "timepieces_count": timepieces_count,
@@ -75,6 +80,8 @@ def home(request: HttpRequest) -> HttpResponse:
             "total_collections_value": total_collections_value,
             "custom_collections": custom_collections,
             "recent_acquisitions": recent_acquisitions,
+            "yoy_pct_change": yoy_pct_change,
+            "yoy_source": yoy_source,
         })
 
     return render(request, "pages/home.html", context)
