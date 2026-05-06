@@ -117,9 +117,34 @@ class TestViewMode:
     def test_system_fields_not_shown_in_view_mode(self, auth_client, sneaker_item):
         """system_json fields (specs) must not appear as editable or readable data."""
         content = auth_client.get(_detail_url(sneaker_item)).content.decode()
-        # The label 'Specs' should not appear as a view-mode data field
-        # (it's system-managed). The raw dict value also shouldn't surface.
         assert "'some'" not in content
+
+    def test_enrichment_keys_not_shown_in_view_mode(self, auth_client, user, sneaker_type):
+        """specs, features, migrated keys injected by enrichment must not surface
+        as display_custom_fields labels in the view-mode grid."""
+        from decimal import Decimal
+        item = DynamicCollectionItem.objects.create(
+            owner=user,
+            collection_type=sneaker_type,
+            name="Test Item",
+            purchase_price=Decimal("100.00"),
+            custom_fields={
+                "size": "10",
+                "colorway": "Black",
+                "specs": {"engine": "V8"},
+                "features": ["sunroof"],
+                "migrated": "xsentinel_migrated_val",
+            },
+        )
+        content = auth_client.get(_detail_url(item)).content.decode()
+        # If migrated leaked into display_custom_fields it would render as a
+        # <dt>Migrated</dt> label — that word doesn't appear anywhere else in
+        # the template, making it a reliable sentinel.
+        assert "Migrated" not in content
+        # If specs leaked into display_custom_fields the raw dict repr would
+        # appear (the Technical Specs panel renders individual k/v pairs, not
+        # the whole dict string).
+        assert "&#x27;engine&#x27;" not in content
 
 
 # ---------------------------------------------------------------------------

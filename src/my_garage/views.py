@@ -529,11 +529,16 @@ def collection_item_detail(
         if field.get("system") or field.get("type") == "system_json"
     }
 
+    # Keys injected by enrichment/migration scripts — rendered in their own
+    # panels (Technical Specs, Factory Features) or are internal flags.
+    _ENRICHMENT_KEYS = {"specs", "features", "migrated"}
+
     # Non-system custom fields formatted for view-mode display
     display_custom_fields = [
         (key.replace("_", " ").title(), value)
         for key, value in (item.custom_fields or {}).items()
         if f"custom_{key}" not in system_field_names
+        and key not in _ENRICHMENT_KEYS
         and value not in (None, "", [], {})
     ]
 

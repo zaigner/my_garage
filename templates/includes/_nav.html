@@ -51,9 +51,55 @@
             The Collection
         </a>
 
-        <!-- Right: User menu or login -->
+        <!-- Right: Quick Add + User menu or login -->
         <div class="flex items-center gap-4">
             {% if user.is_authenticated %}
+                <!-- Quick Add dropdown -->
+                <div class="relative" x-data="{ open: false }" @keydown.escape.window="open = false" @click.outside="open = false">
+                    <button @click="open = !open"
+                            class="w-8 h-8 flex items-center justify-center border border-luxury-gold text-luxury-gold hover:bg-luxury-gold hover:text-black transition-colors rounded-sm"
+                            aria-label="Quick add item"
+                            :aria-expanded="open">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                        </svg>
+                    </button>
+
+                    <div x-show="open" x-cloak
+                         x-transition:enter="transition ease-out duration-150"
+                         x-transition:enter-start="opacity-0 scale-95"
+                         x-transition:enter-end="opacity-100 scale-100"
+                         x-transition:leave="transition ease-in duration-100"
+                         x-transition:leave-start="opacity-100 scale-100"
+                         x-transition:leave-end="opacity-0 scale-95"
+                         class="absolute right-0 mt-2 w-64 bg-[#151b33] border border-white/10 rounded-lg shadow-2xl z-50 origin-top-right">
+                        <div class="py-2">
+                            <div class="px-4 py-2 text-[10px] uppercase tracking-widest text-gray-500 border-b border-white/10 mb-1">
+                                Add to Collection
+                            </div>
+                            {% for collection in quick_add_collections %}
+                                <a href="{% url 'collections:collection_item_add' collection.slug %}"
+                                   class="flex items-center gap-3 px-4 py-3 hover:bg-white/5 text-luxury-white hover:text-luxury-gold transition-colors"
+                                   @click="open = false">
+                                    <i class="{{ collection.icon|default:'fas fa-box' }} w-4 text-luxury-gold text-sm"></i>
+                                    <span class="font-serif italic text-sm">{{ collection.name }}</span>
+                                </a>
+                            {% empty %}
+                                <div class="px-4 py-3 text-gray-500 text-sm italic">No collections yet.</div>
+                            {% endfor %}
+                            <div class="border-t border-white/10 mt-1 pt-1">
+                                <a href="{% url 'collections:collection_type_create' %}"
+                                   class="flex items-center gap-3 px-4 py-3 hover:bg-white/5 text-gray-400 hover:text-luxury-gold transition-colors"
+                                   @click="open = false">
+                                    <i class="fas fa-layer-group w-4 text-sm"></i>
+                                    <span class="text-xs uppercase tracking-widest">New Collection Type</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- User menu -->
                 <div class="relative group">
                     <button class="text-luxury-white hover:text-luxury-gold transition-colors" aria-label="User menu">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
