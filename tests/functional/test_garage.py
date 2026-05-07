@@ -5,6 +5,7 @@ Functional smoke tests for garage/vehicle URL patterns (Phase 5).
 /garage/<id>/ is a smart permalink redirect — finds the migrated DynamicCollectionItem
 by source_vehicle_id and forwards to collections:collection_item_detail.
 """
+
 import pytest
 from django.test import Client
 
@@ -31,7 +32,10 @@ class TestLegacyVehicleDetailRedirect:
         source_id = migrated_vehicle_item.custom_fields["source_vehicle_id"]
         response = auth_client.get(f"/garage/{source_id}/")
         assert response.status_code == 302
-        assert f"/collections/automobiles/items/{migrated_vehicle_item.id}/" in response["Location"]
+        assert (
+            f"/collections/automobiles/items/{migrated_vehicle_item.id}/"
+            in response["Location"]
+        )
 
     def test_unmigrated_vehicle_returns_404(self, auth_client, automobiles_type):
         """An ID with no matching source_vehicle_id raises Http404."""

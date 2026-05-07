@@ -2,6 +2,7 @@
 Tests for the text chunker (Phase 1.2).
 No Django DB or external services needed.
 """
+
 from __future__ import annotations
 
 from my_garage.utils.chunker import DocumentChunk, _split_on_length, chunk_markdown
@@ -76,7 +77,7 @@ class TestChunkMarkdown:
         assert chunks[0].content == chunks[0].content.strip()
 
     def test_h3_headers_also_split(self):
-        text = "### Sub-section A\n\nDetail A.\n\n" "### Sub-section B\n\nDetail B."
+        text = "### Sub-section A\n\nDetail A.\n\n### Sub-section B\n\nDetail B."
         chunks = chunk_markdown(text, source="doc.md")
         assert len(chunks) == 2
 

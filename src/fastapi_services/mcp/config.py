@@ -4,6 +4,7 @@ MCP service configuration with startup validation.
 Validates API keys at startup and exposes which tools are available
 so the MCP server can surface accurate capability information.
 """
+
 import logging
 from typing import Optional
 
@@ -91,7 +92,7 @@ class Settings(BaseSettings):
         if not self.marketcheck_api_key:
             logger.warning(
                 "MARKETCHECK_API_KEY not set — "
-                "search_market_listings, get_sales_stats, get_sales_history_by_vin disabled."
+                "search_market_listings, get_sales_stats, get_sales_history_by_vin disabled."  # noqa: E501
             )
         if not self.google_api_key:
             logger.warning(

@@ -9,6 +9,7 @@ Covers:
   - Returns (None, "none") when old items exist but all have null purchase_price
   - Correct sign: negative pct when current < past
 """
+
 from __future__ import annotations
 
 from datetime import date, timedelta
@@ -44,7 +45,9 @@ def collection_type(user):
     )
 
 
-def _item(user, collection_type, *, market_value=None, purchase_price=None, purchase_date=None):
+def _item(
+    user, collection_type, *, market_value=None, purchase_price=None, purchase_date=None
+):
     return DynamicCollectionItem.objects.create(
         owner=user,
         collection_type=collection_type,
@@ -66,7 +69,9 @@ class TestYoYWithSnapshot:
         one_year_ago = today - timedelta(days=365)
 
         _item(user, collection_type, market_value=Decimal("11000"))
-        PortfolioSnapshot.objects.create(user=user, date=one_year_ago, total_value=Decimal("10000"))
+        PortfolioSnapshot.objects.create(
+            user=user, date=one_year_ago, total_value=Decimal("10000")
+        )
 
         pct, source = portfolio_get_yoy_change(user, today=today)
 
@@ -78,7 +83,9 @@ class TestYoYWithSnapshot:
         one_year_ago = today - timedelta(days=365)
 
         _item(user, collection_type, market_value=Decimal("9000"))
-        PortfolioSnapshot.objects.create(user=user, date=one_year_ago, total_value=Decimal("10000"))
+        PortfolioSnapshot.objects.create(
+            user=user, date=one_year_ago, total_value=Decimal("10000")
+        )
 
         pct, source = portfolio_get_yoy_change(user, today=today)
 
@@ -87,10 +94,14 @@ class TestYoYWithSnapshot:
 
     def test_snapshot_within_30_day_window_is_used(self, user, collection_type):
         today = date(2026, 5, 4)
-        snapshot_date = today - timedelta(days=365 + 20)  # 20 days before exact year ago
+        snapshot_date = today - timedelta(
+            days=365 + 20
+        )  # 20 days before exact year ago
 
         _item(user, collection_type, market_value=Decimal("12000"))
-        PortfolioSnapshot.objects.create(user=user, date=snapshot_date, total_value=Decimal("10000"))
+        PortfolioSnapshot.objects.create(
+            user=user, date=snapshot_date, total_value=Decimal("10000")
+        )
 
         pct, source = portfolio_get_yoy_change(user, today=today)
 
@@ -102,7 +113,9 @@ class TestYoYWithSnapshot:
         snapshot_date = today - timedelta(days=365 + 45)  # outside ±30-day window
 
         _item(user, collection_type, market_value=Decimal("12000"))
-        PortfolioSnapshot.objects.create(user=user, date=snapshot_date, total_value=Decimal("10000"))
+        PortfolioSnapshot.objects.create(
+            user=user, date=snapshot_date, total_value=Decimal("10000")
+        )
 
         _pct, source = portfolio_get_yoy_change(user, today=today)
 
@@ -116,7 +129,9 @@ class TestYoYWithSnapshot:
         _item(user, collection_type, market_value=Decimal("10500"))
         # Two snapshots in window — should use the later one (10000, not 8000)
         PortfolioSnapshot.objects.create(
-            user=user, date=one_year_ago - timedelta(days=10), total_value=Decimal("8000")
+            user=user,
+            date=one_year_ago - timedelta(days=10),
+            total_value=Decimal("8000"),
         )
         PortfolioSnapshot.objects.create(
             user=user, date=one_year_ago, total_value=Decimal("10000")
@@ -140,7 +155,8 @@ class TestYoYWithPurchasePriceFallback:
         old_purchase_date = today - timedelta(days=400)
 
         _item(
-            user, collection_type,
+            user,
+            collection_type,
             market_value=Decimal("12000"),
             purchase_price=Decimal("10000"),
             purchase_date=old_purchase_date,
@@ -156,7 +172,8 @@ class TestYoYWithPurchasePriceFallback:
         recent_purchase_date = today - timedelta(days=100)
 
         _item(
-            user, collection_type,
+            user,
+            collection_type,
             market_value=Decimal("12000"),
             purchase_price=Decimal("10000"),
             purchase_date=recent_purchase_date,
@@ -185,7 +202,8 @@ class TestYoYNoData:
         old_purchase_date = today - timedelta(days=400)
 
         _item(
-            user, collection_type,
+            user,
+            collection_type,
             market_value=Decimal("12000"),
             purchase_price=None,
             purchase_date=old_purchase_date,

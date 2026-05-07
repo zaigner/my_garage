@@ -2,7 +2,6 @@ import logging
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db import transaction
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template import Context, Template
@@ -52,7 +51,10 @@ def legacy_vehicle_detail_redirect(
     ).first()
     if item is None:
         from django.http import Http404
-        raise Http404(f"Vehicle {vehicle_id} has not been migrated to a collection item yet.")
+
+        raise Http404(
+            f"Vehicle {vehicle_id} has not been migrated to a collection item yet."
+        )
     return redirect(
         "collections:collection_item_detail",
         collection_slug="automobiles",
@@ -72,13 +74,15 @@ def legacy_timepiece_detail_redirect(
     ).first()
     if item is None:
         from django.http import Http404
-        raise Http404(f"Timepiece {timepiece_id} has not been migrated to a collection item yet.")
+
+        raise Http404(
+            f"Timepiece {timepiece_id} has not been migrated to a collection item yet."
+        )
     return redirect(
         "collections:collection_item_detail",
         collection_slug="horology-salon",
         item_id=item.id,
     )
-
 
 
 # ============================================================================
@@ -257,7 +261,7 @@ def preview_collection_ui(request: HttpRequest) -> HttpResponse:
         # Render the generated UI fragment with the context
         rendered_ui_fragment = template.render(context)
 
-        # Now render the full page using collection_list.html, passing the rendered fragment
+        # Now render the full page using collection_list.html, passing the rendered fragment  # noqa: E501
         return render(
             request,
             "my_garage/collection_list.html",
@@ -524,7 +528,7 @@ def collection_item_detail(
     # as editable inputs. Catches both "system": true flag and "system_json" type,
     # regardless of how the DB schema was seeded.
     system_field_names = {
-        f'custom_{field["name"]}'
+        f"custom_{field['name']}"
         for field in collection_type.field_schema.get("fields", [])
         if field.get("system") or field.get("type") == "system_json"
     }
@@ -621,7 +625,9 @@ def collection_item_trigger_valuation(
         task_collection_item_refresh_valuation.delay(item.id)
         messages.success(request, "Valuation refresh queued — check back shortly.")
     else:
-        messages.warning(request, "Valuation refresh is not supported for this collection type.")
+        messages.warning(
+            request, "Valuation refresh is not supported for this collection type."
+        )
 
     return redirect(
         "collections:collection_item_detail",
@@ -659,7 +665,9 @@ def collection_item_trigger_enrich(
         task_collection_item_enrich.delay(item.id)
         messages.success(request, "Enrichment queued — check back shortly.")
     else:
-        messages.warning(request, "Enrichment is not supported for this collection type.")
+        messages.warning(
+            request, "Enrichment is not supported for this collection type."
+        )
 
     return redirect(
         "collections:collection_item_detail",
@@ -732,11 +740,13 @@ def collection_item_ocr_receipt(
         ocr_url = f"{settings.FASTAPI_BASE_URL}/ocr/process"
         response = http_requests.post(
             ocr_url,
-            files={"file": (
-                receipt_file.name,
-                receipt_file.read(),
-                receipt_file.content_type or "image/jpeg",
-            )},
+            files={
+                "file": (
+                    receipt_file.name,
+                    receipt_file.read(),
+                    receipt_file.content_type or "image/jpeg",
+                )
+            },
             timeout=30,
         )
         response.raise_for_status()
@@ -774,6 +784,7 @@ def collection_item_add_service(
 
             if record.receipt_image:
                 from my_garage.tasks import task_process_generic_service_record_ocr
+
                 task_process_generic_service_record_ocr.delay(record.id)
 
             messages.success(request, "Service record added successfully.")
@@ -1119,5 +1130,3 @@ def button_test_view(request: HttpRequest) -> HttpResponse:
     Debug view to test button functionality (no login required for testing).
     """
     return render(request, "my_garage/button_test.html", {})
-
-

@@ -8,6 +8,7 @@ Covers:
   - The magnifying-glass search path is NOT used for the profile button
   - Unauthenticated visitors see a login link instead of the profile button
 """
+
 from __future__ import annotations
 
 import pytest
@@ -40,8 +41,9 @@ class TestNavProfileButton:
         assert 'aria-label="User menu"' in response.content.decode()
 
     def test_search_icon_path_not_on_profile_button(self, auth_client):
-        """The magnifying-glass SVG path must not appear inside the profile button group."""
-        content = response_content = auth_client.get(HOME_URL).content.decode()
+        """The magnifying-glass SVG path must not appear inside the profile button
+        group."""
+        content = auth_client.get(HOME_URL).content.decode()
         # The old incorrect path for the magnifying glass was:
         old_search_path = "M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196"
         assert old_search_path not in content
@@ -59,4 +61,4 @@ class TestNavProfileButton:
         content = response.content.decode()
         assert "Login" in content
         assert "Sign Out" not in content
-        assert "aria-label=\"User menu\"" not in content
+        assert 'aria-label="User menu"' not in content

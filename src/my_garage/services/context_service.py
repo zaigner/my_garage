@@ -12,6 +12,7 @@ Usage:
     item_context = ctx.get_collection_item_context(item_id=1, user=request.user)
     docs = ctx.retrieve_relevant_docs("service record oil change")
 """
+
 from __future__ import annotations
 
 import logging
@@ -40,7 +41,7 @@ logger = logging.getLogger(__name__)
 
 def _cosine_similarity(a: list[float], b: list[float]) -> float:
     """Pure-Python cosine similarity. Returns 0.0 on zero-length vectors."""
-    dot = sum(x * y for x, y in zip(a, b))
+    dot = sum(x * y for x, y in zip(a, b, strict=False))
     norm_a = sum(x * x for x in a) ** 0.5
     norm_b = sum(x * x for x in b) ** 0.5
     if norm_a == 0.0 or norm_b == 0.0:
@@ -74,10 +75,10 @@ class ContextService:
             item = DynamicCollectionItem.objects.select_related("collection_type").get(
                 id=item_id, owner=user
             )
-        except DynamicCollectionItem.DoesNotExist:
+        except DynamicCollectionItem.DoesNotExist as e:
             raise ContextServiceError(
                 f"Collection item {item_id} not found for user {user}"
-            )
+            ) from e
 
         return CollectionItemContext(
             id=item.id,

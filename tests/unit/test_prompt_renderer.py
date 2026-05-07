@@ -2,6 +2,7 @@
 Tests for the Jinja2 prompt renderer (Phase 2.1).
 No Django DB or external services needed.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -39,9 +40,9 @@ class TestListTemplates:
             "condition_assessment.j2",
             "collection_item_description.j2",
         }
-        assert expected.issubset(
-            set(templates)
-        ), f"Missing templates: {expected - set(templates)}"
+        assert expected.issubset(set(templates)), (
+            f"Missing templates: {expected - set(templates)}"
+        )
 
     def test_returns_sorted_list(self, renderer):
         templates = renderer.list_templates()

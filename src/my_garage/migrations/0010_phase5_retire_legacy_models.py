@@ -4,48 +4,47 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('my_garage', '0009_phase1_collection_services'),
+        ("my_garage", "0009_phase1_collection_services"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='servicerecord',
-            name='vehicle',
+            model_name="servicerecord",
+            name="vehicle",
         ),
         migrations.RemoveField(
-            model_name='timepiece',
-            name='owner',
+            model_name="timepiece",
+            name="owner",
         ),
         migrations.RemoveField(
-            model_name='upgrade',
-            name='vehicle',
+            model_name="upgrade",
+            name="vehicle",
         ),
         migrations.RemoveField(
-            model_name='valuationhistory',
-            name='vehicle',
+            model_name="valuationhistory",
+            name="vehicle",
         ),
         migrations.RemoveField(
-            model_name='vehicle',
-            name='owner',
+            model_name="vehicle",
+            name="owner",
         ),
         migrations.DeleteModel(
-            name='ConditionReport',
+            name="ConditionReport",
         ),
         migrations.DeleteModel(
-            name='ServiceRecord',
+            name="ServiceRecord",
         ),
         migrations.DeleteModel(
-            name='Timepiece',
+            name="Timepiece",
         ),
         migrations.DeleteModel(
-            name='Upgrade',
+            name="Upgrade",
         ),
         migrations.DeleteModel(
-            name='ValuationHistory',
+            name="ValuationHistory",
         ),
         migrations.DeleteModel(
-            name='Vehicle',
+            name="Vehicle",
         ),
     ]

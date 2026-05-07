@@ -29,8 +29,8 @@ System-only fields (populated by service providers, not user forms):
               The form renderer must skip these. Service providers write to them.
 """
 
-from django.core.management.base import BaseCommand, CommandError
 from django.contrib.auth import get_user_model
+from django.core.management.base import BaseCommand, CommandError
 
 User = get_user_model()
 
@@ -78,7 +78,7 @@ AUTOMOBILES_SCHEMA = {
             "type": "text",
             "label": "VIN",
             "required": False,
-            "help_text": "17-character Vehicle Identification Number — enables VIN decode",
+            "help_text": "17-character Vehicle Identification Number — enables VIN decode",  # noqa: E501
             "max_length": 17,
             # NOTE: uniqueness is enforced at the service layer, not the schema.
             # The VehicleCollectionServices provider validates this before save.
@@ -148,7 +148,7 @@ AUTOMOBILES_SCHEMA = {
             "label": "Technical Specs",
             "required": False,
             "system": True,
-            "help_text": "Auto-populated by VIN decoder — engine, drivetrain, body style, etc.",
+            "help_text": "Auto-populated by VIN decoder — engine, drivetrain, body style, etc.",  # noqa: E501
         },
         {
             "name": "features",
@@ -161,7 +161,14 @@ AUTOMOBILES_SCHEMA = {
     ]
 }
 
-AUTOMOBILES_LIST_DISPLAY = ["year", "make", "model", "trim", "mileage", "exterior_color"]
+AUTOMOBILES_LIST_DISPLAY = [
+    "year",
+    "make",
+    "model",
+    "trim",
+    "mileage",
+    "exterior_color",
+]
 
 # ---------------------------------------------------------------------------
 
@@ -180,7 +187,7 @@ HOROLOGY_SCHEMA = {
             "type": "text",
             "label": "Reference Number",
             "required": True,
-            "help_text": "Manufacturer reference (e.g. 5711/1A-014) — primary valuation key",
+            "help_text": "Manufacturer reference (e.g. 5711/1A-014) — primary valuation key",  # noqa: E501
             "max_length": 100,
         },
         {
@@ -243,7 +250,7 @@ HOROLOGY_SCHEMA = {
             "type": "json_list",
             "label": "Complications",
             "required": False,
-            "help_text": "Enter each complication separated by commas: Chronograph, GMT, Moonphase, Annual Calendar",
+            "help_text": "Enter each complication separated by commas: Chronograph, GMT, Moonphase, Annual Calendar",  # noqa: E501
             # Stored as a JSON array: ["Chronograph", "GMT", "Moonphase"]
             "suggestions": [
                 "Chronograph",
@@ -273,7 +280,7 @@ HOROLOGY_SCHEMA = {
             "type": "boolean",
             "label": "Original Papers",
             "required": False,
-            "help_text": "Includes warranty card, certificate, and documentation (+value)",
+            "help_text": "Includes warranty card, certificate, and documentation (+value)",  # noqa: E501
         },
         {
             "name": "condition_grade",
@@ -284,7 +291,10 @@ HOROLOGY_SCHEMA = {
             "choices": [
                 {"value": "UNWORN", "label": "Unworn / New Old Stock (NOS)"},
                 {"value": "MINT", "label": "Mint — no visible wear"},
-                {"value": "EXCELLENT", "label": "Excellent — light micro-scratches only"},
+                {
+                    "value": "EXCELLENT",
+                    "label": "Excellent — light micro-scratches only",
+                },
                 {"value": "VERY_GOOD", "label": "Very Good — minor service marks"},
                 {"value": "GOOD", "label": "Good — visible wear, fully functional"},
                 {"value": "FAIR", "label": "Fair — heavy wear or polished"},
@@ -340,7 +350,7 @@ SYSTEM_COLLECTIONS = [
 
 
 class Command(BaseCommand):
-    help = "Seed (create or update) the built-in Automobiles and Horology Salon collection types."
+    help = "Seed (create or update) the built-in Automobiles and Horology Salon collection types."  # noqa: E501
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -358,7 +368,7 @@ class Command(BaseCommand):
             ),
         )
 
-    def handle(self, *args, **options):
+    def handle(self, *args, **options):  # noqa: C901
         dry_run = options["dry_run"]
         owner_username = options["owner"]
 
@@ -366,10 +376,12 @@ class Command(BaseCommand):
         if owner_username:
             try:
                 owner = User.objects.get(username=owner_username)
-            except User.DoesNotExist:
-                raise CommandError(f"User '{owner_username}' not found.")
+            except User.DoesNotExist as e:
+                raise CommandError(f"User '{owner_username}' not found.") from e
         else:
-            owner = User.objects.filter(is_superuser=True).order_by("date_joined").first()
+            owner = (
+                User.objects.filter(is_superuser=True).order_by("date_joined").first()
+            )
             if not owner:
                 raise CommandError(
                     "No superuser found. Create one first or pass --owner <username>."
@@ -377,7 +389,9 @@ class Command(BaseCommand):
 
         self.stdout.write(f"Owner: {owner.username}")
         if dry_run:
-            self.stdout.write(self.style.WARNING("DRY RUN — no changes will be written.\n"))
+            self.stdout.write(
+                self.style.WARNING("DRY RUN — no changes will be written.\n")
+            )
 
         # Import here to avoid app-registry issues at module load time
         from my_garage.models import CollectionType

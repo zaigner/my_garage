@@ -2,9 +2,8 @@
 Eval tests: Collection item context assembly (Phase 5 — unified DynamicCollectionItem).
 Validates against the golden dataset to catch regressions in context structure.
 """
-from __future__ import annotations
 
-from decimal import Decimal
+from __future__ import annotations
 
 import pytest
 

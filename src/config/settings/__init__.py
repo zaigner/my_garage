@@ -1,12 +1,13 @@
 """Settings package initialization."""
+
 import os
 
 # Determine which settings to use based on environment
-environment = os.environ.get('DJANGO_ENVIRONMENT', 'local')
+environment = os.environ.get("DJANGO_ENVIRONMENT", "local")
 
-if environment == 'production':
+if environment == "production":
     from .production import *
-elif environment == 'test':
+elif environment == "test":
     from .test import *
 else:
     from .local import *

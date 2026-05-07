@@ -2,6 +2,7 @@
 Tests for MCP config validation (Phase 1.3).
 No network, no DB, no env file needed.
 """
+
 from __future__ import annotations
 
 from fastapi_services.mcp.config import Settings

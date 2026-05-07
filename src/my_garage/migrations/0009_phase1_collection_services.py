@@ -5,33 +5,59 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('my_garage', '0008_collectiontype_ui_theme_html'),
+        ("my_garage", "0008_collectiontype_ui_theme_html"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='collectiontype',
-            name='is_system',
-            field=models.BooleanField(default=False, help_text='System-managed collection; not editable or deletable by users'),
+            model_name="collectiontype",
+            name="is_system",
+            field=models.BooleanField(
+                default=False,
+                help_text="System-managed collection; not editable or deletable by users",
+            ),
         ),
         migrations.AddField(
-            model_name='collectiontype',
-            name='service_provider_key',
-            field=models.CharField(choices=[('default', 'Default'), ('vehicle', 'Automobile'), ('timepiece', 'Timepiece / Horology')], default='default', help_text='Pluggable service provider for enrichment and valuation', max_length=50),
+            model_name="collectiontype",
+            name="service_provider_key",
+            field=models.CharField(
+                choices=[
+                    ("default", "Default"),
+                    ("vehicle", "Automobile"),
+                    ("timepiece", "Timepiece / Horology"),
+                ],
+                default="default",
+                help_text="Pluggable service provider for enrichment and valuation",
+                max_length=50,
+            ),
         ),
         migrations.CreateModel(
-            name='GenericValuationHistory',
+            name="GenericValuationHistory",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('date', models.DateTimeField(auto_now_add=True)),
-                ('value', models.DecimalField(decimal_places=2, max_digits=12)),
-                ('raw_data', models.JSONField(blank=True, null=True)),
-                ('item', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='valuation_history', to='my_garage.dynamiccollectionitem')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("date", models.DateTimeField(auto_now_add=True)),
+                ("value", models.DecimalField(decimal_places=2, max_digits=12)),
+                ("raw_data", models.JSONField(blank=True, null=True)),
+                (
+                    "item",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="valuation_history",
+                        to="my_garage.dynamiccollectionitem",
+                    ),
+                ),
             ],
             options={
-                'ordering': ['-date'],
+                "ordering": ["-date"],
             },
         ),
     ]

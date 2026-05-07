@@ -1,19 +1,29 @@
+from typing import Any, Dict, Optional
+
 import requests
-import base64
-from typing import Dict, Any, Optional
 from pydantic import BaseModel, Field
+
 from ..config import settings
+
 
 class ImageGenerationInput(BaseModel):
     prompt: str = Field(..., description="The prompt to generate an image from.")
-    negative_prompt: Optional[str] = Field(None, description="Negative prompt to avoid specific features.")
+    negative_prompt: Optional[str] = Field(
+        None, description="Negative prompt to avoid specific features."
+    )
 
-def generate_vehicle_image(prompt: str, negative_prompt: Optional[str] = None) -> Dict[str, Any]:
+
+def generate_vehicle_image(
+    prompt: str, negative_prompt: Optional[str] = None
+) -> Dict[str, Any]:
     """
-    Generates an image of a vehicle using Google Gemini 2.5 Flash Image (aka Nano Banana).
+    Generates an image of a vehicle using Google Gemini 2.5 Flash Image
+    (aka Nano Banana).
     """
     # Ensure you have GOOGLE_API_KEY in your .env and settings
-    api_key = getattr(settings, "google_api_key", None) or getattr(settings, "gemini_api_key", None)
+    api_key = getattr(settings, "google_api_key", None) or getattr(
+        settings, "gemini_api_key", None
+    )
 
     if not api_key:
         return {"error": "Google API key not configured."}
@@ -27,20 +37,16 @@ def generate_vehicle_image(prompt: str, negative_prompt: Optional[str] = None) -
         final_prompt += f" --without {negative_prompt}"
 
     payload = {
-        "contents": [{
-            "parts": [{"text": final_prompt}]
-        }],
-        "generationConfig": {
-            "responseMimeType": "image/jpeg"
-        }
+        "contents": [{"parts": [{"text": final_prompt}]}],
+        "generationConfig": {"responseMimeType": "image/jpeg"},
     }
 
     try:
         response = requests.post(url, json=payload, timeout=60)
         response.raise_for_status()
-        
+
         data = response.json()
-        
+
         # Extract base64 image from Gemini response
         # Structure: candidates[0].content.parts[0].inlineData.data
         candidates = data.get("candidates", [])

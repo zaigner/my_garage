@@ -1,6 +1,7 @@
 """
 Eval suite conftest — shared fixtures for the golden dataset evaluation tests.
 """
+
 from __future__ import annotations
 
 import json

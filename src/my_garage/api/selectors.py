@@ -1,6 +1,6 @@
 from datetime import date, timedelta
 from decimal import Decimal
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from django.db.models import Q
 
@@ -16,23 +16,26 @@ def global_search(user, query: str) -> List[Dict[str, Any]]:
         return []
 
     items = DynamicCollectionItem.objects.filter(
-        Q(owner=user) & (
-            Q(name__icontains=query) |
-            Q(collection_type__name__icontains=query) |
-            Q(notes__icontains=query)
+        Q(owner=user)
+        & (
+            Q(name__icontains=query)
+            | Q(collection_type__name__icontains=query)
+            | Q(notes__icontains=query)
         )
     ).select_related("collection_type")[:10]
 
     results = []
     for item in items:
-        results.append({
-            "type": item.collection_type.name,
-            "name": item.name,
-            "subtext": item.collection_type.name,
-            "url": f"/collections/{item.collection_type.slug}/items/{item.id}/",
-            "icon": item.collection_type.icon or "fa-box",
-            "category": item.collection_type.name,
-        })
+        results.append(
+            {
+                "type": item.collection_type.name,
+                "name": item.name,
+                "subtext": item.collection_type.name,
+                "url": f"/collections/{item.collection_type.slug}/items/{item.id}/",
+                "icon": item.collection_type.icon or "fa-box",
+                "category": item.collection_type.name,
+            }
+        )
     return results
 
 
@@ -55,7 +58,9 @@ def portfolio_get_yoy_change(
 
     # Current total value
     items = DynamicCollectionItem.objects.filter(owner=user)
-    current_total = sum(i.current_market_value for i in items if i.current_market_value) or Decimal("0")
+    current_total = sum(
+        i.current_market_value for i in items if i.current_market_value
+    ) or Decimal("0")
 
     # --- Try a real snapshot from ±30 days around one year ago ---
     one_year_ago = today - timedelta(days=365)
@@ -79,13 +84,16 @@ def portfolio_get_yoy_change(
         # Fallback: sum purchase_price of items acquired before the window
         cutoff = today - timedelta(days=365)
         old_items = [
-            i for i in items
+            i
+            for i in items
             if (i.purchase_date and i.purchase_date < cutoff)
             or (not i.purchase_date and i.created_at and i.created_at.date() < cutoff)
         ]
         if not old_items:
             return None, "none"
-        past_value = sum(i.purchase_price for i in old_items if i.purchase_price) or Decimal("0")
+        past_value = sum(
+            i.purchase_price for i in old_items if i.purchase_price
+        ) or Decimal("0")
         if not past_value:
             return None, "none"
         source = "purchase_price"

@@ -4,18 +4,18 @@ from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.forms import UserCreationForm
 from django.http import HttpRequest, HttpResponse
-from django.shortcuts import render, redirect
+from django.shortcuts import redirect, render
 
 from my_garage.api.selectors import portfolio_get_yoy_change
 from my_garage.models import CollectionType, DynamicCollectionItem
 
 
 def get_sort_date(item):
-    if hasattr(item, 'created_at') and item.created_at:
+    if hasattr(item, "created_at") and item.created_at:
         if isinstance(item.created_at, datetime):
             return item.created_at.date()
         return item.created_at
-    if hasattr(item, 'purchase_date') and item.purchase_date:
+    if hasattr(item, "purchase_date") and item.purchase_date:
         return item.purchase_date
     return datetime(1900, 1, 1).date()
 
@@ -30,8 +30,12 @@ def home(request: HttpRequest) -> HttpResponse:
         all_collection_items = DynamicCollectionItem.objects.filter(owner=request.user)
 
         # ── System collection stats ──────────────────────────────────────────
-        automobiles_items = all_collection_items.filter(collection_type__slug="automobiles")
-        horology_items = all_collection_items.filter(collection_type__slug="horology-salon")
+        automobiles_items = all_collection_items.filter(
+            collection_type__slug="automobiles"
+        )
+        horology_items = all_collection_items.filter(
+            collection_type__slug="horology-salon"
+        )
 
         automobiles_count = automobiles_items.count()
         timepieces_count = horology_items.count()
@@ -45,7 +49,9 @@ def home(request: HttpRequest) -> HttpResponse:
 
         # ── Custom (non-system) collections ─────────────────────────────────
         system_slugs = {"automobiles", "horology-salon"}
-        collection_types = CollectionType.objects.filter(owner=request.user, is_active=True)
+        collection_types = CollectionType.objects.filter(
+            owner=request.user, is_active=True
+        )
         custom_collections = []
         for c_type in collection_types:
             if c_type.slug in system_slugs:
@@ -65,38 +71,41 @@ def home(request: HttpRequest) -> HttpResponse:
 
         # ── Recent acquisitions (collection items only) ───────────────────────
         recent_acquisitions = sorted(
-            list(all_collection_items.select_related("collection_type")),
+            all_collection_items.select_related("collection_type"),
             key=get_sort_date,
             reverse=True,
         )[:3]
 
         yoy_pct_change, yoy_source = portfolio_get_yoy_change(request.user)
 
-        context.update({
-            "automobiles_count": automobiles_count,
-            "timepieces_count": timepieces_count,
-            "total_automobiles_value": total_automobiles_value,
-            "total_timepieces_value": total_timepieces_value,
-            "total_collections_value": total_collections_value,
-            "custom_collections": custom_collections,
-            "recent_acquisitions": recent_acquisitions,
-            "yoy_pct_change": yoy_pct_change,
-            "yoy_source": yoy_source,
-        })
+        context.update(
+            {
+                "automobiles_count": automobiles_count,
+                "timepieces_count": timepieces_count,
+                "total_automobiles_value": total_automobiles_value,
+                "total_timepieces_value": total_timepieces_value,
+                "total_collections_value": total_collections_value,
+                "custom_collections": custom_collections,
+                "recent_acquisitions": recent_acquisitions,
+                "yoy_pct_change": yoy_pct_change,
+                "yoy_source": yoy_source,
+            }
+        )
 
     return render(request, "pages/home.html", context)
+
 
 def register(request: HttpRequest) -> HttpResponse:
     """
     Register a new user.
     """
-    if request.method == 'POST':
+    if request.method == "POST":
         form = UserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
             login(request, user)
             messages.success(request, "Registration successful. Welcome to The Salon.")
-            return redirect('home')
+            return redirect("home")
     else:
         form = UserCreationForm()
-    return render(request, 'registration/register.html', {'form': form})
+    return render(request, "registration/register.html", {"form": form})

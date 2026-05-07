@@ -7,6 +7,7 @@ These are two separate interfaces:
   - /mcp/execute  → Django calls this programmatically (REST)
   - /mcp-sdk/     → Claude Code uses this natively (MCP protocol)
 """
+
 from typing import Optional
 
 from mcp.server.fastmcp import FastMCP
@@ -34,7 +35,8 @@ mcp_server = FastMCP(
 def lookup_vehicle_details(vin: str, model_year: Optional[int] = None) -> dict:
     """
     Look up vehicle details using the NHTSA vPIC API (free, no key required).
-    Returns make, model, year, engine, body style, and all decoded spec data for the given VIN.
+    Returns make, model, year, engine, body style, and all decoded spec data for
+    the given VIN.
 
     Args:
         vin: The 17-character Vehicle Identification Number.

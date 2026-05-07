@@ -1,6 +1,8 @@
-from . import vehicle_lookup
-from . import market_valuation
-from . import google_search
-from . import image_generation
-from . import sales_stats
-from . import watch_valuation
+from . import (  # noqa: F401
+    google_search,
+    image_generation,
+    market_valuation,
+    sales_stats,
+    vehicle_lookup,
+    watch_valuation,
+)

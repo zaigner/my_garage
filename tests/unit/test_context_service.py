@@ -4,6 +4,7 @@ Tests for ContextService (Phase 5 — unified DynamicCollectionItem).
 Uses pytest-django with in-memory SQLite (test settings).
 All external I/O (MongoDB, Google API) is mocked.
 """
+
 from __future__ import annotations
 
 from datetime import date
@@ -226,7 +227,9 @@ class TestGetPortfolioSummary:
         summary = svc.get_portfolio_summary(user=user)
         assert "Wine Collection" in summary.collection_types
 
-    def test_total_items_count(self, svc, vehicle_item, timepiece_item, collection_item, user):
+    def test_total_items_count(
+        self, svc, vehicle_item, timepiece_item, collection_item, user
+    ):
         summary = svc.get_portfolio_summary(user=user)
         assert summary.collection_item_count == 3
 

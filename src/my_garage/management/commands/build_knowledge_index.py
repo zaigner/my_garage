@@ -12,6 +12,7 @@ Usage:
     pixi run manage build_knowledge_index --source-dir docs
     pixi run manage build_knowledge_index --dry-run
 """
+
 from __future__ import annotations
 
 import logging
@@ -66,7 +67,7 @@ class Command(BaseCommand):
             help="Maximum characters per chunk (default 2000 ≈ 500 tokens).",
         )
 
-    def handle(self, *args, **options):
+    def handle(self, *args, **options):  # noqa: C901
         dry_run: bool = options["dry_run"]
         source_dir: str | None = options["source_dir"]
         max_chars: int = options["max_chars"]

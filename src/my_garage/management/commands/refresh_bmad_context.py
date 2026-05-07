@@ -11,6 +11,7 @@ Usage:
     pixi run refresh-context
     pixi run manage refresh_bmad_context
 """
+
 from __future__ import annotations
 
 import re
@@ -114,7 +115,7 @@ class Command(BaseCommand):
             f"| Collection types | {stats['collection_type_count']} ({types_str}) |\n"
             f"| Collection items | {stats['collection_item_count']} |\n"
             f"| Collections value | ${stats['total_collections_value']:,.2f} |\n"
-            f"| **Total portfolio value** | **${stats['total_portfolio_value']:,.2f}** |\n"
+            f"| **Total portfolio value** | **${stats['total_portfolio_value']:,.2f}** |\n"  # noqa: E501
             f"| Last refresh | {stats['refreshed_at']} |\n"
         )
 

@@ -4,14 +4,15 @@ Functional tests for provider-dispatched collection item action views:
   - collection_item_trigger_valuation
   - collection_item_trigger_enrich
 """
+
 from __future__ import annotations
 
 from decimal import Decimal
 from unittest.mock import patch
 
 import pytest
-from django.test import Client
 from django.contrib.auth import get_user_model
+from django.test import Client
 
 from my_garage.models import CollectionType, DynamicCollectionItem
 
@@ -123,12 +124,14 @@ class TestProviderContextInDetailView:
         slug = vehicle_item.collection_type.slug
         with patch(
             "my_garage.services.collection_services.vehicle.VehicleCollectionServices.get_detail_context",
-            return_value={"show_valuation_button": True, "show_vin_enrich_button": True,
-                          "show_photo_refresh_button": False, "valuation_history": []},
+            return_value={
+                "show_valuation_button": True,
+                "show_vin_enrich_button": True,
+                "show_photo_refresh_button": False,
+                "valuation_history": [],
+            },
         ):
-            response = auth_client.get(
-                f"/collections/{slug}/items/{vehicle_item.id}/"
-            )
+            response = auth_client.get(f"/collections/{slug}/items/{vehicle_item.id}/")
         assert response.status_code == 200
         assert b"Refresh Valuation" in response.content
         assert b"Decode VIN" in response.content
@@ -139,21 +142,23 @@ class TestProviderContextInDetailView:
         slug = vehicle_item.collection_type.slug
         with patch(
             "my_garage.services.collection_services.vehicle.VehicleCollectionServices.get_detail_context",
-            return_value={"show_valuation_button": False, "show_vin_enrich_button": False,
-                          "show_photo_refresh_button": False, "valuation_history": []},
+            return_value={
+                "show_valuation_button": False,
+                "show_vin_enrich_button": False,
+                "show_photo_refresh_button": False,
+                "valuation_history": [],
+            },
         ):
-            response = auth_client.get(
-                f"/collections/{slug}/items/{vehicle_item.id}/"
-            )
+            response = auth_client.get(f"/collections/{slug}/items/{vehicle_item.id}/")
         assert response.status_code == 200
         assert b"Refresh Valuation" not in response.content
         assert b"Decode VIN" not in response.content
 
-    def test_default_collection_shows_no_action_buttons(self, auth_client, default_item):
+    def test_default_collection_shows_no_action_buttons(
+        self, auth_client, default_item
+    ):
         slug = default_item.collection_type.slug
-        response = auth_client.get(
-            f"/collections/{slug}/items/{default_item.id}/"
-        )
+        response = auth_client.get(f"/collections/{slug}/items/{default_item.id}/")
         assert response.status_code == 200
         assert b"Refresh Valuation" not in response.content
         assert b"Decode VIN" not in response.content
@@ -162,9 +167,14 @@ class TestProviderContextInDetailView:
         slug = timepiece_item.collection_type.slug
         with patch(
             "my_garage.services.collection_services.timepiece.TimepieceCollectionServices.get_detail_context",
-            return_value={"show_valuation_button": True, "show_winder_link": False,
-                          "winder_items": [], "has_box": True, "has_papers": True,
-                          "valuation_history": []},
+            return_value={
+                "show_valuation_button": True,
+                "show_winder_link": False,
+                "winder_items": [],
+                "has_box": True,
+                "has_papers": True,
+                "valuation_history": [],
+            },
         ):
             response = auth_client.get(
                 f"/collections/{slug}/items/{timepiece_item.id}/"
@@ -174,18 +184,21 @@ class TestProviderContextInDetailView:
 
     def test_valuation_history_rendered_when_present(self, auth_client, vehicle_item):
         from my_garage.models import GenericValuationHistory
+
         slug = vehicle_item.collection_type.slug
         entry = GenericValuationHistory.objects.create(
             item=vehicle_item, value=Decimal("39500.00"), raw_data={}
         )
         with patch(
             "my_garage.services.collection_services.vehicle.VehicleCollectionServices.get_detail_context",
-            return_value={"show_valuation_button": True, "show_vin_enrich_button": False,
-                          "show_photo_refresh_button": False, "valuation_history": [entry]},
+            return_value={
+                "show_valuation_button": True,
+                "show_vin_enrich_button": False,
+                "show_photo_refresh_button": False,
+                "valuation_history": [entry],
+            },
         ):
-            response = auth_client.get(
-                f"/collections/{slug}/items/{vehicle_item.id}/"
-            )
+            response = auth_client.get(f"/collections/{slug}/items/{vehicle_item.id}/")
         assert response.status_code == 200
         assert b"Valuation History" in response.content
         assert b"39500" in response.content
@@ -204,9 +217,7 @@ class TestTriggerValuationView:
                 f"/collections/{slug}/items/{vehicle_item.id}/refresh-valuation/"
             )
         assert response.status_code == 302
-        assert response["Location"] == (
-            f"/collections/{slug}/items/{vehicle_item.id}/"
-        )
+        assert response["Location"] == (f"/collections/{slug}/items/{vehicle_item.id}/")
         mock_task.delay.assert_called_once_with(vehicle_item.id)
 
     def test_post_unsupported_provider_shows_warning(self, auth_client, default_item):
@@ -256,23 +267,17 @@ class TestTriggerValuationView:
 class TestTriggerEnrichView:
     def test_post_queues_task_and_redirects(self, auth_client, vehicle_item):
         slug = vehicle_item.collection_type.slug
-        with patch(
-            "my_garage.views.task_collection_item_enrich"
-        ) as mock_task:
+        with patch("my_garage.views.task_collection_item_enrich") as mock_task:
             response = auth_client.post(
                 f"/collections/{slug}/items/{vehicle_item.id}/enrich/"
             )
         assert response.status_code == 302
-        assert response["Location"] == (
-            f"/collections/{slug}/items/{vehicle_item.id}/"
-        )
+        assert response["Location"] == (f"/collections/{slug}/items/{vehicle_item.id}/")
         mock_task.delay.assert_called_once_with(vehicle_item.id)
 
     def test_post_unsupported_provider_shows_warning(self, auth_client, default_item):
         slug = default_item.collection_type.slug
-        with patch(
-            "my_garage.views.task_collection_item_enrich"
-        ) as mock_task:
+        with patch("my_garage.views.task_collection_item_enrich") as mock_task:
             response = auth_client.post(
                 f"/collections/{slug}/items/{default_item.id}/enrich/"
             )
@@ -284,9 +289,7 @@ class TestTriggerEnrichView:
     ):
         """TimepieceCollectionServices.supports_enrichment() returns False."""
         slug = timepiece_item.collection_type.slug
-        with patch(
-            "my_garage.views.task_collection_item_enrich"
-        ) as mock_task:
+        with patch("my_garage.views.task_collection_item_enrich") as mock_task:
             response = auth_client.post(
                 f"/collections/{slug}/items/{timepiece_item.id}/enrich/"
             )
@@ -295,9 +298,7 @@ class TestTriggerEnrichView:
 
     def test_get_redirects_to_detail_without_queuing(self, auth_client, vehicle_item):
         slug = vehicle_item.collection_type.slug
-        with patch(
-            "my_garage.views.task_collection_item_enrich"
-        ) as mock_task:
+        with patch("my_garage.views.task_collection_item_enrich") as mock_task:
             response = auth_client.get(
                 f"/collections/{slug}/items/{vehicle_item.id}/enrich/"
             )
@@ -306,9 +307,7 @@ class TestTriggerEnrichView:
 
     def test_unauthenticated_redirects_to_login(self, vehicle_item):
         slug = vehicle_item.collection_type.slug
-        response = Client().post(
-            f"/collections/{slug}/items/{vehicle_item.id}/enrich/"
-        )
+        response = Client().post(f"/collections/{slug}/items/{vehicle_item.id}/enrich/")
         assert response.status_code == 302
         assert "/accounts/login/" in response["Location"]
 

@@ -10,6 +10,7 @@ Usage:
     renderer = PromptRenderer()
     prompt = renderer.render("vehicle_valuation.j2", context_dict)
 """
+
 from __future__ import annotations
 
 import logging
@@ -68,15 +69,15 @@ class PromptRenderer:
         try:
             template = self._env.get_template(template_name)
             return template.render(**context).strip()
-        except TemplateNotFound:
+        except TemplateNotFound as e:
             raise PromptRenderError(
                 f"Prompt template not found: {template_name}. "
                 f"Available templates: {self.list_templates()}"
-            )
+            ) from e
         except UndefinedError as e:
             raise PromptRenderError(
                 f"Missing context variable in template '{template_name}': {e}"
-            )
+            ) from e
 
     def list_templates(self) -> list[str]:
         """Return all available template filenames."""
@@ -91,4 +92,4 @@ class PromptRenderer:
             template = self._env.from_string(template_string)
             return template.render(**context).strip()
         except UndefinedError as e:
-            raise PromptRenderError(f"Missing context variable: {e}")
+            raise PromptRenderError(f"Missing context variable: {e}") from e

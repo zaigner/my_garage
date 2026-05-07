@@ -4,6 +4,7 @@ passed to prompt templates and AI tool calls.
 
 These are plain data containers — no Django ORM, no I/O.
 """
+
 from __future__ import annotations
 
 from datetime import date, datetime
@@ -37,7 +38,8 @@ class UpgradeContext(BaseModel):
 
 
 class VehicleContext(BaseModel):
-    """Complete context for a single vehicle — used in valuation and condition prompts."""
+    """Complete context for a single vehicle — used in valuation and condition
+    prompts."""
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 

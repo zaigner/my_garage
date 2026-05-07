@@ -6,6 +6,7 @@ These tests verify:
 2. Each tool has a correct name, description, and callable implementation.
 3. Tools return the right shape of data when called with mocked external APIs.
 """
+
 from unittest.mock import MagicMock, patch
 
 from fastapi_services.mcp.server import mcp_server
@@ -48,9 +49,9 @@ EXPECTED_TOOLS = {
 def test_all_expected_tools_are_registered():
     """Every tool defined in server.py must appear in the FastMCP registry."""
     registered = _registered_tool_names()
-    assert EXPECTED_TOOLS.issubset(
-        registered
-    ), f"Missing tools: {EXPECTED_TOOLS - registered}"
+    assert EXPECTED_TOOLS.issubset(registered), (
+        f"Missing tools: {EXPECTED_TOOLS - registered}"
+    )
 
 
 def test_no_unexpected_tools_registered():

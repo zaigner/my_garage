@@ -13,6 +13,7 @@ All tests are pure unit tests — no database access, no HTTP calls.
 External API calls in VehicleCollectionServices and TimepieceCollectionServices
 are tested via mocks so CI runs without live services.
 """
+
 from __future__ import annotations
 
 from decimal import Decimal
@@ -28,13 +29,12 @@ from my_garage.services.collection_services.registry import (
     get_collection_services,
     register,
 )
+from my_garage.services.collection_services.timepiece import TimepieceCollectionServices
 from my_garage.services.collection_services.vehicle import (
     VehicleCollectionServices,
     _build_market_search_args,
     _cf,
 )
-from my_garage.services.collection_services.timepiece import TimepieceCollectionServices
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -250,14 +250,18 @@ class TestBuildMarketSearchArgs:
         assert "mileage" not in args
 
     def test_exterior_color_included(self):
-        item = _make_item(make="Porsche", model="911", year=2022, exterior_color="Guards Red")
+        item = _make_item(
+            make="Porsche", model="911", year=2022, exterior_color="Guards Red"
+        )
         args = _build_market_search_args(item)
         assert args["exterior_color"] == "Guards Red"
 
     def test_specs_engine_extracted(self):
         item = _make_item(
-            make="Ford", model="Mustang", year=2020,
-            specs={"engine": "5.0L V8", "drivetrain": "RWD"}
+            make="Ford",
+            model="Mustang",
+            year=2020,
+            specs={"engine": "5.0L V8", "drivetrain": "RWD"},
         )
         args = _build_market_search_args(item)
         assert args["engine"] == "5.0L V8"
@@ -266,8 +270,10 @@ class TestBuildMarketSearchArgs:
     def test_specs_title_case_keys_extracted(self):
         """Verify that Title Case spec keys (from NHTSA) are normalised."""
         item = _make_item(
-            make="Ford", model="F-150", year=2021,
-            specs={"Body Style": "Pickup", "Fuel Type": "Gasoline"}
+            make="Ford",
+            model="F-150",
+            year=2021,
+            specs={"Body Style": "Pickup", "Fuel Type": "Gasoline"},
         )
         args = _build_market_search_args(item)
         assert args.get("body_style") == "Pickup"
@@ -275,16 +281,17 @@ class TestBuildMarketSearchArgs:
 
     def test_features_dict_becomes_keywords(self):
         item = _make_item(
-            make="BMW", model="M3", year=2022,
-            features={"Sunroof": True, "Leather Seats": True, "Sunshades": False}
+            make="BMW",
+            model="M3",
+            year=2022,
+            features={"Sunroof": True, "Leather Seats": True, "Sunshades": False},
         )
         args = _build_market_search_args(item)
         assert set(args["keywords"]) == {"Sunroof", "Leather Seats"}
 
     def test_features_list_becomes_keywords(self):
         item = _make_item(
-            make="BMW", model="M3", year=2022,
-            features=["Sunroof", "Leather Seats"]
+            make="BMW", model="M3", year=2022, features=["Sunroof", "Leather Seats"]
         )
         args = _build_market_search_args(item)
         assert args["keywords"] == ["Sunroof", "Leather Seats"]
@@ -402,19 +409,28 @@ class TestVehicleRunEnrichment:
     def setup_method(self):
         self.provider = VehicleCollectionServices()
 
-    @patch("my_garage.services.collection_services.vehicle.VehicleCollectionServices.run_photo_fetch")
+    @patch(
+        "my_garage.services.collection_services.vehicle.VehicleCollectionServices.run_photo_fetch"
+    )
     @patch("my_garage.services.collection_services.vehicle.requests.post")
     def test_updates_custom_fields_from_vin_data(self, mock_post, mock_photo):
         mock_post.return_value = MagicMock(
             status_code=200,
-            json=lambda: {"make": "Toyota", "model": "Tacoma", "model_year": 2021, "engine": "3.5L V6"},
+            json=lambda: {
+                "make": "Toyota",
+                "model": "Tacoma",
+                "model_year": 2021,
+                "engine": "3.5L V6",
+            },
         )
         mock_post.return_value.raise_for_status = MagicMock()
 
-        item = _make_item(vin="1HGBH41JXMN109186", make="Unknown", model="Unknown", year=2021)
+        item = _make_item(
+            vin="1HGBH41JXMN109186", make="Unknown", model="Unknown", year=2021
+        )
         item.save = MagicMock()
 
-        result = self.provider.run_enrichment(item)
+        self.provider.run_enrichment(item)
 
         assert item.custom_fields["make"] == "Toyota"
         assert item.custom_fields["model"] == "Tacoma"
@@ -439,7 +455,9 @@ class TestVehicleRunEnrichment:
         )
         mock_post.return_value.raise_for_status = MagicMock()
 
-        item = _make_item(vin="INVALIDVIN123456X", make="Unknown", model="Unknown", year=2000)
+        item = _make_item(
+            vin="INVALIDVIN123456X", make="Unknown", model="Unknown", year=2000
+        )
         item.save = MagicMock()
 
         result = self.provider.run_enrichment(item)
@@ -523,7 +541,9 @@ class TestTimepieceRunValuation:
         )
         mock_post.return_value.raise_for_status = MagicMock()
 
-        item = _make_item(brand="Obscure", watch_model="Unknown", reference_number="???")
+        item = _make_item(
+            brand="Obscure", watch_model="Unknown", reference_number="???"
+        )
         item.current_market_value = Decimal("500.00")
         item.save = MagicMock()
 
@@ -548,12 +568,14 @@ class TestTimepieceRunValuation:
             has_papers=False,
         )
         item.save = MagicMock()
-        # Patch history creation — local import inside run_valuation lives in my_garage.models
+        # Patch history creation — local import inside run_valuation lives in my_garage.models  # noqa: E501
         with patch("my_garage.models.GenericValuationHistory"):
             self.provider.run_valuation(item)
 
         call_kwargs = mock_post.call_args
-        payload = call_kwargs[1]["json"] if "json" in call_kwargs[1] else call_kwargs[0][1]
+        payload = (
+            call_kwargs[1]["json"] if "json" in call_kwargs[1] else call_kwargs[0][1]
+        )
         assert payload["arguments"]["has_box"] is True
         assert payload["arguments"]["has_papers"] is False
 

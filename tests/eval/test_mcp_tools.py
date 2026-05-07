@@ -3,6 +3,7 @@ Eval tests: MCP tool correctness (Phase 3.2).
 Tests tool output shape against the golden dataset.
 External APIs are always mocked.
 """
+
 from __future__ import annotations
 
 from unittest.mock import MagicMock, patch

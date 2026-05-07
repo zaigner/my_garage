@@ -1,6 +1,7 @@
 """
 Shared fixtures for functional (HTTP smoke) tests.
 """
+
 from __future__ import annotations
 
 from decimal import Decimal
@@ -59,7 +60,8 @@ def horology_type(user):
 
 @pytest.fixture
 def migrated_vehicle_item(user, automobiles_type):
-    """A DynamicCollectionItem representing a migrated vehicle (has source_vehicle_id)."""
+    """A DynamicCollectionItem representing a migrated vehicle (has
+    source_vehicle_id)."""
     return DynamicCollectionItem.objects.create(
         owner=user,
         collection_type=automobiles_type,
@@ -77,7 +79,8 @@ def migrated_vehicle_item(user, automobiles_type):
 
 @pytest.fixture
 def migrated_timepiece_item(user, horology_type):
-    """A DynamicCollectionItem representing a migrated timepiece (has source_timepiece_id)."""
+    """A DynamicCollectionItem representing a migrated timepiece (has
+    source_timepiece_id)."""
     return DynamicCollectionItem.objects.create(
         owner=user,
         collection_type=horology_type,

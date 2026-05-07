@@ -6,6 +6,7 @@ Verifies the three rendering states:
   2. Authenticated user with NO items → empty-vault prompt, no fake names
   3. Unauthenticated visitor         → generic marketing placeholders only
 """
+
 from __future__ import annotations
 
 from decimal import Decimal
@@ -27,6 +28,7 @@ pytestmark = pytest.mark.django_db
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def user(db):
     return User.objects.create_user(username="acq_user", password="pass")
@@ -44,7 +46,11 @@ def automobiles_type(user):
     ct, _ = CollectionType.objects.get_or_create(
         owner=user,
         slug="automobiles",
-        defaults={"name": "Automobiles", "service_provider_key": "vehicle", "is_system": True},
+        defaults={
+            "name": "Automobiles",
+            "service_provider_key": "vehicle",
+            "is_system": True,
+        },
     )
     return ct
 
@@ -63,6 +69,7 @@ def collection_item(user, automobiles_type):
 # ---------------------------------------------------------------------------
 # State 1: authenticated user WITH items
 # ---------------------------------------------------------------------------
+
 
 class TestAuthenticatedWithItems:
     def test_shows_real_item_name(self, auth_client, collection_item):
@@ -89,13 +96,14 @@ class TestAuthenticatedWithItems:
         response = auth_client.get(HOME_URL)
         content = response.content.decode()
 
-        expected_url = f"/collections/{collection_item.collection_type.slug}/items/{collection_item.id}/"
+        expected_url = f"/collections/{collection_item.collection_type.slug}/items/{collection_item.id}/"  # noqa: E501
         assert expected_url in content
 
 
 # ---------------------------------------------------------------------------
 # State 2: authenticated user with NO items
 # ---------------------------------------------------------------------------
+
 
 class TestAuthenticatedNoItems:
     def test_shows_empty_vault_prompt(self, auth_client):
@@ -122,6 +130,7 @@ class TestAuthenticatedNoItems:
 # ---------------------------------------------------------------------------
 # State 3: unauthenticated visitor sees marketing placeholders only
 # ---------------------------------------------------------------------------
+
 
 class TestUnauthenticated:
     def test_shows_generic_marketing_labels(self):

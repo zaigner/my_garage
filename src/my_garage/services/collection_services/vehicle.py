@@ -12,6 +12,7 @@ External dependencies (all via the FastAPI MCP relay):
   - Google Images → Stock photo (search_google_images)
   - Google Gemini → AI image generation (generate_vehicle_image)
 """
+
 from __future__ import annotations
 
 import base64
@@ -39,7 +40,7 @@ def _cf(item: DynamicCollectionItem, key: str, default: Any = "") -> Any:
     return item.custom_fields.get(key, default)
 
 
-def _build_market_search_args(item: DynamicCollectionItem) -> dict[str, Any]:
+def _build_market_search_args(item: DynamicCollectionItem) -> dict[str, Any]:  # noqa: C901
     """
     Build the search argument dict expected by the search_market_listings MCP
     tool, reading all values from item.custom_fields.
@@ -65,9 +66,20 @@ def _build_market_search_args(item: DynamicCollectionItem) -> dict[str, Any]:
 
     specs = _cf(item, "specs", {})
     if specs:
-        spec_keys = ["engine", "drivetrain", "drive_type", "fuel_type", "body_style", "interior_color"]
+        spec_keys = [
+            "engine",
+            "drivetrain",
+            "drive_type",
+            "fuel_type",
+            "body_style",
+            "interior_color",
+        ]
         for key in spec_keys:
-            val = specs.get(key) or specs.get(key.replace("_", " ").title()) or specs.get(key.replace("_", " "))
+            val = (
+                specs.get(key)
+                or specs.get(key.replace("_", " ").title())
+                or specs.get(key.replace("_", " "))
+            )
             if val:
                 args[key] = val
 
@@ -119,7 +131,11 @@ class VehicleCollectionServices(BaseCollectionServices):
         payload = {"tool_name": "search_market_listings", "arguments": search_args}
 
         try:
-            logger.info("Requesting vehicle valuation for item %s with args: %s", item, search_args)
+            logger.info(
+                "Requesting vehicle valuation for item %s with args: %s",
+                item,
+                search_args,
+            )
             response = requests.post(_MCP_EXECUTE_URL, json=payload, timeout=20)
             response.raise_for_status()
             data = response.json()
@@ -129,7 +145,11 @@ class VehicleCollectionServices(BaseCollectionServices):
                 logger.warning("No listings found for item %s (valuation)", item)
                 return item.current_market_value
 
-            prices = [Decimal(str(l["price"])) for l in listings if l.get("price")]
+            prices = [
+                Decimal(str(listing["price"]))
+                for listing in listings
+                if listing.get("price")
+            ]
             if not prices:
                 return item.current_market_value
 
@@ -202,7 +222,9 @@ class VehicleCollectionServices(BaseCollectionServices):
     # Photo fetch
     # ------------------------------------------------------------------
 
-    def run_photo_fetch(self, item: DynamicCollectionItem, force_refresh: bool = False) -> bool:
+    def run_photo_fetch(
+        self, item: DynamicCollectionItem, force_refresh: bool = False
+    ) -> bool:
         """
         4-stage stock photo sourcing:
           1. Market listings (specific with trim/color)
@@ -218,7 +240,11 @@ class VehicleCollectionServices(BaseCollectionServices):
         args_specific = base_args.copy()
         args_specific.pop("mileage", None)
 
-        args_relaxed: dict[str, Any] = {"make": _cf(item, "make"), "model": _cf(item, "model"), "year": _cf(item, "year")}
+        args_relaxed: dict[str, Any] = {
+            "make": _cf(item, "make"),
+            "model": _cf(item, "model"),
+            "year": _cf(item, "year"),
+        }
         if _cf(item, "trim"):
             args_relaxed["trim"] = _cf(item, "trim")
 
@@ -237,7 +263,9 @@ class VehicleCollectionServices(BaseCollectionServices):
         )
         if _cf(item, "exterior_color"):
             hq_query += f" {_cf(item, 'exterior_color')}"
-        if self._search_and_save(item, {"query": hq_query}, "hq_press", "search_google_images"):
+        if self._search_and_save(
+            item, {"query": hq_query}, "hq_press", "search_google_images"
+        ):
             return True
 
         # Google broad fallback
@@ -247,13 +275,17 @@ class VehicleCollectionServices(BaseCollectionServices):
         )
         if _cf(item, "exterior_color"):
             query += f" {_cf(item, 'exterior_color')}"
-        if self._search_and_save(item, {"query": query}, "google", "search_google_images"):
+        if self._search_and_save(
+            item, {"query": query}, "google", "search_google_images"
+        ):
             return True
 
         # AI generation
         return self._generate_and_save(item)
 
-    def _search_and_save(self, item: DynamicCollectionItem, args: dict, suffix: str, tool: str) -> bool:
+    def _search_and_save(
+        self, item: DynamicCollectionItem, args: dict, suffix: str, tool: str
+    ) -> bool:
         payload = {"tool_name": tool, "arguments": args}
         try:
             response = requests.post(_MCP_EXECUTE_URL, json=payload, timeout=20)
@@ -263,13 +295,19 @@ class VehicleCollectionServices(BaseCollectionServices):
             candidates: list[str] = []
             if tool == "search_market_listings":
                 for listing in data.get("results", []):
-                    url = listing.get("image_url") or listing.get("photo") or listing.get("primary_photo_url")
+                    url = (
+                        listing.get("image_url")
+                        or listing.get("photo")
+                        or listing.get("primary_photo_url")
+                    )
                     if url and isinstance(url, str) and url.startswith("http"):
                         candidates.append(url)
             elif tool == "search_google_images":
                 candidates = data.get("images", [])
 
-            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"  # noqa: E501
+            }
             for url in candidates[:10]:
                 try:
                     img = requests.get(url, headers=headers, timeout=10)
@@ -279,7 +317,9 @@ class VehicleCollectionServices(BaseCollectionServices):
                     make = _cf(item, "make", "vehicle")
                     model = _cf(item, "model", "model")
                     year = _cf(item, "year", "")
-                    fname = f"{make}_{model}_{year}_{suffix}.jpg".lower().replace(" ", "_")
+                    fname = f"{make}_{model}_{year}_{suffix}.jpg".lower().replace(
+                        " ", "_"
+                    )
                     item.photo.save(fname, ContentFile(img.content), save=True)
                     return True
                 except Exception as exc:
@@ -299,7 +339,10 @@ class VehicleCollectionServices(BaseCollectionServices):
             prompt += f" in {_cf(item, 'exterior_color')} color"
         prompt += ", parked in a modern garage or showroom, 4k, highly detailed"
 
-        payload = {"tool_name": "generate_vehicle_image", "arguments": {"prompt": prompt}}
+        payload = {
+            "tool_name": "generate_vehicle_image",
+            "arguments": {"prompt": prompt},
+        }
         try:
             response = requests.post(_MCP_EXECUTE_URL, json=payload, timeout=70)
             response.raise_for_status()
@@ -317,7 +360,9 @@ class VehicleCollectionServices(BaseCollectionServices):
                 make = _cf(item, "make", "vehicle")
                 model = _cf(item, "model", "model")
                 year = _cf(item, "year", "")
-                fname = f"{make}_{model}_{year}_ai_generated.jpg".lower().replace(" ", "_")
+                fname = f"{make}_{model}_{year}_ai_generated.jpg".lower().replace(
+                    " ", "_"
+                )
                 item.photo.save(fname, ContentFile(content), save=True)
                 return True
         except Exception as exc:

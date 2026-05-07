@@ -8,6 +8,7 @@ Verifies:
   - Custom fields appear in view mode display
   - System fields (specs, features) are NOT shown in view mode display
 """
+
 from __future__ import annotations
 
 from decimal import Decimal
@@ -27,6 +28,7 @@ pytestmark = pytest.mark.django_db
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def user(db):
@@ -50,7 +52,12 @@ def sneaker_type(user):
             "fields": [
                 {"name": "size", "type": "text", "label": "Size"},
                 {"name": "colorway", "type": "text", "label": "Colorway"},
-                {"name": "specs", "type": "system_json", "label": "Specs", "system": True},
+                {
+                    "name": "specs",
+                    "type": "system_json",
+                    "label": "Specs",
+                    "system": True,
+                },
             ]
         },
     )
@@ -83,6 +90,7 @@ def _detail_url(item):
 # ---------------------------------------------------------------------------
 # View mode (default on page load)
 # ---------------------------------------------------------------------------
+
 
 class TestViewMode:
     def test_page_renders_ok(self, auth_client, sneaker_item):
@@ -119,10 +127,13 @@ class TestViewMode:
         content = auth_client.get(_detail_url(sneaker_item)).content.decode()
         assert "'some'" not in content
 
-    def test_enrichment_keys_not_shown_in_view_mode(self, auth_client, user, sneaker_type):
+    def test_enrichment_keys_not_shown_in_view_mode(
+        self, auth_client, user, sneaker_type
+    ):
         """specs, features, migrated keys injected by enrichment must not surface
         as display_custom_fields labels in the view-mode grid."""
         from decimal import Decimal
+
         item = DynamicCollectionItem.objects.create(
             owner=user,
             collection_type=sneaker_type,
@@ -151,13 +162,15 @@ class TestViewMode:
 # Edit mode controls present in HTML (Alpine toggles via x-show)
 # ---------------------------------------------------------------------------
 
+
 class TestEditModeHTML:
     def test_alpine_x_data_attribute_present(self, auth_client, sneaker_item):
         content = auth_client.get(_detail_url(sneaker_item)).content.decode()
         assert 'x-data="{ editing: false }"' in content
 
     def test_save_changes_button_in_html(self, auth_client, sneaker_item):
-        """Save Changes button is in the DOM (Alpine hides it via x-show until Edit clicked)."""
+        """Save Changes button is in the DOM (Alpine hides it via x-show until Edit
+        clicked)."""
         content = auth_client.get(_detail_url(sneaker_item)).content.decode()
         assert "Save Changes" in content
 
@@ -178,27 +191,34 @@ class TestEditModeHTML:
 # POST (form submission) still works correctly
 # ---------------------------------------------------------------------------
 
+
 class TestEditSubmit:
     def test_post_updates_item_name(self, auth_client, sneaker_item):
         url = _detail_url(sneaker_item)
-        response = auth_client.post(url, {
-            "name": "Air Jordan 1 Royal Blue",
-            "purchase_price": "180.00",
-            "current_market_value": "420.00",
-            "custom_size": "11",
-            "custom_colorway": "Royal Blue",
-        })
+        response = auth_client.post(
+            url,
+            {
+                "name": "Air Jordan 1 Royal Blue",
+                "purchase_price": "180.00",
+                "current_market_value": "420.00",
+                "custom_size": "11",
+                "custom_colorway": "Royal Blue",
+            },
+        )
         assert response.status_code in (200, 302)
         sneaker_item.refresh_from_db()
         assert sneaker_item.name == "Air Jordan 1 Royal Blue"
 
     def test_post_redirects_on_success(self, auth_client, sneaker_item):
         url = _detail_url(sneaker_item)
-        response = auth_client.post(url, {
-            "name": sneaker_item.name,
-            "purchase_price": "180.00",
-            "current_market_value": "420.00",
-            "custom_size": "11",
-            "custom_colorway": "Chicago",
-        })
+        response = auth_client.post(
+            url,
+            {
+                "name": sneaker_item.name,
+                "purchase_price": "180.00",
+                "current_market_value": "420.00",
+                "custom_size": "11",
+                "custom_colorway": "Chicago",
+            },
+        )
         assert response.status_code == 302

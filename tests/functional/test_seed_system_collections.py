@@ -11,6 +11,7 @@ Tests verify:
   - GenericValuationHistory model can be created and is linked to a
     DynamicCollectionItem (confirms the Phase 1 migration is applied)
 """
+
 from __future__ import annotations
 
 from decimal import Decimal
@@ -277,7 +278,7 @@ class TestGenericValuationHistory:
             name="2020 Ford GT",
             custom_fields={},
         )
-        h1 = GenericValuationHistory.objects.create(item=item, value=Decimal("200000"))
+        GenericValuationHistory.objects.create(item=item, value=Decimal("200000"))
         h2 = GenericValuationHistory.objects.create(item=item, value=Decimal("210000"))
 
         history = list(item.valuation_history.all())

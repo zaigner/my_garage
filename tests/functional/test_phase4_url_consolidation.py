@@ -6,6 +6,7 @@ Covers:
   - /timepieces/  redirects to /collections/horology-salon/items/
   - Home view sources counts/values from DynamicCollectionItem
 """
+
 from __future__ import annotations
 
 from decimal import Decimal
@@ -97,7 +98,8 @@ class TestGarageListRedirect:
         assert response.status_code == 302  # 302 not 301
 
     def test_unauthenticated_garage_redirects(self):
-        """Unauthenticated users also get redirected (RedirectView doesn't require auth)."""
+        """Unauthenticated users also get redirected (RedirectView doesn't require
+        auth)."""
         response = Client().get("/garage/")
         assert response.status_code == 302
         assert response["Location"] == "/collections/automobiles/items/"

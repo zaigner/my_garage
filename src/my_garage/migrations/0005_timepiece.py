@@ -6,35 +6,113 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('my_garage', '0004_add_valuation_history'),
+        ("my_garage", "0004_add_valuation_history"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Timepiece',
+            name="Timepiece",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('brand', models.CharField(help_text='e.g. Patek Philippe, Rolex', max_length=100)),
-                ('model', models.CharField(help_text='e.g. Nautilus, Submariner', max_length=100)),
-                ('reference_number', models.CharField(help_text='Crucial for valuation (e.g. 5711/1A)', max_length=100)),
-                ('serial_number', models.CharField(blank=True, help_text='Private identifier', max_length=100)),
-                ('year', models.PositiveIntegerField(blank=True, null=True)),
-                ('movement_type', models.CharField(blank=True, choices=[('AUTOMATIC', 'Automatic'), ('MANUAL', 'Manual Wind'), ('QUARTZ', 'Quartz'), ('SPRING_DRIVE', 'Spring Drive')], max_length=20)),
-                ('case_material', models.CharField(blank=True, help_text='e.g. 18k Rose Gold, Stainless Steel', max_length=50)),
-                ('dial_color', models.CharField(blank=True, max_length=50)),
-                ('complications', models.JSONField(blank=True, default=list, help_text='List of features: Chronograph, Moonphase')),
-                ('has_box', models.BooleanField(default=False)),
-                ('has_papers', models.BooleanField(default=False)),
-                ('condition_grade', models.CharField(blank=True, help_text='e.g. Unworn, Mint, Good', max_length=20)),
-                ('purchase_price', models.DecimalField(blank=True, decimal_places=2, max_digits=12, null=True)),
-                ('purchase_date', models.DateField(blank=True, null=True)),
-                ('current_market_value', models.DecimalField(decimal_places=2, default=0.0, max_digits=12)),
-                ('photo', models.ImageField(blank=True, null=True, upload_to='timepieces/%Y/%m/')),
-                ('notes', models.TextField(blank=True)),
-                ('owner', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='timepieces', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "brand",
+                    models.CharField(
+                        help_text="e.g. Patek Philippe, Rolex", max_length=100
+                    ),
+                ),
+                (
+                    "model",
+                    models.CharField(
+                        help_text="e.g. Nautilus, Submariner", max_length=100
+                    ),
+                ),
+                (
+                    "reference_number",
+                    models.CharField(
+                        help_text="Crucial for valuation (e.g. 5711/1A)", max_length=100
+                    ),
+                ),
+                (
+                    "serial_number",
+                    models.CharField(
+                        blank=True, help_text="Private identifier", max_length=100
+                    ),
+                ),
+                ("year", models.PositiveIntegerField(blank=True, null=True)),
+                (
+                    "movement_type",
+                    models.CharField(
+                        blank=True,
+                        choices=[
+                            ("AUTOMATIC", "Automatic"),
+                            ("MANUAL", "Manual Wind"),
+                            ("QUARTZ", "Quartz"),
+                            ("SPRING_DRIVE", "Spring Drive"),
+                        ],
+                        max_length=20,
+                    ),
+                ),
+                (
+                    "case_material",
+                    models.CharField(
+                        blank=True,
+                        help_text="e.g. 18k Rose Gold, Stainless Steel",
+                        max_length=50,
+                    ),
+                ),
+                ("dial_color", models.CharField(blank=True, max_length=50)),
+                (
+                    "complications",
+                    models.JSONField(
+                        blank=True,
+                        default=list,
+                        help_text="List of features: Chronograph, Moonphase",
+                    ),
+                ),
+                ("has_box", models.BooleanField(default=False)),
+                ("has_papers", models.BooleanField(default=False)),
+                (
+                    "condition_grade",
+                    models.CharField(
+                        blank=True, help_text="e.g. Unworn, Mint, Good", max_length=20
+                    ),
+                ),
+                (
+                    "purchase_price",
+                    models.DecimalField(
+                        blank=True, decimal_places=2, max_digits=12, null=True
+                    ),
+                ),
+                ("purchase_date", models.DateField(blank=True, null=True)),
+                (
+                    "current_market_value",
+                    models.DecimalField(decimal_places=2, default=0.0, max_digits=12),
+                ),
+                (
+                    "photo",
+                    models.ImageField(
+                        blank=True, null=True, upload_to="timepieces/%Y/%m/"
+                    ),
+                ),
+                ("notes", models.TextField(blank=True)),
+                (
+                    "owner",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="timepieces",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
         ),
     ]

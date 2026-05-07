@@ -8,6 +8,7 @@ External dependencies (all via the FastAPI MCP relay):
   - watch_valuation  → Watch market valuation (get_watch_valuation)
   - search_google_images → Stock photo sourcing
 """
+
 from __future__ import annotations
 
 import logging
@@ -91,7 +92,9 @@ class TimepieceCollectionServices(BaseCollectionServices):
 
             estimated_value = data.get("estimated_value")
             if not estimated_value:
-                logger.warning("Watch valuation returned no estimated_value for item %s", item)
+                logger.warning(
+                    "Watch valuation returned no estimated_value for item %s", item
+                )
                 return item.current_market_value
 
             new_value = Decimal(str(estimated_value))
@@ -115,7 +118,9 @@ class TimepieceCollectionServices(BaseCollectionServices):
     # Photo fetch
     # ------------------------------------------------------------------
 
-    def run_photo_fetch(self, item: DynamicCollectionItem, force_refresh: bool = False) -> bool:
+    def run_photo_fetch(
+        self, item: DynamicCollectionItem, force_refresh: bool = False
+    ) -> bool:
         """
         Search Google Images using brand + reference number for a press/product
         photo of the watch.
@@ -136,14 +141,20 @@ class TimepieceCollectionServices(BaseCollectionServices):
             data = response.json()
             candidates: list[str] = data.get("images", [])
 
-            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"  # noqa: E501
+            }
             for url in candidates[:10]:
                 try:
                     img = requests.get(url, headers=headers, timeout=10)
                     img.raise_for_status()
                     if len(img.content) < 30 * 1024:
                         continue
-                    fname = f"{brand}_{reference}_photo.jpg".lower().replace(" ", "_").replace("/", "_")
+                    fname = (
+                        f"{brand}_{reference}_photo.jpg".lower()
+                        .replace(" ", "_")
+                        .replace("/", "_")
+                    )
                     item.photo.save(fname, ContentFile(img.content), save=True)
                     return True
                 except Exception as exc:
@@ -166,13 +177,10 @@ class TimepieceCollectionServices(BaseCollectionServices):
         """
         from my_garage.models import DynamicCollectionItem as DCItem
 
-        winder_items = (
-            DCItem.objects.filter(
-                collection_type=item.collection_type,
-                owner=item.owner,
-            )
-            .order_by("name")[:8]
-        )
+        winder_items = DCItem.objects.filter(
+            collection_type=item.collection_type,
+            owner=item.owner,
+        ).order_by("name")[:8]
 
         return {
             "show_valuation_button": True,

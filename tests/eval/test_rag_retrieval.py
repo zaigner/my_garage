@@ -3,6 +3,7 @@ Eval tests: RAG retrieval (Phase 3.2).
 Tests that the ContextService.retrieve_relevant_docs() behaves correctly
 under mocked MongoDB and embedding conditions.
 """
+
 from __future__ import annotations
 
 from unittest.mock import patch

@@ -10,6 +10,7 @@ Verifies:
   - Empty states render correctly
   - Service Records section is no longer in the sidebar (tab panel only)
 """
+
 from __future__ import annotations
 
 from decimal import Decimal
@@ -34,6 +35,7 @@ pytestmark = pytest.mark.django_db
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def user(db):
@@ -111,6 +113,7 @@ def _detail_url(item):
 # Tab structure in HTML
 # ---------------------------------------------------------------------------
 
+
 class TestTabStructure:
     def test_tab_container_has_alpine_data(self, auth_client, sneaker_item):
         content = auth_client.get(_detail_url(sneaker_item)).content.decode()
@@ -133,20 +136,28 @@ class TestTabStructure:
 # Service records tab content
 # ---------------------------------------------------------------------------
 
+
 class TestServiceRecordsTab:
-    def test_all_service_records_in_html(self, auth_client, sneaker_item, service_records):
+    def test_all_service_records_in_html(
+        self, auth_client, sneaker_item, service_records
+    ):
         content = auth_client.get(_detail_url(sneaker_item)).content.decode()
         for record in service_records:
             assert record.vendor in content
 
-    def test_service_record_count_badge(self, auth_client, sneaker_item, service_records):
+    def test_service_record_count_badge(
+        self, auth_client, sneaker_item, service_records
+    ):
         content = auth_client.get(_detail_url(sneaker_item)).content.decode()
         assert "3" in content
 
     def test_add_service_record_link_present(self, auth_client, sneaker_item):
         content = auth_client.get(_detail_url(sneaker_item)).content.decode()
         assert "Add" in content
-        assert "service" in auth_client.get(_detail_url(sneaker_item)).content.decode().lower()
+        assert (
+            "service"
+            in auth_client.get(_detail_url(sneaker_item)).content.decode().lower()
+        )
 
     def test_empty_state_shown_when_no_records(self, auth_client, sneaker_item):
         content = auth_client.get(_detail_url(sneaker_item)).content.decode()
@@ -156,6 +167,7 @@ class TestServiceRecordsTab:
 # ---------------------------------------------------------------------------
 # Projects tab content
 # ---------------------------------------------------------------------------
+
 
 class TestProjectsTab:
     def test_all_upgrades_in_html(self, auth_client, sneaker_item, upgrades):

@@ -8,7 +8,7 @@ sys.path.append("/home/zaigner77/projects/zaigner/my_garage/src")
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "my_garage.settings")
 django.setup()
 
-from my_garage.models import ServiceRecord, Upgrade, Vehicle
+from my_garage.models import ServiceRecord, Upgrade, Vehicle  # noqa: E402
 
 
 def check_vehicle_data(vehicle_id):
@@ -23,7 +23,7 @@ def check_vehicle_data(vehicle_id):
         print(f"Total Records: {records.count()}")
         for r in records:
             print(
-                f"- {r.date}: {r.service_type} (Cost: {r.total_cost}, Verified: {r.is_verified})"
+                f"- {r.date}: {r.service_type} (Cost: {r.total_cost}, Verified: {r.is_verified})"  # noqa: E501
             )
 
         print("\n--- Legacy Upgrades ---")

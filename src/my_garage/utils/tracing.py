@@ -25,6 +25,7 @@ Usage:
         success=True,
     ))
 """
+
 from __future__ import annotations
 
 import functools
@@ -133,7 +134,9 @@ def trace_ai_call(
         model: Model name (e.g. "claude-sonnet-4-6").
 
     Example:
-        @trace_ai_call(tool_name="vehicle_valuation", prompt_template="vehicle_valuation.j2")
+        @trace_ai_call(
+            tool_name="vehicle_valuation", prompt_template="vehicle_valuation.j2"
+        )
         def run_valuation(vehicle_context: dict) -> str:
             ...
     """

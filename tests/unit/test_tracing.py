@@ -2,6 +2,7 @@
 Tests for the AI trace decorator and record_trace (Phase 3.1).
 No Django DB or MongoDB needed — MongoDB writes are mocked.
 """
+
 from __future__ import annotations
 
 import time
@@ -35,11 +36,11 @@ class TestAITrace:
 class TestRecordTrace:
     def test_writes_to_mongo_in_background(self):
         trace = AITrace(tool_name="test_tool")
-        with patch("my_garage.utils.tracing._write_trace") as mock_write:
+        with patch("my_garage.utils.tracing._write_trace"):
             record_trace(trace)
             # Give the background thread a moment to start
             time.sleep(0.05)
-        # Background thread may have called _write_trace or not yet — just verify no exception
+        # Background thread may have called _write_trace or not yet — just verify no exception  # noqa: E501
 
     def test_does_not_raise_on_mongo_failure(self):
         trace = AITrace(tool_name="test_tool")

@@ -6,132 +6,407 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('my_garage', '0005_timepiece'),
+        ("my_garage", "0005_timepiece"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='CollectionType',
+            name="CollectionType",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(help_text='e.g., Wine Collection, Art Collection', max_length=100)),
-                ('slug', models.SlugField(blank=True, max_length=100, unique=True)),
-                ('icon', models.CharField(default='fa-box', help_text='FontAwesome icon class', max_length=50)),
-                ('description', models.TextField(blank=True)),
-                ('field_schema', models.JSONField(blank=True, default=dict, help_text='\n        Define custom fields as JSON:\n        {\n          "fields": [\n            {\n              "name": "vintage",\n              "type": "number",\n              "label": "Vintage Year",\n              "required": true,\n              "help_text": "Year the wine was produced"\n            },\n            {\n              "name": "region",\n              "type": "text",\n              "label": "Region",\n              "required": false\n            }\n          ]\n        }\n        Supported types: text, number, date, file, relationship\n        ')),
-                ('list_display_fields', models.JSONField(blank=True, default=list, help_text="List of field names to display in list view, e.g., ['vintage', 'region']")),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('is_active', models.BooleanField(default=True)),
-                ('owner', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='collection_types', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "name",
+                    models.CharField(
+                        help_text="e.g., Wine Collection, Art Collection",
+                        max_length=100,
+                    ),
+                ),
+                ("slug", models.SlugField(blank=True, max_length=100, unique=True)),
+                (
+                    "icon",
+                    models.CharField(
+                        default="fa-box",
+                        help_text="FontAwesome icon class",
+                        max_length=50,
+                    ),
+                ),
+                ("description", models.TextField(blank=True)),
+                (
+                    "field_schema",
+                    models.JSONField(
+                        blank=True,
+                        default=dict,
+                        help_text='\n        Define custom fields as JSON:\n        {\n          "fields": [\n            {\n              "name": "vintage",\n              "type": "number",\n              "label": "Vintage Year",\n              "required": true,\n              "help_text": "Year the wine was produced"\n            },\n            {\n              "name": "region",\n              "type": "text",\n              "label": "Region",\n              "required": false\n            }\n          ]\n        }\n        Supported types: text, number, date, file, relationship\n        ',
+                    ),
+                ),
+                (
+                    "list_display_fields",
+                    models.JSONField(
+                        blank=True,
+                        default=list,
+                        help_text="List of field names to display in list view, e.g., ['vintage', 'region']",
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("is_active", models.BooleanField(default=True)),
+                (
+                    "owner",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="collection_types",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'ordering': ['name'],
-                'unique_together': {('owner', 'slug')},
+                "ordering": ["name"],
+                "unique_together": {("owner", "slug")},
             },
         ),
         migrations.CreateModel(
-            name='DynamicCollectionItem',
+            name="DynamicCollectionItem",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(help_text='Primary identifier for this item', max_length=200)),
-                ('purchase_price', models.DecimalField(blank=True, decimal_places=2, help_text='What you paid for it', max_digits=12, null=True)),
-                ('purchase_date', models.DateField(blank=True, null=True)),
-                ('current_market_value', models.DecimalField(blank=True, decimal_places=2, help_text='Current estimated value', max_digits=12, null=True)),
-                ('photo', models.ImageField(blank=True, help_text='Main photo of the item', null=True, upload_to='collections/%Y/%m/')),
-                ('notes', models.TextField(blank=True)),
-                ('custom_fields', models.JSONField(blank=True, default=dict, help_text='Collection-specific fields defined in CollectionType schema')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('collection_type', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='items', to='my_garage.collectiontype')),
-                ('owner', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='collection_items', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "name",
+                    models.CharField(
+                        help_text="Primary identifier for this item", max_length=200
+                    ),
+                ),
+                (
+                    "purchase_price",
+                    models.DecimalField(
+                        blank=True,
+                        decimal_places=2,
+                        help_text="What you paid for it",
+                        max_digits=12,
+                        null=True,
+                    ),
+                ),
+                ("purchase_date", models.DateField(blank=True, null=True)),
+                (
+                    "current_market_value",
+                    models.DecimalField(
+                        blank=True,
+                        decimal_places=2,
+                        help_text="Current estimated value",
+                        max_digits=12,
+                        null=True,
+                    ),
+                ),
+                (
+                    "photo",
+                    models.ImageField(
+                        blank=True,
+                        help_text="Main photo of the item",
+                        null=True,
+                        upload_to="collections/%Y/%m/",
+                    ),
+                ),
+                ("notes", models.TextField(blank=True)),
+                (
+                    "custom_fields",
+                    models.JSONField(
+                        blank=True,
+                        default=dict,
+                        help_text="Collection-specific fields defined in CollectionType schema",
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "collection_type",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="items",
+                        to="my_garage.collectiontype",
+                    ),
+                ),
+                (
+                    "owner",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="collection_items",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'ordering': ['-created_at'],
+                "ordering": ["-created_at"],
             },
         ),
         migrations.CreateModel(
-            name='CollectionItemRelationship',
+            name="CollectionItemRelationship",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('relationship_type', models.CharField(choices=[('PAIRED_WITH', 'Paired With'), ('PART_OF', 'Part Of'), ('INSPIRED_BY', 'Inspired By'), ('RELATED_TO', 'Related To'), ('CUSTOM', 'Custom')], default='RELATED_TO', max_length=20)),
-                ('custom_label', models.CharField(blank=True, help_text='Custom label if relationship_type is CUSTOM', max_length=100)),
-                ('notes', models.TextField(blank=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('created_by', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to=settings.AUTH_USER_MODEL)),
-                ('from_item', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='relationships_from', to='my_garage.dynamiccollectionitem')),
-                ('to_item', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='relationships_to', to='my_garage.dynamiccollectionitem')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "relationship_type",
+                    models.CharField(
+                        choices=[
+                            ("PAIRED_WITH", "Paired With"),
+                            ("PART_OF", "Part Of"),
+                            ("INSPIRED_BY", "Inspired By"),
+                            ("RELATED_TO", "Related To"),
+                            ("CUSTOM", "Custom"),
+                        ],
+                        default="RELATED_TO",
+                        max_length=20,
+                    ),
+                ),
+                (
+                    "custom_label",
+                    models.CharField(
+                        blank=True,
+                        help_text="Custom label if relationship_type is CUSTOM",
+                        max_length=100,
+                    ),
+                ),
+                ("notes", models.TextField(blank=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "created_by",
+                    models.ForeignKey(
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "from_item",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="relationships_from",
+                        to="my_garage.dynamiccollectionitem",
+                    ),
+                ),
+                (
+                    "to_item",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="relationships_to",
+                        to="my_garage.dynamiccollectionitem",
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='CollectionItemAttachment',
+            name="CollectionItemAttachment",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('file', models.FileField(upload_to='collection_attachments/%Y/%m/')),
-                ('file_type', models.CharField(choices=[('RECEIPT', 'Receipt'), ('CERTIFICATE', 'Certificate of Authenticity'), ('APPRAISAL', 'Appraisal Document'), ('MANUAL', 'Manual/Documentation'), ('PHOTO', 'Additional Photo'), ('OTHER', 'Other')], default='OTHER', max_length=20)),
-                ('title', models.CharField(blank=True, max_length=200)),
-                ('description', models.TextField(blank=True)),
-                ('uploaded_at', models.DateTimeField(auto_now_add=True)),
-                ('uploaded_by', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to=settings.AUTH_USER_MODEL)),
-                ('item', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='attachments', to='my_garage.dynamiccollectionitem')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("file", models.FileField(upload_to="collection_attachments/%Y/%m/")),
+                (
+                    "file_type",
+                    models.CharField(
+                        choices=[
+                            ("RECEIPT", "Receipt"),
+                            ("CERTIFICATE", "Certificate of Authenticity"),
+                            ("APPRAISAL", "Appraisal Document"),
+                            ("MANUAL", "Manual/Documentation"),
+                            ("PHOTO", "Additional Photo"),
+                            ("OTHER", "Other"),
+                        ],
+                        default="OTHER",
+                        max_length=20,
+                    ),
+                ),
+                ("title", models.CharField(blank=True, max_length=200)),
+                ("description", models.TextField(blank=True)),
+                ("uploaded_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "uploaded_by",
+                    models.ForeignKey(
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "item",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="attachments",
+                        to="my_garage.dynamiccollectionitem",
+                    ),
+                ),
             ],
             options={
-                'ordering': ['-uploaded_at'],
+                "ordering": ["-uploaded_at"],
             },
         ),
         migrations.CreateModel(
-            name='GenericServiceRecord',
+            name="GenericServiceRecord",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('date', models.DateField()),
-                ('vendor', models.CharField(help_text='Who performed the service', max_length=255)),
-                ('description', models.TextField()),
-                ('category', models.CharField(choices=[('MAINTENANCE', 'Maintenance'), ('REPAIR', 'Repair'), ('UPGRADE', 'Upgrade'), ('RESTORATION', 'Restoration'), ('APPRAISAL', 'Appraisal'), ('OTHER', 'Other')], default='MAINTENANCE', max_length=20)),
-                ('total_cost', models.DecimalField(decimal_places=2, max_digits=10)),
-                ('receipt_image', models.ImageField(blank=True, null=True, upload_to='service_receipts/%Y/%m/')),
-                ('ocr_raw_data', models.JSONField(blank=True, help_text='OCR extracted data from receipt', null=True)),
-                ('is_verified', models.BooleanField(default=False)),
-                ('item', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='service_records', to='my_garage.dynamiccollectionitem')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("date", models.DateField()),
+                (
+                    "vendor",
+                    models.CharField(
+                        help_text="Who performed the service", max_length=255
+                    ),
+                ),
+                ("description", models.TextField()),
+                (
+                    "category",
+                    models.CharField(
+                        choices=[
+                            ("MAINTENANCE", "Maintenance"),
+                            ("REPAIR", "Repair"),
+                            ("UPGRADE", "Upgrade"),
+                            ("RESTORATION", "Restoration"),
+                            ("APPRAISAL", "Appraisal"),
+                            ("OTHER", "Other"),
+                        ],
+                        default="MAINTENANCE",
+                        max_length=20,
+                    ),
+                ),
+                ("total_cost", models.DecimalField(decimal_places=2, max_digits=10)),
+                (
+                    "receipt_image",
+                    models.ImageField(
+                        blank=True, null=True, upload_to="service_receipts/%Y/%m/"
+                    ),
+                ),
+                (
+                    "ocr_raw_data",
+                    models.JSONField(
+                        blank=True,
+                        help_text="OCR extracted data from receipt",
+                        null=True,
+                    ),
+                ),
+                ("is_verified", models.BooleanField(default=False)),
+                (
+                    "item",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="service_records",
+                        to="my_garage.dynamiccollectionitem",
+                    ),
+                ),
             ],
             options={
-                'ordering': ['-date'],
+                "ordering": ["-date"],
             },
         ),
         migrations.CreateModel(
-            name='GenericUpgrade',
+            name="GenericUpgrade",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(help_text='Name of the upgrade/modification', max_length=255)),
-                ('brand', models.CharField(blank=True, max_length=100)),
-                ('part_number', models.CharField(blank=True, max_length=100)),
-                ('status', models.CharField(choices=[('WISHLIST', 'Wishlist'), ('ORDERED', 'Ordered'), ('IN_PROGRESS', 'In Progress'), ('COMPLETED', 'Completed'), ('CANCELLED', 'Cancelled')], default='WISHLIST', max_length=20)),
-                ('cost', models.DecimalField(decimal_places=2, default=0.0, max_digits=10)),
-                ('ordered_date', models.DateField(blank=True, null=True)),
-                ('completion_date', models.DateField(blank=True, null=True)),
-                ('notes', models.TextField(blank=True)),
-                ('item', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='upgrades', to='my_garage.dynamiccollectionitem')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "name",
+                    models.CharField(
+                        help_text="Name of the upgrade/modification", max_length=255
+                    ),
+                ),
+                ("brand", models.CharField(blank=True, max_length=100)),
+                ("part_number", models.CharField(blank=True, max_length=100)),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("WISHLIST", "Wishlist"),
+                            ("ORDERED", "Ordered"),
+                            ("IN_PROGRESS", "In Progress"),
+                            ("COMPLETED", "Completed"),
+                            ("CANCELLED", "Cancelled"),
+                        ],
+                        default="WISHLIST",
+                        max_length=20,
+                    ),
+                ),
+                (
+                    "cost",
+                    models.DecimalField(decimal_places=2, default=0.0, max_digits=10),
+                ),
+                ("ordered_date", models.DateField(blank=True, null=True)),
+                ("completion_date", models.DateField(blank=True, null=True)),
+                ("notes", models.TextField(blank=True)),
+                (
+                    "item",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="upgrades",
+                        to="my_garage.dynamiccollectionitem",
+                    ),
+                ),
             ],
             options={
-                'ordering': ['-completion_date', '-ordered_date'],
+                "ordering": ["-completion_date", "-ordered_date"],
             },
         ),
         migrations.AddIndex(
-            model_name='dynamiccollectionitem',
-            index=models.Index(fields=['collection_type', 'owner'], name='my_garage_d_collect_0f329d_idx'),
+            model_name="dynamiccollectionitem",
+            index=models.Index(
+                fields=["collection_type", "owner"],
+                name="my_garage_d_collect_0f329d_idx",
+            ),
         ),
         migrations.AddIndex(
-            model_name='dynamiccollectionitem',
-            index=models.Index(fields=['owner', '-created_at'], name='my_garage_d_owner_i_715fc0_idx'),
+            model_name="dynamiccollectionitem",
+            index=models.Index(
+                fields=["owner", "-created_at"], name="my_garage_d_owner_i_715fc0_idx"
+            ),
         ),
         migrations.AlterUniqueTogether(
-            name='collectionitemrelationship',
-            unique_together={('from_item', 'to_item', 'relationship_type')},
+            name="collectionitemrelationship",
+            unique_together={("from_item", "to_item", "relationship_type")},
         ),
         migrations.AddIndex(
-            model_name='genericservicerecord',
-            index=models.Index(fields=['item', '-date'], name='my_garage_g_item_id_abec08_idx'),
+            model_name="genericservicerecord",
+            index=models.Index(
+                fields=["item", "-date"], name="my_garage_g_item_id_abec08_idx"
+            ),
         ),
     ]

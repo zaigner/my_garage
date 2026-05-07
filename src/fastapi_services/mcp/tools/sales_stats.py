@@ -1,6 +1,8 @@
+from typing import Any, Dict, Optional
+
 import requests
-from typing import Dict, Any, Optional
 from pydantic import BaseModel, Field
+
 from ..config import settings
 
 
@@ -8,9 +10,15 @@ class SalesStatsInput(BaseModel):
     year: int = Field(..., description="Vehicle year.")
     make: str = Field(..., description="Vehicle make.")
     model: str = Field(..., description="Vehicle model.")
-    trim: Optional[str] = Field(None, description="Vehicle trim level for more precision.")
-    zip_code: Optional[str] = Field(None, description="Zip code for local market analysis.")
-    radius: Optional[int] = Field(None, description="Search radius in miles (default 500).")
+    trim: Optional[str] = Field(
+        None, description="Vehicle trim level for more precision."
+    )
+    zip_code: Optional[str] = Field(
+        None, description="Zip code for local market analysis."
+    )
+    radius: Optional[int] = Field(
+        None, description="Search radius in miles (default 500)."
+    )
 
 
 class SalesHistoryInput(BaseModel):
@@ -18,12 +26,12 @@ class SalesHistoryInput(BaseModel):
 
 
 def get_sales_stats(
-        year: int,
-        make: str,
-        model: str,
-        trim: Optional[str] = None,
-        zip_code: Optional[str] = None,
-        radius: Optional[int] = 500
+    year: int,
+    make: str,
+    model: str,
+    trim: Optional[str] = None,
+    zip_code: Optional[str] = None,
+    radius: Optional[int] = 500,
 ) -> Dict[str, Any]:
     """
     Retrieves inferred sales statistics (sold data) from Marketcheck.

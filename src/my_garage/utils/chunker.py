@@ -7,6 +7,7 @@ passages are self-contained and understandable without the parent doc.
 
 Max tokens per chunk is approximated as max_chars / 4 (rough char-to-token ratio).
 """
+
 from __future__ import annotations
 
 import re

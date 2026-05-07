@@ -8,8 +8,10 @@ Usage:
     from my_garage.services.collection_services.registry import get_collection_services
 
     services = get_collection_services("vehicle")   # VehicleCollectionServices
-    services = get_collection_services("unknown")   # DefaultCollectionServices (fallback)
+    # DefaultCollectionServices (fallback):
+    services = get_collection_services("unknown")
 """
+
 from __future__ import annotations
 
 from .base import BaseCollectionServices

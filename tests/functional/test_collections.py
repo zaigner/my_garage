@@ -1,6 +1,7 @@
 """
 Functional smoke tests for collection views.
 """
+
 import pytest
 from django.test import Client
 

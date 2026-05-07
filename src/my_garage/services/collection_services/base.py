@@ -6,6 +6,7 @@ so providers only need to override what they actually implement.  Views and
 Celery tasks MUST check supports_*() before calling the corresponding run_*()
 method.
 """
+
 from __future__ import annotations
 
 from decimal import Decimal

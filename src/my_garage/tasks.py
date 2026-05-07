@@ -17,14 +17,18 @@ RETRY_KWARGS = {
 }
 
 
-@celery_app.task(bind=True, name="my_garage.collection_item_refresh_valuation", **RETRY_KWARGS)
+@celery_app.task(
+    bind=True, name="my_garage.collection_item_refresh_valuation", **RETRY_KWARGS
+)
 def task_collection_item_refresh_valuation(self, item_id: int):
     """
     Background task: refresh market valuation for a DynamicCollectionItem
     using the service provider registered for its CollectionType.
     """
     try:
-        item = DynamicCollectionItem.objects.select_related("collection_type").get(pk=item_id)
+        item = DynamicCollectionItem.objects.select_related("collection_type").get(
+            pk=item_id
+        )
         provider = get_collection_services(item.collection_type.service_provider_key)
         if provider.supports_valuation_refresh():
             new_value = provider.run_valuation(item)
@@ -36,7 +40,7 @@ def task_collection_item_refresh_valuation(self, item_id: int):
         logger.error("DynamicCollectionItem %s not found.", item_id)
     except Exception as exc:
         logger.error("Valuation failed for item %s: %s", item_id, exc)
-        raise self.retry(exc=exc)
+        raise self.retry(exc=exc) from exc
 
 
 @celery_app.task(bind=True, name="my_garage.collection_item_enrich", **RETRY_KWARGS)
@@ -46,7 +50,9 @@ def task_collection_item_enrich(self, item_id: int):
     DynamicCollectionItem.
     """
     try:
-        item = DynamicCollectionItem.objects.select_related("collection_type").get(pk=item_id)
+        item = DynamicCollectionItem.objects.select_related("collection_type").get(
+            pk=item_id
+        )
         provider = get_collection_services(item.collection_type.service_provider_key)
         if provider.supports_enrichment():
             data = provider.run_enrichment(item)
@@ -58,7 +64,7 @@ def task_collection_item_enrich(self, item_id: int):
         logger.error("DynamicCollectionItem %s not found.", item_id)
     except Exception as exc:
         logger.error("Enrichment failed for item %s: %s", item_id, exc)
-        raise self.retry(exc=exc)
+        raise self.retry(exc=exc) from exc
 
 
 @celery_app.task(name="my_garage.tasks.task_refresh_bmad_context")
@@ -91,7 +97,9 @@ def task_take_portfolio_snapshot():
 
     for user in User.objects.all():
         items = DynamicCollectionItem.objects.filter(owner=user)
-        total = sum(i.current_market_value for i in items if i.current_market_value) or Decimal("0")
+        total = sum(
+            i.current_market_value for i in items if i.current_market_value
+        ) or Decimal("0")
         PortfolioSnapshot.objects.update_or_create(
             user=user,
             date=today,
@@ -103,7 +111,9 @@ def task_take_portfolio_snapshot():
     return f"Snapped {snapped} portfolios."
 
 
-@celery_app.task(bind=True, name="my_garage.process_generic_service_record_ocr", **RETRY_KWARGS)
+@celery_app.task(
+    bind=True, name="my_garage.process_generic_service_record_ocr", **RETRY_KWARGS
+)
 def task_process_generic_service_record_ocr(self, record_id: int):
     """Background task: run OCR on a GenericServiceRecord's receipt image."""
     from my_garage.api.services import process_generic_service_record_ocr
@@ -116,7 +126,7 @@ def task_process_generic_service_record_ocr(self, record_id: int):
         logger.info("OCR complete for GenericServiceRecord pk=%s", record_id)
     except Exception as exc:
         logger.error("OCR task failed for record %s: %s", record_id, exc)
-        raise self.retry(exc=exc)
+        raise self.retry(exc=exc) from exc
 
 
 @celery_app.task(name="my_garage.tasks.task_bulk_valuation_refresh")

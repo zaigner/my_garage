@@ -4,15 +4,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('my_garage', '0007_genericupgrade_content_type_genericupgrade_object_id_and_more'),
+        (
+            "my_garage",
+            "0007_genericupgrade_content_type_genericupgrade_object_id_and_more",
+        ),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='collectiontype',
-            name='ui_theme_html',
-            field=models.TextField(blank=True, help_text='Custom UI component HTML for this collection'),
+            model_name="collectiontype",
+            name="ui_theme_html",
+            field=models.TextField(
+                blank=True, help_text="Custom UI component HTML for this collection"
+            ),
         ),
     ]
