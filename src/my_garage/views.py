@@ -701,6 +701,53 @@ def all_upgrades_view(request: HttpRequest) -> HttpResponse:
 
 
 @login_required
+def collection_item_ocr_receipt(
+    request: HttpRequest, collection_slug: str, item_id: int
+) -> JsonResponse:
+    """
+    AJAX endpoint: POST a receipt image, get back OCR-extracted fields as JSON.
+    Used by the Document Scan panel to pre-fill the service record form.
+    """
+    if request.method != "POST":
+        return JsonResponse({"success": False, "error": "POST required"}, status=405)
+
+    collection_type = get_object_or_404(
+        CollectionType, slug=collection_slug, owner=request.user
+    )
+    get_object_or_404(
+        DynamicCollectionItem,
+        id=item_id,
+        collection_type=collection_type,
+        owner=request.user,
+    )
+
+    receipt_file = request.FILES.get("receipt")
+    if not receipt_file:
+        return JsonResponse({"success": False, "error": "No file uploaded"}, status=400)
+
+    try:
+        import requests as http_requests
+        from django.conf import settings
+
+        ocr_url = f"{settings.FASTAPI_BASE_URL}/ocr/process"
+        response = http_requests.post(
+            ocr_url,
+            files={"file": (
+                receipt_file.name,
+                receipt_file.read(),
+                receipt_file.content_type or "image/jpeg",
+            )},
+            timeout=30,
+        )
+        response.raise_for_status()
+        ocr_data = response.json()
+        return JsonResponse({"success": True, **ocr_data})
+    except Exception as exc:
+        logger.error("Inline OCR failed: %s", exc)
+        return JsonResponse({"success": False, "error": str(exc)}, status=500)
+
+
+@login_required
 def collection_item_add_service(
     request: HttpRequest, collection_slug: str, item_id: int
 ) -> HttpResponse:
@@ -722,8 +769,12 @@ def collection_item_add_service(
         if form.is_valid():
             record = form.save(commit=False)
             record.item = item
-            record.is_verified = True  # Manually added records are verified by default
+            record.is_verified = True
             record.save()
+
+            if record.receipt_image:
+                from my_garage.tasks import task_process_generic_service_record_ocr
+                task_process_generic_service_record_ocr.delay(record.id)
 
             messages.success(request, "Service record added successfully.")
             return redirect(

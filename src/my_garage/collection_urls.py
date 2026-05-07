@@ -27,6 +27,7 @@ urlpatterns = [
     path("<slug:collection_slug>/items/<int:item_id>/enrich/", views.collection_item_trigger_enrich, name="collection_item_trigger_enrich"),
 
     # Dynamic Collections - Service Records
+    path("<slug:collection_slug>/items/<int:item_id>/ocr-receipt/", views.collection_item_ocr_receipt, name="collection_item_ocr_receipt"),
     path("<slug:collection_slug>/items/<int:item_id>/add-service/", views.collection_item_add_service, name="collection_item_add_service"),
     path("<slug:collection_slug>/items/<int:item_id>/service/<int:record_id>/edit/", views.collection_item_edit_service, name="collection_item_edit_service"),
     path("<slug:collection_slug>/items/<int:item_id>/service/<int:record_id>/delete/", views.collection_item_delete_service, name="collection_item_delete_service"),

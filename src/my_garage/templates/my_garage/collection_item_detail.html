@@ -351,20 +351,38 @@
                     <h2 class="text-luxury-gold text-sm uppercase tracking-widest mb-4 border-b border-white/10 pb-2">Actions</h2>
                     <div class="space-y-3">
                         {% if show_valuation_button %}
-                        <form method="post" action="{% url 'collections:collection_item_trigger_valuation' collection_type.slug item.id %}">
+                        <form x-data="{ loading: false }" @submit="loading = true"
+                              method="post" action="{% url 'collections:collection_item_trigger_valuation' collection_type.slug item.id %}">
                             {% csrf_token %}
                             <button type="submit"
-                                    class="w-full px-4 py-2 border border-luxury-gold text-luxury-gold hover:bg-luxury-gold hover:text-black transition-colors uppercase text-xs tracking-widest font-bold rounded-sm">
-                                Refresh Valuation
+                                    :disabled="loading"
+                                    class="w-full px-4 py-2 border border-luxury-gold text-luxury-gold hover:bg-luxury-gold hover:text-black transition-colors uppercase text-xs tracking-widest font-bold rounded-sm disabled:opacity-50 disabled:cursor-not-allowed">
+                                <span x-show="!loading">Refresh Valuation</span>
+                                <span x-show="loading" x-cloak class="flex items-center justify-center gap-2">
+                                    <svg class="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                    </svg>
+                                    Processing...
+                                </span>
                             </button>
                         </form>
                         {% endif %}
                         {% if show_vin_enrich_button %}
-                        <form method="post" action="{% url 'collections:collection_item_trigger_enrich' collection_type.slug item.id %}">
+                        <form x-data="{ loading: false }" @submit="loading = true"
+                              method="post" action="{% url 'collections:collection_item_trigger_enrich' collection_type.slug item.id %}">
                             {% csrf_token %}
                             <button type="submit"
-                                    class="w-full px-4 py-2 border border-white/20 text-gray-300 hover:border-luxury-gold hover:text-luxury-gold transition-colors uppercase text-xs tracking-widest font-bold rounded-sm">
-                                Decode VIN / Enrich Data
+                                    :disabled="loading"
+                                    class="w-full px-4 py-2 border border-white/20 text-gray-300 hover:border-luxury-gold hover:text-luxury-gold transition-colors uppercase text-xs tracking-widest font-bold rounded-sm disabled:opacity-50 disabled:cursor-not-allowed">
+                                <span x-show="!loading">Decode VIN / Enrich Data</span>
+                                <span x-show="loading" x-cloak class="flex items-center justify-center gap-2">
+                                    <svg class="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                    </svg>
+                                    Processing...
+                                </span>
                             </button>
                         </form>
                         {% endif %}

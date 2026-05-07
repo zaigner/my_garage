@@ -103,6 +103,22 @@ def task_take_portfolio_snapshot():
     return f"Snapped {snapped} portfolios."
 
 
+@celery_app.task(bind=True, name="my_garage.process_generic_service_record_ocr", **RETRY_KWARGS)
+def task_process_generic_service_record_ocr(self, record_id: int):
+    """Background task: run OCR on a GenericServiceRecord's receipt image."""
+    from my_garage.api.services import process_generic_service_record_ocr
+
+    try:
+        from my_garage.models import GenericServiceRecord
+
+        record = GenericServiceRecord.objects.get(pk=record_id)
+        process_generic_service_record_ocr(record)
+        logger.info("OCR complete for GenericServiceRecord pk=%s", record_id)
+    except Exception as exc:
+        logger.error("OCR task failed for record %s: %s", record_id, exc)
+        raise self.retry(exc=exc)
+
+
 @celery_app.task(name="my_garage.tasks.task_bulk_valuation_refresh")
 def task_bulk_valuation_refresh():
     """

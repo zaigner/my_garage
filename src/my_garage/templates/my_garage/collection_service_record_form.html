@@ -3,64 +3,47 @@
 {% block title %}{{ title }} - {{ item.name }}{% endblock %}
 
 {% block extra_head %}
-<link href="https://fonts.googleapis.com/css2?family=Michroma&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
 <style>
-    .porsche-font {
-        font-family: 'Michroma', sans-serif;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
+    .salon-font {
+        font-family: 'Cinzel', serif;
     }
-    .race-deck-bg {
-        background-color: #111;
-        background-image:
-            linear-gradient(45deg, #1a1a1a 25%, transparent 25%, transparent 75%, #1a1a1a 75%, #1a1a1a),
-            linear-gradient(45deg, #1a1a1a 25%, transparent 25%, transparent 75%, #1a1a1a 75%, #1a1a1a);
-        background-position: 0 0, 10px 10px;
-        background-size: 20px 20px;
+    .salon-bg {
+        background-color: #0B1026;
+        background-image: radial-gradient(circle at 50% 0%, #1a2342 0%, #0B1026 70%);
     }
-    .cabinet-finish {
-        background: linear-gradient(180deg, #262626 0%, #171717 100%);
-        border: 1px solid #404040;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+    .detail-card {
+        background-color: #151b33;
+        border: 1px solid rgba(255, 255, 255, 0.05);
     }
-
-    /* Clean Data Entry Styling */
-    .cabinet-finish input[type="text"],
-    .cabinet-finish input[type="number"],
-    .cabinet-finish input[type="date"],
-    .cabinet-finish input[type="email"],
-    .cabinet-finish select,
-    .cabinet-finish textarea {
-        background-color: #262626;
-        border: 1px solid #404040;
-        color: #e5e5e5;
-        padding: 0.5rem;
+    input[type="text"],
+    input[type="number"],
+    input[type="date"],
+    input[type="email"],
+    textarea,
+    select {
+        background-color: #0B1026;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #fff;
+        padding: 0.5rem 0.75rem;
         border-radius: 0.25rem;
         width: 100%;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-        transition: all 0.2s;
+        transition: border-color 0.2s, box-shadow 0.2s;
     }
-
-    .cabinet-finish input:focus,
-    .cabinet-finish select:focus,
-    .cabinet-finish textarea:focus {
+    input[type="text"]:focus,
+    input[type="number"]:focus,
+    input[type="date"]:focus,
+    input[type="email"]:focus,
+    textarea:focus,
+    select:focus {
         outline: none;
-        border-color: #dc2626;
-        box-shadow: 0 0 0 1px #dc2626;
-        background-color: #1f1f1f;
+        border-color: #D4AF37;
+        box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.1);
     }
-
-    .cabinet-finish label {
-        color: #9ca3af;
-        font-size: 0.75rem;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        font-weight: 600;
-        margin-bottom: 0.25rem;
-        display: block;
+    input::placeholder,
+    textarea::placeholder {
+        color: rgba(255, 255, 255, 0.3);
     }
-
-    /* Hide default file input */
     input[type="file"] {
         display: none;
     }
@@ -68,133 +51,299 @@
 {% endblock %}
 
 {% block content %}
-<div class="race-deck-bg min-h-screen text-gray-200 font-sans">
-    <div class="container mx-auto px-4 py-8">
+<div class="salon-bg min-h-screen text-gray-200 font-sans">
+    <div class="container mx-auto px-4 py-10 max-w-5xl">
+
+        <!-- Breadcrumb -->
+        <nav class="flex mb-6 text-xs uppercase tracking-widest text-gray-500 items-center gap-2">
+            <a href="{% url 'collections:collection_type_list' %}" class="hover:text-luxury-gold transition-colors">Collections</a>
+            <span>/</span>
+            <a href="{% url 'collections:collection_list' collection_type.slug %}" class="hover:text-luxury-gold transition-colors">{{ collection_type.name }}</a>
+            <span>/</span>
+            <a href="{% url 'collections:collection_item_detail' collection_type.slug item.id %}" class="hover:text-luxury-gold transition-colors">{{ item.name }}</a>
+            <span>/</span>
+            <span class="text-gray-300">{{ title }}</span>
+        </nav>
+
         <!-- Header -->
-        <div class="flex flex-col md:flex-row justify-between items-center mb-8 border-b border-gray-700 pb-4">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
             <div>
-                <h1 class="text-3xl font-bold porsche-font text-white tracking-wider mb-1">{{ title }}</h1>
-                <h2 class="text-sm text-gray-400 uppercase tracking-widest">
-                    <i class="{{ collection_type.icon }} mr-1"></i>
-                    {{ item.name }}
-                </h2>
+                <h1 class="text-3xl md:text-4xl salon-font text-luxury-gold mb-1">{{ title }}</h1>
+                <p class="text-xs uppercase tracking-widest text-gray-500">
+                    <i class="{{ collection_type.icon }} mr-1"></i>{{ item.name }}
+                </p>
             </div>
             <a href="{% url 'collections:collection_item_detail' collection_type.slug item.id %}"
-               class="px-4 py-2 bg-gray-800 text-gray-300 rounded hover:bg-gray-700 border border-gray-600 uppercase text-xs font-bold tracking-wider transition-colors">
+               class="mt-4 md:mt-0 px-4 py-2 border border-white/20 text-white/60 hover:text-white hover:border-white/50 text-xs uppercase tracking-widest font-bold transition-colors rounded-sm">
                 &larr; Back to Item
             </a>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <!-- Manual Entry Form -->
-            <div class="cabinet-finish p-6 rounded-lg">
-                <div class="flex items-center mb-6 border-b border-gray-700 pb-2">
-                    <div class="w-1 h-6 bg-red-600 mr-3"></div>
-                    <h3 class="text-xl font-bold porsche-font text-gray-100">Manual Entry</h3>
-                </div>
+
+            <!-- Entry Form -->
+            <div class="detail-card rounded-lg p-6 md:p-8">
+                <h2 class="text-luxury-gold text-sm uppercase tracking-widest mb-6 border-b border-white/10 pb-3">
+                    {% if is_edit %}Edit Record{% else %}Record Details{% endif %}
+                </h2>
 
                 <form method="post" enctype="multipart/form-data">
                     {% csrf_token %}
-                    <div class="space-y-4">
-                        <!-- Render fields manually to apply styles -->
-                        <div class="space-y-1">
-                            <label for="{{ form.date.id_for_label }}">Date</label>
+                    <div class="space-y-5">
+
+                        <div>
+                            <label for="{{ form.date.id_for_label }}"
+                                   class="block text-xs uppercase tracking-widest text-gray-400 mb-2">Date</label>
                             {{ form.date }}
                             {% if form.date.errors %}
-                                <p class="text-red-500 text-xs mt-1">{{ form.date.errors.0 }}</p>
+                                <p class="text-red-400 text-xs mt-1">{{ form.date.errors.0 }}</p>
                             {% endif %}
                         </div>
-                        <div class="space-y-1">
-                            <label for="{{ form.vendor.id_for_label }}">Vendor</label>
+
+                        <div>
+                            <label for="{{ form.vendor.id_for_label }}"
+                                   class="block text-xs uppercase tracking-widest text-gray-400 mb-2">Vendor</label>
                             {{ form.vendor }}
                             {% if form.vendor.errors %}
-                                <p class="text-red-500 text-xs mt-1">{{ form.vendor.errors.0 }}</p>
+                                <p class="text-red-400 text-xs mt-1">{{ form.vendor.errors.0 }}</p>
                             {% endif %}
                         </div>
-                        <div class="space-y-1">
-                            <label for="{{ form.category.id_for_label }}">Category</label>
+
+                        <div>
+                            <label for="{{ form.category.id_for_label }}"
+                                   class="block text-xs uppercase tracking-widest text-gray-400 mb-2">Category</label>
                             {{ form.category }}
                             {% if form.category.errors %}
-                                <p class="text-red-500 text-xs mt-1">{{ form.category.errors.0 }}</p>
+                                <p class="text-red-400 text-xs mt-1">{{ form.category.errors.0 }}</p>
                             {% endif %}
                         </div>
-                        <div class="space-y-1">
-                            <label for="{{ form.total_cost.id_for_label }}">Total Cost</label>
+
+                        <div>
+                            <label for="{{ form.total_cost.id_for_label }}"
+                                   class="block text-xs uppercase tracking-widest text-gray-400 mb-2">Total Cost</label>
                             {{ form.total_cost }}
                             {% if form.total_cost.errors %}
-                                <p class="text-red-500 text-xs mt-1">{{ form.total_cost.errors.0 }}</p>
+                                <p class="text-red-400 text-xs mt-1">{{ form.total_cost.errors.0 }}</p>
                             {% endif %}
                         </div>
-                        <div class="space-y-1">
-                            <label for="{{ form.description.id_for_label }}">Description</label>
+
+                        <div>
+                            <label for="{{ form.description.id_for_label }}"
+                                   class="block text-xs uppercase tracking-widest text-gray-400 mb-2">Description</label>
                             {{ form.description }}
                             {% if form.description.errors %}
-                                <p class="text-red-500 text-xs mt-1">{{ form.description.errors.0 }}</p>
+                                <p class="text-red-400 text-xs mt-1">{{ form.description.errors.0 }}</p>
                             {% endif %}
                         </div>
-                        <div class="space-y-1">
-                            <label for="{{ form.receipt_image.id_for_label }}">Receipt Image</label>
-                            <div class="text-gray-400 text-sm bg-gray-800 p-2 rounded border border-gray-700">
-                                {{ form.receipt_image }}
-                            </div>
+
+                        <!-- Receipt Image — styled trigger button -->
+                        <div>
+                            <label class="block text-xs uppercase tracking-widest text-gray-400 mb-2">Receipt Image</label>
+                            <label for="{{ form.receipt_image.id_for_label }}"
+                                   class="inline-flex items-center gap-2 cursor-pointer px-4 py-2 border border-white/20
+                                          text-white/60 hover:text-luxury-gold hover:border-luxury-gold-dim
+                                          text-xs uppercase tracking-widest font-bold transition-colors rounded-sm">
+                                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                                </svg>
+                                {% if is_edit and record.receipt_image %}Replace Image{% else %}Upload Receipt{% endif %}
+                            </label>
+                            {{ form.receipt_image }}
                             {% if form.receipt_image.errors %}
-                                <p class="text-red-500 text-xs mt-1">{{ form.receipt_image.errors.0 }}</p>
+                                <p class="text-red-400 text-xs mt-1">{{ form.receipt_image.errors.0 }}</p>
                             {% endif %}
                         </div>
+
                     </div>
 
-                    <div class="mt-8 flex justify-end space-x-4">
-                        <button type="submit" class="w-full px-6 py-3 bg-red-700 text-white uppercase tracking-widest font-bold hover:bg-red-600 transition-colors border border-red-800 shadow-lg rounded">
+                    <div class="flex gap-4 mt-8 pt-6 border-t border-white/10">
+                        <button type="submit"
+                                class="px-6 py-3 bg-luxury-gold text-black font-bold uppercase text-xs tracking-widest hover:bg-yellow-600 transition-colors rounded-sm">
                             Save Record
                         </button>
+                        <a href="{% url 'collections:collection_item_detail' collection_type.slug item.id %}"
+                           class="px-6 py-3 border border-white/20 text-white/60 hover:text-white hover:border-white/50 font-bold uppercase text-xs tracking-widest transition-colors rounded-sm">
+                            Cancel
+                        </a>
                     </div>
                 </form>
             </div>
 
-            <!-- Info Panel -->
-            <div class="cabinet-finish p-6 rounded-lg h-fit">
-                <div class="flex items-center mb-6 border-b border-gray-700 pb-2">
-                    <div class="w-1 h-6 bg-blue-500 mr-3"></div>
-                    <h3 class="text-xl font-bold porsche-font text-gray-100">Service History</h3>
-                </div>
+            <!-- Right Panel — context-aware -->
+            {% if is_edit %}
+            <div class="space-y-6">
 
-                <div class="space-y-4 text-sm text-gray-400">
-                    <p class="leading-relaxed">
-                        Track all maintenance, repairs, appraisals, and restorations for your {{ collection_type.name }} items.
-                    </p>
+                {% if record.receipt_image %}
+                <div class="detail-card rounded-lg p-6">
+                    <h2 class="text-luxury-gold text-sm uppercase tracking-widest mb-4 border-b border-white/10 pb-3">Receipt Image</h2>
+                    <img src="{{ record.receipt_image.url }}"
+                         alt="Receipt"
+                         class="w-full rounded border border-white/10 object-contain max-h-64 mb-4">
 
-                    <div class="bg-gray-800/50 p-4 rounded border border-gray-700">
-                        <h4 class="text-gray-300 font-bold uppercase text-xs mb-2 tracking-wider">Category Types</h4>
-                        <ul class="space-y-1 text-xs">
-                            <li><span class="text-blue-400">•</span> Maintenance - Regular upkeep</li>
-                            <li><span class="text-yellow-400">•</span> Repair - Fix issues</li>
-                            <li><span class="text-green-400">•</span> Upgrade - Improvements</li>
-                            <li><span class="text-purple-400">•</span> Restoration - Major work</li>
-                            <li><span class="text-pink-400">•</span> Appraisal - Value assessment</li>
-                        </ul>
-                    </div>
+                    <!-- OCR Status -->
+                    {% if record.is_verified %}
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-green-900/40 border border-green-700/50 text-green-400 text-xs uppercase tracking-wider rounded-full font-bold">
+                            <span class="w-1.5 h-1.5 rounded-full bg-green-400 inline-block"></span>Verified
+                        </span>
+                    {% elif record.ocr_raw_data %}
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-yellow-900/40 border border-yellow-700/50 text-yellow-400 text-xs uppercase tracking-wider rounded-full font-bold">
+                            <span class="w-1.5 h-1.5 rounded-full bg-yellow-400 inline-block"></span>OCR Pending Review
+                        </span>
+                    {% else %}
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-white/5 border border-white/10 text-gray-500 text-xs uppercase tracking-wider rounded-full font-bold">
+                            <span class="w-1.5 h-1.5 rounded-full bg-gray-500 inline-block"></span>No OCR Data
+                        </span>
+                    {% endif %}
 
-                    {% if item.service_records.count > 0 %}
-                    <div class="bg-gray-800/50 p-4 rounded border border-gray-700">
-                        <h4 class="text-gray-300 font-bold uppercase text-xs mb-2 tracking-wider">Recent Records</h4>
+                    <!-- OCR Line Items -->
+                    {% if record.ocr_raw_data.line_items %}
+                    <div class="mt-4 bg-white/5 p-3 rounded border border-white/10">
+                        <h3 class="text-gray-400 font-bold uppercase text-xs mb-3 tracking-wider">Extracted Line Items</h3>
                         <div class="space-y-2">
-                            {% for record in item.service_records.all|slice:":3" %}
-                            <div class="text-xs border-b border-gray-700 pb-2">
-                                <p class="text-gray-300">{{ record.category|upper }}</p>
-                                <p class="text-gray-500">{{ record.date }} - ${{ record.total_cost }}</p>
+                            {% for line in record.ocr_raw_data.line_items %}
+                            <div class="flex justify-between text-xs">
+                                <span class="text-gray-400">{{ line.item }}</span>
+                                <span class="text-luxury-gold font-mono">${{ line.price }}</span>
                             </div>
                             {% endfor %}
                         </div>
                     </div>
                     {% endif %}
+                </div>
+                {% endif %}
 
-                    <div class="pt-4 border-t border-gray-700">
-                        <p class="text-xs text-gray-500 italic">
-                            All service records help track your total investment and can increase resale value.
-                        </p>
-                    </div>
+                <!-- Category Guide -->
+                <div class="detail-card rounded-lg p-6">
+                    <h2 class="text-luxury-gold text-sm uppercase tracking-widest mb-4 border-b border-white/10 pb-3">Category Types</h2>
+                    <ul class="space-y-3 text-xs text-gray-400">
+                        <li class="flex items-start gap-2"><span class="text-blue-400 mt-0.5">•</span><div><span class="text-gray-200 uppercase tracking-wider font-bold">Maintenance</span><span class="block text-gray-500 mt-0.5">Regular upkeep and scheduled service</span></div></li>
+                        <li class="flex items-start gap-2"><span class="text-yellow-400 mt-0.5">•</span><div><span class="text-gray-200 uppercase tracking-wider font-bold">Repair</span><span class="block text-gray-500 mt-0.5">Fixing issues or damage</span></div></li>
+                        <li class="flex items-start gap-2"><span class="text-green-400 mt-0.5">•</span><div><span class="text-gray-200 uppercase tracking-wider font-bold">Upgrade</span><span class="block text-gray-500 mt-0.5">Performance or aesthetic improvements</span></div></li>
+                        <li class="flex items-start gap-2"><span class="text-purple-400 mt-0.5">•</span><div><span class="text-gray-200 uppercase tracking-wider font-bold">Restoration</span><span class="block text-gray-500 mt-0.5">Major refurbishment or period work</span></div></li>
+                        <li class="flex items-start gap-2"><span class="text-pink-400 mt-0.5">•</span><div><span class="text-gray-200 uppercase tracking-wider font-bold">Appraisal</span><span class="block text-gray-500 mt-0.5">Professional value assessment</span></div></li>
+                    </ul>
                 </div>
             </div>
+
+            {% else %}
+            <!-- Add mode: OCR Document Scan + Category Guide -->
+            <div class="space-y-6">
+
+                <div class="detail-card rounded-lg p-6"
+                     x-data="{ ocrState: 'idle', ocrSummary: {} }">
+                    <h2 class="text-luxury-gold text-sm uppercase tracking-widest mb-4 border-b border-white/10 pb-3">Document Scan</h2>
+
+                    <p class="text-gray-400 text-sm mb-6 leading-relaxed">
+                        Upload a photo of your receipt or invoice. We'll extract the vendor, date, cost, and description — review before saving.
+                    </p>
+
+                    <!-- Idle: dropzone -->
+                    <div x-show="ocrState === 'idle'">
+                        <input type="file" id="ocr_receipt_input" accept="image/*"
+                               @change="
+                                   ocrState = 'loading';
+                                   const fd = new FormData();
+                                   fd.append('receipt', $event.target.files[0]);
+                                   fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+                                   fetch('{% url 'collections:collection_item_ocr_receipt' collection_type.slug item.id %}', {
+                                       method: 'POST', body: fd
+                                   })
+                                   .then(r => r.json())
+                                   .then(data => {
+                                       if (data.success) {
+                                           if (data.vendor)      document.getElementById('{{ form.vendor.id_for_label }}').value = data.vendor;
+                                           if (data.date)        document.getElementById('{{ form.date.id_for_label }}').value = data.date;
+                                           if (data.total_cost)  document.getElementById('{{ form.total_cost.id_for_label }}').value = data.total_cost;
+                                           if (data.description) document.getElementById('{{ form.description.id_for_label }}').value = data.description;
+                                           ocrSummary = data;
+                                           ocrState = 'done';
+                                       } else { ocrState = 'error'; }
+                                   })
+                                   .catch(() => { ocrState = 'error'; });
+                               ">
+                        <label for="ocr_receipt_input"
+                               class="border border-dashed border-white/20 rounded-sm p-10 flex flex-col items-center
+                                      hover:border-luxury-gold-dim hover:bg-white/5 transition-all cursor-pointer group">
+                            <svg class="w-14 h-14 text-gray-600 group-hover:text-luxury-gold mb-4 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                      d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            </svg>
+                            <span class="text-luxury-gold font-bold uppercase tracking-widest text-xs group-hover:text-yellow-400 transition-colors">Upload Receipt</span>
+                            <span class="text-xs text-gray-600 mt-2 uppercase tracking-wide">JPG, PNG supported</span>
+                        </label>
+                    </div>
+
+                    <!-- Loading -->
+                    <div x-show="ocrState === 'loading'" class="flex flex-col items-center py-12 text-gray-500 text-xs">
+                        <svg class="animate-spin w-10 h-10 text-luxury-gold mb-4" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                        </svg>
+                        <span class="uppercase tracking-widest">Scanning receipt…</span>
+                    </div>
+
+                    <!-- Success -->
+                    <div x-show="ocrState === 'done'" class="space-y-4">
+                        <div class="flex items-center gap-2 text-luxury-gold text-xs font-bold uppercase tracking-wider">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            OCR Complete — Fields Pre-filled
+                        </div>
+                        <div class="bg-white/5 p-4 rounded border border-white/10 text-xs space-y-2">
+                            <div class="flex justify-between">
+                                <span class="text-gray-500 uppercase tracking-wider">Vendor</span>
+                                <span x-text="ocrSummary.vendor || '—'" class="text-gray-200 font-mono"></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-500 uppercase tracking-wider">Date</span>
+                                <span x-text="ocrSummary.date || '—'" class="text-gray-200 font-mono"></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-500 uppercase tracking-wider">Total</span>
+                                <span x-text="ocrSummary.total_cost ? '$' + ocrSummary.total_cost : '—'" class="text-luxury-gold font-mono"></span>
+                            </div>
+                        </div>
+                        <p class="text-gray-500 text-xs">Review and adjust the pre-filled fields before saving.</p>
+                        <button type="button" @click="ocrState = 'idle'"
+                                class="text-xs text-gray-500 hover:text-luxury-gold uppercase tracking-wider transition-colors">
+                            Scan a different receipt
+                        </button>
+                    </div>
+
+                    <!-- Error -->
+                    <div x-show="ocrState === 'error'" class="space-y-4">
+                        <div class="flex items-center gap-2 text-red-400 text-xs font-bold uppercase tracking-wider">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                            Scan Failed
+                        </div>
+                        <p class="text-gray-500 text-xs">Could not extract data from the image. Fill in the fields manually or upload the image using the receipt field on the left.</p>
+                        <button type="button" @click="ocrState = 'idle'"
+                                class="text-xs text-gray-500 hover:text-luxury-gold uppercase tracking-wider transition-colors">
+                            Try again
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Category Guide -->
+                <div class="detail-card rounded-lg p-6">
+                    <h2 class="text-luxury-gold text-sm uppercase tracking-widest mb-4 border-b border-white/10 pb-3">Category Types</h2>
+                    <ul class="space-y-3 text-xs text-gray-400">
+                        <li class="flex items-start gap-2"><span class="text-blue-400 mt-0.5">•</span><div><span class="text-gray-200 uppercase tracking-wider font-bold">Maintenance</span><span class="block text-gray-500 mt-0.5">Regular upkeep and scheduled service</span></div></li>
+                        <li class="flex items-start gap-2"><span class="text-yellow-400 mt-0.5">•</span><div><span class="text-gray-200 uppercase tracking-wider font-bold">Repair</span><span class="block text-gray-500 mt-0.5">Fixing issues or damage</span></div></li>
+                        <li class="flex items-start gap-2"><span class="text-green-400 mt-0.5">•</span><div><span class="text-gray-200 uppercase tracking-wider font-bold">Upgrade</span><span class="block text-gray-500 mt-0.5">Performance or aesthetic improvements</span></div></li>
+                        <li class="flex items-start gap-2"><span class="text-purple-400 mt-0.5">•</span><div><span class="text-gray-200 uppercase tracking-wider font-bold">Restoration</span><span class="block text-gray-500 mt-0.5">Major refurbishment or period work</span></div></li>
+                        <li class="flex items-start gap-2"><span class="text-pink-400 mt-0.5">•</span><div><span class="text-gray-200 uppercase tracking-wider font-bold">Appraisal</span><span class="block text-gray-500 mt-0.5">Professional value assessment</span></div></li>
+                    </ul>
+                </div>
+
+            </div>
+            {% endif %}
+
         </div>
     </div>
 </div>
