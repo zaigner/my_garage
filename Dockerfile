@@ -29,6 +29,10 @@ COPY static/ ./static/
 
 # Collect static files into staticfiles/ at build time.
 # Uses a placeholder key — collectstatic doesn't touch the database.
+# logs/ must exist before Django starts: production settings wire a RotatingFileHandler
+# that dictConfig opens at import time, before collectstatic even runs.
+RUN mkdir -p logs
+
 RUN DJANGO_SECRET_KEY=build-placeholder \
     ALLOWED_HOSTS=localhost \
     PYTHONPATH=/app/src \
