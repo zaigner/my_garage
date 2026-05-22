@@ -2,6 +2,7 @@ import logging
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.db.models import Sum
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template import Context, Template
@@ -12,6 +13,7 @@ from my_garage.models import (
     DynamicCollectionItem,
     GenericServiceRecord,
     GenericUpgrade,
+    GenericValuationHistory,
 )
 
 from .api.selectors import global_search
@@ -706,6 +708,47 @@ def all_upgrades_view(request: HttpRequest) -> HttpResponse:
     )
 
     return render(request, "my_garage/all_upgrades.html", {"upgrades": upgrades})
+
+
+@login_required
+def all_items_view(request: HttpRequest) -> HttpResponse:
+    """
+    View all items across ALL collections.
+    """
+    items = (
+        DynamicCollectionItem.objects.filter(owner=request.user)
+        .select_related("collection_type")
+        .order_by("-created_at")
+    )
+    totals = items.aggregate(
+        total_value=Sum("current_market_value"),
+        total_cost=Sum("purchase_price"),
+    )
+    total_value = totals["total_value"] or 0
+    total_cost = totals["total_cost"] or 0
+    return render(
+        request,
+        "my_garage/all_items.html",
+        {
+            "items": items,
+            "total_value": total_value,
+            "total_cost": total_cost,
+            "total_equity": total_value - total_cost,
+        },
+    )
+
+
+@login_required
+def all_valuations_view(request: HttpRequest) -> HttpResponse:
+    """
+    View all valuation history across ALL collections.
+    """
+    history = (
+        GenericValuationHistory.objects.filter(item__owner=request.user)
+        .select_related("item", "item__collection_type")
+        .order_by("-date")
+    )
+    return render(request, "my_garage/all_valuations.html", {"history": history})
 
 
 @login_required

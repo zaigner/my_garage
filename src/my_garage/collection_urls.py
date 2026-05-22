@@ -103,4 +103,6 @@ urlpatterns = [
     # Dynamic Collections - Unified Views
     path("all-services/", views.all_services_view, name="all_services"),
     path("all-upgrades/", views.all_upgrades_view, name="all_upgrades"),
+    path("all-items/", views.all_items_view, name="all_items"),
+    path("all-valuations/", views.all_valuations_view, name="all_valuations"),
 ]

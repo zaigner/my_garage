@@ -42,6 +42,29 @@
             </div>
         </div>
 
+        <!-- Cross-Collection Views -->
+        <div class="mb-10">
+            <p class="text-xs uppercase tracking-widest text-gray-600 mb-3">Cross-Collection Views</p>
+            <div class="flex flex-wrap gap-3">
+                <a href="{% url 'collections:all_items' %}"
+                   class="flex items-center gap-2 px-5 py-2 bg-[#151b33] border border-white/10 rounded-sm text-xs uppercase tracking-widest text-gray-300 hover:text-luxury-gold hover:border-luxury-gold/40 transition-colors">
+                    <i class="fas fa-layer-group"></i> All Items
+                </a>
+                <a href="{% url 'collections:all_valuations' %}"
+                   class="flex items-center gap-2 px-5 py-2 bg-[#151b33] border border-white/10 rounded-sm text-xs uppercase tracking-widest text-gray-300 hover:text-luxury-gold hover:border-luxury-gold/40 transition-colors">
+                    <i class="fas fa-chart-line"></i> Value History
+                </a>
+                <a href="{% url 'collections:all_services' %}"
+                   class="flex items-center gap-2 px-5 py-2 bg-[#151b33] border border-white/10 rounded-sm text-xs uppercase tracking-widest text-gray-300 hover:text-luxury-gold hover:border-luxury-gold/40 transition-colors">
+                    <i class="fas fa-wrench"></i> All Services
+                </a>
+                <a href="{% url 'collections:all_upgrades' %}"
+                   class="flex items-center gap-2 px-5 py-2 bg-[#151b33] border border-white/10 rounded-sm text-xs uppercase tracking-widest text-gray-300 hover:text-luxury-gold hover:border-luxury-gold/40 transition-colors">
+                    <i class="fas fa-tools"></i> All Upgrades
+                </a>
+            </div>
+        </div>
+
         {% if type_data %}
             <!-- Grid -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
