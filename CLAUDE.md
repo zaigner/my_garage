@@ -775,6 +775,29 @@ pytest --cov=src --cov-report=term # With coverage
 5. Add prompt template to `prompts/`
 6. Write functional tests
 
+### Mandatory Quality Gates — After Every Feature or Code Change
+
+**These steps are not optional.** Run them in order after completing any feature addition, bug fix, or refactor before considering the task done:
+
+```bash
+pixi run pytest tests/unit/ -x -q        # Unit tests — must all pass
+pixi run pytest tests/functional/ -x -q  # Functional tests — must all pass
+pixi run lint                            # Ruff lint — zero errors
+pixi run -- ruff format --check .        # Format check — zero diffs
+```
+
+If any step fails:
+1. Fix the failure before moving on — do not skip or suppress
+2. Re-run the full sequence from the top after fixing
+3. For lint/format failures: run `pixi run -- ruff check . --fix && pixi run format` then re-check
+
+FastAPI tests (`tests/fastapi/`) should also be run when changes touch `src/fastapi_services/`:
+```bash
+pixi run pytest tests/fastapi/ -x -q
+```
+
+Eval tests (`tests/eval/`) hit real external APIs — do **not** run in this gate. Run manually when testing AI tool quality.
+
 ---
 
 ## 17. EXTERNAL API INTEGRATIONS

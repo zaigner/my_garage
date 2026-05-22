@@ -32,6 +32,7 @@ COPY static/ ./static/
 RUN DJANGO_SECRET_KEY=build-placeholder \
     ALLOWED_HOSTS=localhost \
     PYTHONPATH=/app/src \
+    DJANGO_SETTINGS_MODULE=config.settings.production \
     .pixi/envs/prod/bin/python manage.py collectstatic --noinput
 
 # ──────────────────────────────────────────────────

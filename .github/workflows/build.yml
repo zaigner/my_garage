@@ -1,17 +1,17 @@
 name: Build
 
 on:
-  push:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
     branches: [main]
-
-# Only run after CI passes on the same commit
-# Build is triggered separately (not via needs:) so it can be re-run independently.
-# To gate on CI: change trigger to workflow_run (see deploy.yml for pattern).
 
 jobs:
   build-and-push:
     name: Build & Push Docker Image
     runs-on: ubuntu-latest
+    # Only build if CI passed — prevents pushing broken images to GHCR
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     permissions:
       contents: read
       packages: write   # Required to push to ghcr.io

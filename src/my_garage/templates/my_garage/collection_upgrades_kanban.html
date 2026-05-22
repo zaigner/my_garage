@@ -40,14 +40,37 @@
 {% block content %}
 <div class="salon-bg min-h-screen text-gray-200 font-sans">
     <div class="container mx-auto px-4 py-12">
+        <!-- Breadcrumb -->
+        <nav class="flex mb-6 text-xs uppercase tracking-widest text-gray-500" aria-label="Breadcrumb">
+            <ol class="inline-flex items-center space-x-1 md:space-x-3">
+                <li class="inline-flex items-center">
+                    <a href="{% url 'home' %}" class="hover:text-white transition-colors">Vault</a>
+                </li>
+                <li>
+                    <div class="flex items-center">
+                        <span class="mx-2">/</span>
+                        <a href="{% url 'collections:collection_type_list' %}" class="hover:text-white transition-colors">Collections</a>
+                    </div>
+                </li>
+                <li>
+                    <div class="flex items-center">
+                        <span class="mx-2">/</span>
+                        <a href="{% url 'collections:collection_list' collection_type.slug %}" class="hover:text-white transition-colors">{{ collection_type.name }}</a>
+                    </div>
+                </li>
+                <li aria-current="page">
+                    <div class="flex items-center">
+                        <span class="mx-2">/</span>
+                        <span class="text-gray-300">Projects</span>
+                    </div>
+                </li>
+            </ol>
+        </nav>
+
         <!-- Header -->
         <div class="mb-12">
             <div class="flex flex-col md:flex-row justify-between items-center border-b border-white/10 pb-6">
                 <div>
-                    <a href="{% url 'collections:collection_list' collection_type.slug %}"
-                       class="text-gray-400 hover:text-luxury-gold text-xs uppercase tracking-widest transition-colors mb-4 inline-block">
-                        ← Back to {{ collection_type.name }}
-                    </a>
                     <h1 class="text-3xl md:text-4xl salon-font text-luxury-gold mb-2">
                         <i class="fas fa-columns mr-2"></i>
                         Project Kanban Board

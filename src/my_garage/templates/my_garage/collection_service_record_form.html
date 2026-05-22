@@ -55,14 +55,36 @@
     <div class="container mx-auto px-4 py-10 max-w-5xl">
 
         <!-- Breadcrumb -->
-        <nav class="flex mb-6 text-xs uppercase tracking-widest text-gray-500 items-center gap-2">
-            <a href="{% url 'collections:collection_type_list' %}" class="hover:text-luxury-gold transition-colors">Collections</a>
-            <span>/</span>
-            <a href="{% url 'collections:collection_list' collection_type.slug %}" class="hover:text-luxury-gold transition-colors">{{ collection_type.name }}</a>
-            <span>/</span>
-            <a href="{% url 'collections:collection_item_detail' collection_type.slug item.id %}" class="hover:text-luxury-gold transition-colors">{{ item.name }}</a>
-            <span>/</span>
-            <span class="text-gray-300">{{ title }}</span>
+        <nav class="flex mb-6 text-xs uppercase tracking-widest text-gray-500" aria-label="Breadcrumb">
+            <ol class="inline-flex items-center space-x-1 md:space-x-3">
+                <li class="inline-flex items-center">
+                    <a href="{% url 'home' %}" class="hover:text-white transition-colors">Vault</a>
+                </li>
+                <li>
+                    <div class="flex items-center">
+                        <span class="mx-2">/</span>
+                        <a href="{% url 'collections:collection_type_list' %}" class="hover:text-white transition-colors">Collections</a>
+                    </div>
+                </li>
+                <li>
+                    <div class="flex items-center">
+                        <span class="mx-2">/</span>
+                        <a href="{% url 'collections:collection_list' collection_type.slug %}" class="hover:text-white transition-colors">{{ collection_type.name }}</a>
+                    </div>
+                </li>
+                <li>
+                    <div class="flex items-center">
+                        <span class="mx-2">/</span>
+                        <a href="{% url 'collections:collection_item_detail' collection_type.slug item.id %}" class="hover:text-white transition-colors">{{ item.name }}</a>
+                    </div>
+                </li>
+                <li aria-current="page">
+                    <div class="flex items-center">
+                        <span class="mx-2">/</span>
+                        <span class="text-gray-300">{{ title }}</span>
+                    </div>
+                </li>
+            </ol>
         </nav>
 
         <!-- Header -->
