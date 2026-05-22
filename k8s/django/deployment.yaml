@@ -1,9 +1,5 @@
-# PREREQUISITE: Before first deploy, run migrations manually:
-#   kubectl exec -it deploy/django -n my-garage -- python manage.py migrate
-#   kubectl exec -it deploy/django -n my-garage -- python manage.py collectstatic --noinput
-#
-# REQUIRED: Add to src/config/settings/production.py to avoid redirect loops behind Traefik:
-#   SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+# Migrations run automatically via entrypoint.sh on container start.
+# collectstatic runs at image build time (see Dockerfile).
 apiVersion: apps/v1
 kind: Deployment
 metadata:

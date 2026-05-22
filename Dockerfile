@@ -24,6 +24,15 @@ RUN pixi install --environment prod --locked
 # Copy source after deps are installed
 COPY src/ ./src/
 COPY manage.py ./
+COPY templates/ ./templates/
+COPY static/ ./static/
+
+# Collect static files into staticfiles/ at build time.
+# Uses a placeholder key — collectstatic doesn't touch the database.
+RUN DJANGO_SECRET_KEY=build-placeholder \
+    ALLOWED_HOSTS=localhost \
+    PYTHONPATH=/app/src \
+    .pixi/envs/prod/bin/python manage.py collectstatic --noinput
 
 # ──────────────────────────────────────────────────
 # Stage 2: Runtime — lean image, no pixi tooling
@@ -46,21 +55,28 @@ RUN apt-get update \
 # Non-root user for container security
 RUN useradd -m -u 1000 -s /bin/bash appuser
 
-# Copy the pixi production conda environment (not pixi itself)
-COPY --from=builder /app/.pixi/envs/prod /opt/env
+# Copy the pixi production conda environment to the same path as the builder
+# so hardcoded shebangs (e.g. #!/app/.pixi/envs/prod/bin/python) still resolve.
+COPY --from=builder /app/.pixi/envs/prod /app/.pixi/envs/prod
 
 # Copy application source and manage.py
 COPY --from=builder /app/src /app/src
 COPY --from=builder /app/manage.py /app/manage.py
+COPY --from=builder /app/templates /app/templates
+COPY --from=builder /app/static /app/static
+COPY --from=builder /app/staticfiles /app/staticfiles
+
+# Entrypoint runs migrations then execs the CMD
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
 
 # Create writable directories Django needs at runtime
-RUN mkdir -p /app/logs /app/media /app/staticfiles \
+RUN mkdir -p /app/logs /app/media \
     && chown -R appuser:appuser /app
 
 USER appuser
 
-# Activate the conda environment by putting it on PATH
-ENV PATH="/opt/env/bin:$PATH"
+ENV PATH="/app/.pixi/envs/prod/bin:$PATH"
 ENV PYTHONPATH="/app/src"
 ENV DJANGO_SETTINGS_MODULE="config.settings.production"
 
@@ -69,23 +85,17 @@ EXPOSE 8000 8001
 
 # ──────────────────────────────────────────────────
 # Default: Django via uvicorn (ASGI)
-# Override CMD in K8s Deployments for other services:
+# entrypoint.sh runs migrations before exec'ing this CMD.
 #
+# Override CMD in K8s Deployments for other services:
 #   FastAPI + MCP server:
 #     uvicorn fastapi_services.main:app --host 0.0.0.0 --port 8001 --workers 1
-#
 #   Celery worker:
 #     celery -A config.celery_app worker -l info
-#
 #   Celery beat (always 1 replica — never scale):
 #     celery -A config.celery_app beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
-#
-# NOTE: production.py has SECURE_SSL_REDIRECT = True. When running behind
-# Traefik (which terminates SSL), this causes redirect loops for HTTP traffic.
-# Add to src/config/settings/production.py before deploying:
-#   SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-# This lets Django trust Traefik's X-Forwarded-Proto header instead.
 # ──────────────────────────────────────────────────
+ENTRYPOINT ["/app/entrypoint.sh"]
 CMD ["uvicorn", "config.asgi:application", \
      "--host", "0.0.0.0", \
      "--port", "8000", \

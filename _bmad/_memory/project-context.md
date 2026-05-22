@@ -140,13 +140,13 @@ pixi run refresh-context    # Refresh this BMAD context file
 
 ## Current Project State
 
-> Auto-refreshed by `pixi run refresh-context`. Last updated: 2026-05-07 13:41 UTC
+> Auto-refreshed by `pixi run refresh-context`. Last updated: 2026-05-22 01:08 UTC
 
 | Metric | Value |
 |---|---|
 | Collection types | 6 (Automobiles, Coin Collection, Hand Bags, Horology Salon, The Gun Safe, Wine Collection) |
 | Collection items | 3 |
-| Collections value | $55,800.00 |
-| **Total portfolio value** | **$55,800.00** |
-| Last refresh | 2026-05-07 13:41 UTC |
+| Collections value | $56,995.00 |
+| **Total portfolio value** | **$56,995.00** |
+| Last refresh | 2026-05-22 01:08 UTC |
 

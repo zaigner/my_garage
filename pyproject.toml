@@ -23,6 +23,7 @@ dependencies = [
     "beautifulsoup4>=4.12,<5.0",
     "pytesseract>=0.3,<0.4",
     "python-multipart>=0.0.22,<0.1.0",
+    "whitenoise>=6.6,<7.0",
 ]
 
 [project.optional-dependencies]

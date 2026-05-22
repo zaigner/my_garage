@@ -93,6 +93,7 @@ services:
       ALLOWED_HOSTS: localhost,127.0.0.1
       GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
       MARKETCHECK_API_KEY: ${MARKETCHECK_API_KEY:-}
+      SECURE_SSL_REDIRECT: "False"
     volumes:
       - ./src:/app/src          # live code reload
       - ./templates:/app/templates
