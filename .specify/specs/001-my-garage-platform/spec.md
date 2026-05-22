@@ -3,10 +3,10 @@
 ## Overview
 
 **Feature ID**: 001-my-garage-platform
-**Status**: ✅ Phase 14 Complete - Global Search & Navigation Enhancements
+**Status**: ✅ Phase 15 Complete - UX Enhancement Suite (13 specs)
 **Owner**: Development Team
 **Created**: 2025-12-21
-**Last Updated**: 2026-02-12
+**Last Updated**: 2026-05-21
 
 ## Problem Statement
 
@@ -422,24 +422,39 @@ task_bulk_valuation_refresh() -> str
 - ✅ Added dropdown navigation for quick access to collections
 - ✅ Fixed search bug with integer fields (Year)
 
+**Phase 15: UX Enhancement Suite (13 Specs)**
+- ✅ Spec 1: Portfolio count-up animation — Alpine.js `requestAnimationFrame` cubic ease-out over 1.4 s on hero value
+- ✅ Spec 2: Nav hamburger click toggle — replaced CSS `group-hover` with Alpine.js click toggle; Escape + click-outside dismiss; touch-device compatible
+- ✅ Spec 3: Search icon in nav — persistent magnifying-glass button in top-right nav cluster opening the existing `toggleSearch()` modal
+- ✅ Spec 4: Floating toast notifications — fixed top-right overlay outside `<main>`; success toasts auto-dismiss after 5 s; X dismiss button; stacked multi-message support
+- ✅ Spec 5: Drag-and-drop photo upload — Alpine.js drop zone on `collection_item_form.html` and `collection_service_record_form.html`; gold highlight on drag; thumbnail preview; DataTransfer API for file handoff; OCR chain on service record receipt drop
+- ✅ Spec 6: Valuation history sparkline — inline SVG trend chart above the history list; gold for appreciation, red for depreciation; computed from Alpine.js points array
+- ✅ Spec 7: Personalized empty state copy — slug-conditional messaging for Automobiles ("What's in the garage?"), Horology Salon ("Start your horological journey"), and custom collections
+- ✅ Spec 8: Onboarding step auto-completion — `has_items`, `has_valuation`, `has_service` booleans from real DB queries; all-three-complete triggers auto-redirect to home
+- ✅ Spec 9: Valuations tab in item detail — third tab alongside Service Records and Projects; standalone valuation card removed from right column; sparkline lives inside the tab
+- ✅ Spec 10: Recent acquisitions hover overlay — "View →" pill centred over card on hover
+- ✅ Spec 11: AI Curator's Note — `collection_item_generate_description` POST endpoint; `CollectionThemeGenerator.generate_item_description()`; Alpine.js state machine (idle / loading / done / error) on item detail
+- ✅ Spec 12: Portfolio Insights page — `/insights/` route; category allocation bars; KPI cards; YoY badge; top-3 items; "Insights" link in hamburger menu
+- ✅ Spec 13: Service Record Timeline view — Alpine.js table/timeline toggle on All Services page; vertical line + colour-coded category dots
+
+**Bug Fixes (discovered post-deploy)**
+- ✅ QuerySet `|last` crash — `provider_context["valuation_history"]` converted to Python list in `collection_item_detail` view before template rendering
+- ✅ Jinja2 `StrictUndefined` — `relevant_docs` added to context dict in `collection_item_generate_description` view (with `[]` fallback) before calling `PromptRenderer.render()`
+
 ### ⏳ Remaining Work
 
 **FastAPI OCR Service**
-- Implement receipt image preprocessing
-- Integrate OCR library (Tesseract or cloud API)
-- Parse extracted text into structured data
-- Return JSON with vendor, date, cost, line items
+- Receipt image preprocessing (already implemented in `ocr/main.py` via pytesseract)
+- ⏳ Further accuracy improvements or cloud Vision API fallback
 
 **Dashboard Views**
-- Create service history timeline view
-- Create upgrade tracker with status indicators
-- Create condition report gallery
-- Implement 360° Spin Viewer (Epic 6)
+- ⏳ Condition report gallery
+- ⏳ Implement 360° Spin Viewer (Epic 6)
 
 **Additional Features**
-- PDF export of vehicle history
-- Price tracking for wishlist parts
-- Email notifications for market changes
+- ⏳ WatchCharts integration — live secondary market data (currently brand/condition mock)
+- ⏳ Price alerts — notify when comparable listing drops below threshold
+- ⏳ PDF export of vehicle history
 
 ## Success Metrics
 
@@ -603,16 +618,23 @@ task_bulk_valuation_refresh() -> str
 - Breadcrumbs
 - Mobile Responsiveness
 
-### Version 0.9.0 (Next)
-- FastAPI OCR service
-- Receipt upload and processing
-- Dashboard views
+### Version 0.9.0 (Current) ✅
+- UX Enhancement Suite — all 13 specs
+- Portfolio count-up, floating toasts, click-toggle nav, search icon
+- Drag-and-drop photo upload with preview
+- Valuation sparkline + Valuations tab in item detail
+- AI Curator's Note (Gemini-backed) with AJAX state machine
+- Portfolio Insights analytics page
+- Service Record Timeline view
+- Personalized empty states, onboarding auto-completion
+- Bug fixes: QuerySet `|last` crash, Jinja2 `relevant_docs` missing key
 
-### Version 1.0.0
-- All core features implemented
-- Comprehensive test coverage
-- Production-ready deployment
-- User documentation complete
+### Version 1.0.0 (Next)
+- WatchCharts integration for live timepiece market data
+- Price alerts and notification system
+- 360° Spin Viewer (Imagin.Studio)
+- Comprehensive test coverage across all new features
+- Production-ready documentation
 
 ---
 

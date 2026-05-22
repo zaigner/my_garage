@@ -526,12 +526,14 @@ prompt = renderer.render("vehicle_valuation.j2", context=vehicle_context.dict())
 
 **Available templates:**
 
-| Template | Context model | Purpose |
-|---|---|---|
-| `vehicle_valuation.j2` | VehicleContext | Market value estimation prompt |
-| `service_record_analysis.j2` | ServiceRecord data | Receipt / service data parsing |
-| `condition_assessment.j2` | ConditionReport data | Photo-based condition grading |
-| `collection_item_description.j2` | CollectionItemContext | Item summary generation |
+| Template | Context model | Purpose | Extra keys required |
+|---|---|---|---|
+| `vehicle_valuation.j2` | VehicleContext | Market value estimation prompt | — |
+| `service_record_analysis.j2` | ServiceRecord data | Receipt / service data parsing | — |
+| `condition_assessment.j2` | ConditionReport data | Photo-based condition grading | — |
+| `collection_item_description.j2` | CollectionItemContext | Curator's note / item summary | `relevant_docs` (list[str]) — not in `.dict()`, fetch via `ContextService.retrieve_relevant_docs()` |
+
+**`PromptRenderer` uses Jinja2 `StrictUndefined`.** Every variable referenced in a `.j2` template must be present in the context dict — missing keys raise `UndefinedError` immediately, not silently. Before calling `renderer.render()`, read the template and verify all referenced variables are present.
 
 ---
 
@@ -676,11 +678,28 @@ Generates collection type schema and UI using Google Gemini 2.5 Flash.
 generator = CollectionThemeGenerator()
 schema = generator.generate_schema(name, description)
 ui_html = generator.generate_ui_component(name, description, feedback=None)
+description = generator.generate_item_description(item_context_dict)
 ```
 
 - `generate_schema()` → JSON field schema for `CollectionType.field_schema`
 - `generate_ui_component()` → Tailwind + Alpine.js HTML for `CollectionType.ui_theme_html`
-- Both methods have safe fallbacks if the API call fails
+- `generate_item_description(item_context: dict) -> str` → auction-style curator's note via Gemini 2.5 Flash; returns `""` on failure
+- All methods have safe fallbacks if the API call fails
+
+**CRITICAL — `generate_item_description` context requirements:** `collection_item_description.j2` references `relevant_docs`. `CollectionItemContext.dict()` does not include this field. Always add it before calling:
+
+```python
+context_dict = item_context.dict()
+try:
+    context_dict["relevant_docs"] = ctx_service.retrieve_relevant_docs(
+        f"{item.name} {item.collection_type.name}"
+    )
+except Exception:
+    context_dict["relevant_docs"] = []
+generator.generate_item_description(context_dict)
+```
+
+`PromptRenderer` uses Jinja2 `StrictUndefined` — missing keys raise `UndefinedError` immediately.
 
 ---
 
@@ -688,13 +707,16 @@ ui_html = generator.generate_ui_component(name, description, feedback=None)
 
 | Prefix | Namespace | Handler |
 |---|---|---|
-| `/` | — | Home view |
+| `/` | — | Home view (portfolio dashboard) |
+| `/insights/` | — | `portfolio_insights` — category breakdown, KPI cards, top items |
+| `/welcome/` | — | `onboarding` — checklist with real DB completion state |
 | `/admin/` | — | Django admin |
 | `/accounts/` | — | Django auth + custom register |
 | `/api/` | — | DRF router (api_router.py) |
 | `/garage/` | `my_garage` | Vehicle management |
 | `/timepieces/` | `timepieces` | Timepiece management |
 | `/collections/` | `collections` | Dynamic collections |
+| `/collections/<slug>/items/<id>/generate-description/` | `collections` | `collection_item_generate_description` — POST, returns `{"success": true, "description": "..."}` |
 
 ---
 
@@ -734,6 +756,20 @@ pytest --cov=src --cov-report=term # With coverage
 - Functional tests use `factory-boy` for fixture creation — no raw `Model.objects.create` in tests
 - MCP tools are tested in `eval/` against real API responses (can be slow — tag with `@pytest.mark.eval` to skip in CI)
 - Do not mock the database in functional tests — use Django's test runner with transaction rollback
+
+**Provider context / QuerySet safety:**
+- `get_detail_context()` on collection providers returns QuerySets, not lists. Always convert list-like context values before template rendering:
+  ```python
+  if "valuation_history" in provider_context:
+      provider_context["valuation_history"] = list(provider_context["valuation_history"])
+  ```
+- The Django template `|last` / `|first` filters call `queryset[-1]` / `queryset[0]` — fine on lists, raises `ValueError` on QuerySets.
+- For any provider context field the template will iterate or index: convert to list in the view, not the template.
+
+**Test string assertions after UI changes:**
+- Before shipping any spec that renames or moves UI elements, `grep` the test suite for the old string and update assertions.
+- Prefer `aria-label`, URL patterns, and HTTP status codes over exact copy strings in assertions.
+- For "must not appear" assertions, scope the check to the specific element, not the full page — the pattern may legitimately appear elsewhere.
 
 ---
 

@@ -17,7 +17,8 @@ My Garage is a professional-grade, **self-hosted** asset management system for a
 - Tracks vehicles, watches, and any custom collection type in one unified platform
 - Pulls real market data to keep valuations current
 - Manages service history, project kanban boards, and cost tracking
-- Shows portfolio-level financial performance with year-over-year value tracking
+- Shows portfolio-level financial performance with year-over-year value tracking and a dedicated Insights analytics page
+- Generates AI curator's notes for any collection item using Google Gemini
 - Runs entirely on your own hardware — local dev, Docker Compose, or Kubernetes
 
 ---
@@ -30,36 +31,54 @@ Everything is a collection. Vehicles and timepieces are pre-configured system co
 
 - **Custom Schemas**: Define fields (Vintage, Region, Artist, Edition) for any collection type
 - **AI-Generated UI**: Gemini generates a Tailwind + Alpine.js component for each collection's item view
+- **Personalized Empty States**: Collection-specific copy nudges users toward the first action ("What's in the garage?" for Automobiles, "Start your horological journey" for watches, etc.)
 - **Item Relationships**: Link related items across collections (paired with, part of, inspired by)
 - **File Attachments**: Attach receipts, certificates, appraisals, and manuals to any item
+
+### Navigation & Notifications
+
+- **Click-toggle hamburger**: Alpine.js click toggle with keyboard Escape and click-outside dismiss — works on touch devices
+- **Floating toast notifications**: Django messages rendered as fixed top-right toasts (auto-dismiss after 5 s for success, dismissible X button, stacked for multiple messages — no page layout shift)
+- **Onboarding checklist auto-completion**: `/welcome/` step-completion state driven by real DB queries — Steps 1/2/3 check off as the user adds items, gets a valuation, and logs a service record
 
 ### Portfolio Dashboard
 
 The home page gives a live read on your entire collection's financial state:
+- **Count-up animation** — hero portfolio value animates from 0 on each page load (cubic ease-out, 1.4 s)
 - Total value broken out by asset category (Garage, Horology, custom collections)
 - Year-over-year portfolio value change — backed by daily snapshots or purchase-price baseline when snapshots aren't yet available
-- Recent acquisitions across all collections
-- Global search (⌘K) across every item you own
+- Recent acquisitions carousel with hover "View →" overlay
+- Global search (⌘K) across every item you own, plus a persistent search icon in the nav
+
+### Portfolio Insights
+
+A dedicated `/insights/` analytics page provides:
+- KPI cards: Total Value, Total Equity, and Items Tracked
+- Category allocation bar chart — horizontal bars proportional to each category's share of portfolio value
+- Top 3 items by current market value
+- Year-over-year change badge (green/red)
 
 ### Cross-Collection Views
 
 Navigate your entire portfolio from one place:
 - **All Items** — every item across every collection, filterable
 - **Value History** — valuation timeline across all assets
-- **All Services** — unified service record log
+- **All Services** — unified service record log with **table/timeline toggle** (vertical timeline with colour-coded category dots)
 - **All Upgrades** — kanban board spanning every collection
 
 ### Service & Project Management
 
 - **Digital Service History**: Upload receipts, extract data via OCR, and categorize maintenance automatically
+- **Drag-and-Drop Photo Upload**: Drop zone on item and service record forms — highlights gold on drag, shows thumbnail preview, chains OCR on service record receipts
 - **Project Kanban Boards**: Plan upgrades and restorations with a drag-and-drop board — Wishlist → Ordered → In Progress → Completed
 - **Cost Tracking**: Purchase price vs. current market value equity per item and across the portfolio
 
 ### AI-Powered Intelligence
 
 - **Smart Valuations**: Live Marketcheck data for vehicles; brand/condition multiplier model for watches
+- **Valuation Sparkline**: Item detail pages show an SVG sparkline trend chart above the valuation history list — gold for appreciation, red for depreciation
 - **Receipt OCR**: Photograph a service receipt — vendor, date, cost, and line items are extracted automatically via pytesseract
-- **Instant Descriptions**: Generate rich item descriptions from structured collection data
+- **AI Curator's Note**: One-click "Generate Description" on any item detail page — produces an auction-style curator's note via Gemini, displayed inline with a Regenerate button
 - **Image Generation**: Create reference vehicle images via Google Gemini
 - **Claude Code Integration**: Full MCP server — query your garage, look up valuations, and enrich asset data directly from Claude Code
 
@@ -229,14 +248,22 @@ docs/                       # Implementation plans and UX specs
 - [x] Receipt OCR — vendor, date, and cost extracted from photos
 - [x] Vehicle market valuations via Marketcheck
 - [x] Watch valuations — brand/condition/completeness model
-- [x] Portfolio dashboard with year-over-year value tracking
-- [x] Cross-collection unified views (all items, all services, all upgrades, value history)
+- [x] Portfolio dashboard with year-over-year value tracking and count-up animation
+- [x] Cross-collection unified views (all items, all services with timeline toggle, all upgrades, value history)
 - [x] MCP server — Claude Code integration with 6 registered tools
 - [x] RAG knowledge layer — MongoDB-backed vector search over project docs
 - [x] Docker Compose + Kubernetes deployment
+- [x] **Portfolio Insights page** — category allocation bars, KPI cards, top items
+- [x] **AI Curator's Note** — Gemini-generated auction-style item descriptions
+- [x] **Valuation sparkline** — SVG trend chart in item detail Valuations tab
+- [x] **Drag-and-drop photo upload** — drop zone with preview on item and service record forms
+- [x] **Floating toast notifications** — fixed top-right, auto-dismiss, luxury aesthetic
+- [x] **Click-toggle navigation** — Alpine.js hamburger with keyboard / touch support
+- [x] **Personalized empty states** — collection-type-specific copy
+- [x] **Onboarding auto-completion** — checklist driven by real DB state
 - [ ] **WatchCharts Integration**: Live secondary market data for timepieces (currently a mock model)
 - [ ] **Price Alerts**: Notify when a comparable listing drops below a threshold
-- [ ] **Depreciation Curves**: Visual value history charts per item
+- [ ] **360° Spin Viewer**: Interactive vehicle rotation via Imagin.Studio or similar
 
 ---
 
