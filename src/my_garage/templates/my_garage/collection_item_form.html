@@ -83,6 +83,16 @@
             Add Item to {{ collection_type.name }}
         </h1>
 
+        {% if collection_type.slug == "automobiles" %}
+        <div class="mb-6 p-4 rounded-lg bg-yellow-900/20 border border-yellow-600/30 flex items-start gap-3">
+            <i class="fas fa-robot text-yellow-500 mt-0.5"></i>
+            <div>
+                <p class="text-yellow-500 text-sm font-semibold uppercase tracking-widest mb-1">AI Auto-Fill Available</p>
+                <p class="text-gray-400 text-xs leading-relaxed">Enter a VIN in the custom fields below and click <strong class="text-gray-200">Enrich from VIN</strong> after saving — we'll pull make, model, trim, engine type, and full NHTSA specs automatically.</p>
+            </div>
+        </div>
+        {% endif %}
+
         <form method="post" enctype="multipart/form-data" class="detail-card rounded-lg p-6 md:p-8">
             {% csrf_token %}
 
@@ -92,6 +102,57 @@
 
                 {% for field in form %}
                     {% if not field.name|slice:":7" == "custom_" %}
+                        {% if field.name == "photo" %}
+                        <div class="mb-4"
+                             x-data="{
+                                 dragging: false,
+                                 fileName: '',
+                                 previewUrl: null,
+                                 handleFiles(files) {
+                                     if (!files.length) return;
+                                     const file = files[0];
+                                     if (!file.type.startsWith('image/')) return;
+                                     this.fileName = file.name;
+                                     const reader = new FileReader();
+                                     reader.onload = e => this.previewUrl = e.target.result;
+                                     reader.readAsDataURL(file);
+                                     const dt = new DataTransfer();
+                                     dt.items.add(file);
+                                     this.$refs.fileInput.files = dt.files;
+                                 }
+                             }"
+                             @dragover.prevent="dragging = true"
+                             @dragleave.prevent="dragging = false"
+                             @drop.prevent="dragging = false; handleFiles($event.dataTransfer.files)">
+                            <label class="block text-xs uppercase tracking-widest text-gray-400 mb-2">
+                                {{ field.label }}
+                            </label>
+                            <input type="file" name="photo" accept="image/*" x-ref="fileInput"
+                                   @change="handleFiles($event.target.files)"
+                                   class="hidden">
+                            <div @click="$refs.fileInput.click()"
+                                 :class="dragging ? 'border-luxury-gold bg-luxury-gold/5' : 'border-white/10 hover:border-white/30'"
+                                 class="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-all duration-200">
+                                <template x-if="!previewUrl">
+                                    <div class="space-y-2">
+                                        <i class="fas fa-cloud-upload-alt text-3xl text-gray-600"></i>
+                                        <p class="text-gray-400 text-sm">Drag &amp; drop a photo here, or <span class="text-luxury-gold">click to browse</span></p>
+                                        <p class="text-gray-600 text-xs">JPEG, PNG, WEBP</p>
+                                    </div>
+                                </template>
+                                <template x-if="previewUrl">
+                                    <div class="space-y-2">
+                                        <img :src="previewUrl" class="max-h-40 mx-auto rounded object-contain">
+                                        <p class="text-gray-400 text-xs" x-text="fileName"></p>
+                                        <p class="text-luxury-gold text-xs">Click to change</p>
+                                    </div>
+                                </template>
+                            </div>
+                            {% if field.errors %}
+                                <p class="text-red-400 text-sm mt-1">{{ field.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        {% else %}
                         <div class="mb-4">
                             <label for="{{ field.id_for_label }}" class="block text-xs uppercase tracking-widest text-gray-400 mb-2">
                                 {{ field.label }}{% if field.field.required %} <span class="text-luxury-gold">*</span>{% endif %}
@@ -104,6 +165,7 @@
                                 <p class="text-red-400 text-sm mt-1">{{ field.errors.0 }}</p>
                             {% endif %}
                         </div>
+                        {% endif %}
                     {% endif %}
                 {% endfor %}
             </div>

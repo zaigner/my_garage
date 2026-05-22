@@ -137,13 +137,32 @@
                     </div>
                 {% else %}
                     <div class="col-span-full py-24 text-center border border-dashed border-white/10 rounded-lg bg-[#151b33]">
-                        <i class="{{ collection_type.icon }} text-6xl text-gray-600 mb-4"></i>
-                        <h3 class="text-xl salon-font text-gray-400 mb-2">No Items Yet</h3>
-                        <p class="text-gray-600 text-sm mb-6">Add your first item to this collection.</p>
-                        <a href="{% url 'collections:collection_item_add' collection_type.slug %}"
-                           class="px-6 py-2 bg-luxury-gold text-black font-bold rounded-sm uppercase text-xs tracking-widest hover:bg-yellow-600 transition-colors inline-block">
-                            Add First Item
-                        </a>
+                        <i class="{{ collection_type.icon }} text-6xl text-gray-600 mb-4 block"></i>
+
+                        {% if collection_type.slug == "automobiles" %}
+                            <h3 class="text-xl font-serif italic text-luxury-white mb-2">What's in the garage?</h3>
+                            <p class="text-luxury-text text-sm mb-6 max-w-xs mx-auto leading-relaxed">Add your first vehicle and we'll decode the VIN, find comparable market listings, and track its value over time.</p>
+                            <a href="{% url 'collections:collection_item_add' collection_type.slug %}"
+                               class="px-6 py-2 bg-luxury-gold text-black font-bold rounded-sm uppercase text-xs tracking-widest hover:bg-yellow-600 transition-colors inline-block">
+                                Add First Vehicle
+                            </a>
+
+                        {% elif collection_type.slug == "horology-salon" %}
+                            <h3 class="text-xl font-serif italic text-luxury-white mb-2">Start your horological journey</h3>
+                            <p class="text-luxury-text text-sm mb-6 max-w-xs mx-auto leading-relaxed">Add a reference number and we'll track market valuations for your timepieces — with box &amp; papers accounted for.</p>
+                            <a href="{% url 'collections:collection_item_add' collection_type.slug %}"
+                               class="px-6 py-2 bg-luxury-gold text-black font-bold rounded-sm uppercase text-xs tracking-widest hover:bg-yellow-600 transition-colors inline-block">
+                                Add First Timepiece
+                            </a>
+
+                        {% else %}
+                            <h3 class="text-xl font-serif italic text-luxury-white mb-2">{{ collection_type.name }} awaits</h3>
+                            <p class="text-luxury-text text-sm mb-6 max-w-xs mx-auto leading-relaxed">Add your first item to begin tracking this collection.</p>
+                            <a href="{% url 'collections:collection_item_add' collection_type.slug %}"
+                               class="px-6 py-2 bg-luxury-gold text-black font-bold rounded-sm uppercase text-xs tracking-widest hover:bg-yellow-600 transition-colors inline-block">
+                                Add First Item
+                            </a>
+                        {% endif %}
                     </div>
                 {% endif %}
             </div>

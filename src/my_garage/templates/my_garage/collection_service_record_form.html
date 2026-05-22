@@ -101,6 +101,14 @@
             </a>
         </div>
 
+        <div class="mb-6 p-4 rounded-lg bg-yellow-900/20 border border-yellow-600/30 flex items-start gap-3">
+            <i class="fas fa-magic text-yellow-500 mt-0.5"></i>
+            <div>
+                <p class="text-yellow-500 text-sm font-semibold uppercase tracking-widest mb-1">AI Receipt Parsing</p>
+                <p class="text-gray-400 text-xs leading-relaxed">Upload a receipt image and we'll extract vendor, date, and cost automatically. You can review and confirm before saving.</p>
+            </div>
+        </div>
+
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
             <!-- Entry Form -->
@@ -158,20 +166,49 @@
                             {% endif %}
                         </div>
 
-                        <!-- Receipt Image — styled trigger button -->
-                        <div>
+                        <!-- Receipt Image — drag-and-drop zone -->
+                        <div x-data="{
+                                 dragging: false,
+                                 fileName: '',
+                                 previewUrl: {% if is_edit and record.receipt_image %}'{{ record.receipt_image.url }}'{% else %}null{% endif %},
+                                 handleFiles(files) {
+                                     if (!files.length) return;
+                                     const file = files[0];
+                                     if (!file.type.startsWith('image/')) return;
+                                     this.fileName = file.name;
+                                     const reader = new FileReader();
+                                     reader.onload = e => this.previewUrl = e.target.result;
+                                     reader.readAsDataURL(file);
+                                     const dt = new DataTransfer();
+                                     dt.items.add(file);
+                                     this.$refs.receiptInput.files = dt.files;
+                                 }
+                             }"
+                             @dragover.prevent="dragging = true"
+                             @dragleave.prevent="dragging = false"
+                             @drop.prevent="dragging = false; handleFiles($event.dataTransfer.files)">
                             <label class="block text-xs uppercase tracking-widest text-gray-400 mb-2">Receipt Image</label>
-                            <label for="{{ form.receipt_image.id_for_label }}"
-                                   class="inline-flex items-center gap-2 cursor-pointer px-4 py-2 border border-white/20
-                                          text-white/60 hover:text-luxury-gold hover:border-luxury-gold-dim
-                                          text-xs uppercase tracking-widest font-bold transition-colors rounded-sm">
-                                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
-                                </svg>
-                                {% if is_edit and record.receipt_image %}Replace Image{% else %}Upload Receipt{% endif %}
-                            </label>
-                            {{ form.receipt_image }}
+                            <input type="file" name="receipt_image" accept="image/*" x-ref="receiptInput"
+                                   @change="handleFiles($event.target.files)"
+                                   class="hidden">
+                            <div @click="$refs.receiptInput.click()"
+                                 :class="dragging ? 'border-luxury-gold bg-luxury-gold/5' : 'border-white/10 hover:border-white/30'"
+                                 class="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-all duration-200">
+                                <template x-if="!previewUrl">
+                                    <div class="space-y-2">
+                                        <i class="fas fa-cloud-upload-alt text-2xl text-gray-600"></i>
+                                        <p class="text-gray-400 text-sm">Drag &amp; drop a receipt, or <span class="text-luxury-gold">click to browse</span></p>
+                                        <p class="text-gray-600 text-xs">JPEG, PNG</p>
+                                    </div>
+                                </template>
+                                <template x-if="previewUrl">
+                                    <div class="space-y-2">
+                                        <img :src="previewUrl" class="max-h-32 mx-auto rounded object-contain">
+                                        <p class="text-gray-400 text-xs" x-text="fileName || 'Current receipt'"></p>
+                                        <p class="text-luxury-gold text-xs">Click to change</p>
+                                    </div>
+                                </template>
+                            </div>
                             {% if form.receipt_image.errors %}
                                 <p class="text-red-400 text-xs mt-1">{{ form.receipt_image.errors.0 }}</p>
                             {% endif %}

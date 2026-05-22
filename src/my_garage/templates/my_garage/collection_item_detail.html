@@ -351,6 +351,7 @@
                     <h2 class="text-luxury-gold text-sm uppercase tracking-widest mb-4 border-b border-white/10 pb-2">Actions</h2>
                     <div class="space-y-3">
                         {% if show_valuation_button %}
+                        <p class="text-gray-500 text-xs uppercase tracking-widest mb-3">AI-powered comparable market analysis</p>
                         <form x-data="{ loading: false }" @submit="loading = true"
                               method="post" action="{% url 'collections:collection_item_trigger_valuation' collection_type.slug item.id %}">
                             {% csrf_token %}
@@ -390,21 +391,36 @@
                 </div>
                 {% endif %}
 
-                <!-- Valuation History (provider-injected) -->
-                {% if valuation_history %}
-                <div class="detail-card rounded-lg p-6 mb-6">
-                    <h2 class="text-luxury-gold text-sm uppercase tracking-widest mb-4 border-b border-white/10 pb-2">Valuation History</h2>
-                    <div class="space-y-2">
-                        {% for entry in valuation_history %}
-                        <div class="flex justify-between items-center py-2 border-b border-white/5 last:border-b-0">
-                            <span class="text-xs text-gray-500">{{ entry.date }}</span>
-                            <span class="text-sm font-mono text-luxury-gold">${{ entry.value|floatformat:2 }}</span>
-                        </div>
-                        {% endfor %}
+                <!-- AI Curator's Note -->
+                <div class="detail-card rounded-lg p-6 mb-6"
+                     x-data="{ state: 'idle', description: '' }">
+                    <h2 class="text-luxury-gold text-sm uppercase tracking-widest mb-4 border-b border-white/10 pb-2">AI Curator's Note</h2>
+                    <p class="text-gray-500 text-xs uppercase tracking-widest mb-3">Auction-style description</p>
+                    <button
+                        @click="
+                            state = 'loading';
+                            fetch('{% url 'collections:collection_item_generate_description' collection_type.slug item.id %}', {
+                                method: 'POST',
+                                headers: {'X-CSRFToken': '{{ csrf_token }}'}
+                            })
+                            .then(r => r.json())
+                            .then(data => {
+                                if (data.success) { description = data.description; state = 'done'; }
+                                else { state = 'error'; }
+                            })
+                            .catch(() => state = 'error')
+                        "
+                        :disabled="state === 'loading'"
+                        class="w-full px-4 py-2 border border-white/20 text-gray-300 hover:border-luxury-gold hover:text-luxury-gold transition-colors uppercase text-xs tracking-widest font-bold rounded-sm disabled:opacity-50">
+                        <span x-show="state === 'idle'">Generate Description</span>
+                        <span x-show="state === 'loading'" x-cloak>Generating...</span>
+                        <span x-show="state === 'done'" x-cloak>Regenerate</span>
+                        <span x-show="state === 'error'" x-cloak class="text-red-400">Failed — Retry</span>
+                    </button>
+                    <div x-show="state === 'done'" x-cloak class="mt-4 p-4 bg-black/20 border border-white/5 rounded-lg">
+                        <p class="text-gray-300 text-sm leading-relaxed italic" x-text="description"></p>
                     </div>
                 </div>
-                {% endif %}
-
 
                 <!-- Attachments -->
                 {% if attachments %}
@@ -442,6 +458,14 @@
                     Projects
                     {% if upgrades %}<span class="ml-2 px-1.5 py-0.5 bg-white/10 rounded text-[10px]">{{ upgrades.count }}</span>{% endif %}
                 </button>
+                {% if valuation_history %}
+                <button @click="activeTab = 'valuations'"
+                        class="px-6 py-4 text-xs uppercase tracking-widest font-medium transition-colors border-b-2"
+                        :class="activeTab === 'valuations' ? 'border-luxury-gold text-luxury-gold' : 'border-transparent text-gray-500 hover:text-white'">
+                    Valuations
+                    <span class="ml-2 px-1.5 py-0.5 bg-white/10 rounded text-[10px]">{{ valuation_history|length }}</span>
+                </button>
+                {% endif %}
             </div>
 
             <!-- Service Records Tab -->
@@ -581,6 +605,55 @@
                     </div>
                 {% endif %}
             </div>
+
+            {% if valuation_history %}
+            <!-- Valuations Tab -->
+            <div x-show="activeTab === 'valuations'" x-cloak class="p-6">
+                {% if valuation_history|length >= 2 %}
+                <div x-data="{
+                         points: [{% for e in valuation_history %}{{ e.value }}{% if not forloop.last %},{% endif %}{% endfor %}],
+                         get path() {
+                             const min = Math.min(...this.points);
+                             const max = Math.max(...this.points);
+                             const range = max - min || 1;
+                             const w = 280, h = 60, pad = 4;
+                             return this.points.map((v, i) => {
+                                 const x = pad + (i / (this.points.length - 1)) * (w - pad * 2);
+                                 const y = h - pad - ((v - min) / range) * (h - pad * 2);
+                                 return (i === 0 ? 'M' : 'L') + x.toFixed(1) + ',' + y.toFixed(1);
+                             }).join(' ');
+                         },
+                         get trend() { return this.points[0] >= this.points[this.points.length - 1] ? 'up' : 'down'; }
+                     }"
+                     class="mb-6">
+                    <svg viewBox="0 0 280 60" class="w-full h-16" preserveAspectRatio="none">
+                        <path :d="path"
+                              fill="none"
+                              :stroke="trend === 'up' ? '#D4AF37' : '#ef4444'"
+                              stroke-width="1.5"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"/>
+                        <circle cx="4" cy="30" r="3" :fill="trend === 'up' ? '#D4AF37' : '#ef4444'" opacity="0.5"/>
+                    </svg>
+                    {% with valuation_history|first as newest_entry %}{% with valuation_history|last as oldest_entry %}
+                    <div class="flex justify-between text-[10px] text-gray-600 uppercase tracking-widest mt-1">
+                        <span>{{ newest_entry.date|date:"M Y" }}</span>
+                        <span>{{ oldest_entry.date|date:"M Y" }}</span>
+                    </div>
+                    {% endwith %}{% endwith %}
+                </div>
+                {% endif %}
+
+                <div class="space-y-1">
+                    {% for entry in valuation_history %}
+                    <div class="flex justify-between items-center py-1.5 border-b border-white/5 last:border-0">
+                        <span class="text-xs text-gray-500">{{ entry.date|date:"M j, Y" }}</span>
+                        <span class="text-sm font-mono text-luxury-gold">${{ entry.value|floatformat:0 }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
         </div>
 
     </div>

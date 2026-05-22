@@ -1,0 +1,181 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome | The Collection</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pinyon+Script&family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>[x-cloak] { display: none !important; }</style>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'luxury-black': '#0B1026',
+                        'luxury-card': '#151b33',
+                        'luxury-gold': '#D4AF37',
+                        'luxury-gold-dim': '#8a7020',
+                        'luxury-white': '#F5F5F5',
+                        'luxury-text': '#A3A3A3',
+                    },
+                    fontFamily: {
+                        'script': ['"Pinyon Script"', 'cursive'],
+                        'serif': ['"Playfair Display"', 'serif'],
+                        'sans': ['"Montserrat"', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0B1026; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #D4AF37; }
+        .fade-in { animation: fadeIn 1.0s ease-in-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-luxury-black text-luxury-white font-sans antialiased min-h-screen">
+
+    {% include "includes/_nav.html" %}
+
+    <main class="max-w-2xl mx-auto px-6 py-16 space-y-12 fade-in"
+          x-data="{}"
+          x-init="
+            localStorage.setItem('ftux_onboarding_seen', '1');
+            {% if has_items and has_valuation and has_service %}
+            if (localStorage.getItem('ftux_onboarding_seen') === '1') {
+                window.location.href = '/';
+            }
+            {% endif %}
+          ">
+
+        {% if messages %}
+        <div class="space-y-2">
+            {% for message in messages %}
+            <div class="px-4 py-3 rounded-lg bg-luxury-gold/10 border border-luxury-gold/30 text-luxury-gold text-sm">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <section class="text-center space-y-4">
+            <h1 class="text-5xl font-script text-luxury-gold tracking-widest">Welcome</h1>
+            <p class="font-serif text-2xl italic text-luxury-white">to The Collection</p>
+            <p class="text-luxury-text text-sm uppercase tracking-widest">Three steps to get the most out of your vault.</p>
+        </section>
+
+        <section class="space-y-4">
+
+            <!-- Step 1: Add first item -->
+            <div class="relative p-6 rounded-xl bg-luxury-card border {% if has_items %}border-luxury-gold/50{% else %}border-white/10{% endif %} flex items-start gap-5">
+                <div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center {% if has_items %}bg-luxury-gold/20 text-luxury-gold{% else %}bg-white/5 text-luxury-gold{% endif %}">
+                    {% if has_items %}
+                        <i class="fas fa-check text-sm"></i>
+                    {% else %}
+                        <span class="font-serif font-bold text-sm">1</span>
+                    {% endif %}
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between gap-4">
+                        <div>
+                            <p class="text-luxury-white font-serif text-lg italic {% if has_items %}line-through opacity-60{% endif %}">Add your first item</p>
+                            <p class="text-luxury-text text-xs mt-1 leading-relaxed">Add a vehicle, timepiece, or any collection item to your vault.</p>
+                        </div>
+                        {% if not has_items %}
+                        <a href="{% url 'collections:collection_type_list' %}"
+                           class="flex-shrink-0 px-4 py-2 border border-luxury-gold text-luxury-gold hover:bg-luxury-gold hover:text-black transition-colors text-xs uppercase tracking-widest rounded-sm font-bold">
+                            Start &rarr;
+                        </a>
+                        {% else %}
+                        <span class="flex-shrink-0 text-luxury-gold text-xs uppercase tracking-widest">Done</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: Get a valuation -->
+            <div class="relative p-6 rounded-xl bg-luxury-card border {% if has_valuation %}border-luxury-gold/50{% else %}border-white/5{% endif %} flex items-start gap-5 {% if not has_items %}opacity-50{% endif %}">
+                <div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center {% if has_valuation %}bg-luxury-gold/20 text-luxury-gold{% else %}bg-white/5 text-luxury-text{% endif %}">
+                    {% if has_valuation %}
+                        <i class="fas fa-check text-sm"></i>
+                    {% else %}
+                        <span class="font-serif font-bold text-sm">2</span>
+                    {% endif %}
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between gap-4">
+                        <div>
+                            <p class="text-luxury-white font-serif text-lg italic {% if has_valuation %}line-through opacity-60{% endif %}">Get a market valuation</p>
+                            <p class="text-luxury-text text-xs mt-1 leading-relaxed">Open any item and run an AI-powered valuation against live market listings.</p>
+                        </div>
+                        {% if has_valuation %}
+                        <span class="flex-shrink-0 text-luxury-gold text-xs uppercase tracking-widest">Done</span>
+                        {% elif has_items %}
+                        <a href="{% url 'collections:collection_list' 'automobiles' %}"
+                           class="flex-shrink-0 px-4 py-2 border border-white/20 text-luxury-text hover:border-luxury-gold hover:text-luxury-gold transition-colors text-xs uppercase tracking-widest rounded-sm font-bold">
+                            View &rarr;
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 3: Log a service record -->
+            <div class="relative p-6 rounded-xl bg-luxury-card border {% if has_service %}border-luxury-gold/50{% else %}border-white/5{% endif %} flex items-start gap-5 {% if not has_items %}opacity-50{% endif %}">
+                <div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center {% if has_service %}bg-luxury-gold/20 text-luxury-gold{% else %}bg-white/5 text-luxury-text{% endif %}">
+                    {% if has_service %}
+                        <i class="fas fa-check text-sm"></i>
+                    {% else %}
+                        <span class="font-serif font-bold text-sm">3</span>
+                    {% endif %}
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between gap-4">
+                        <div>
+                            <p class="text-luxury-white font-serif text-lg italic {% if has_service %}line-through opacity-60{% endif %}">Log your first service record</p>
+                            <p class="text-luxury-text text-xs mt-1 leading-relaxed">Upload a receipt photo — AI reads vendor, date, and cost automatically.</p>
+                        </div>
+                        {% if has_service %}
+                        <span class="flex-shrink-0 text-luxury-gold text-xs uppercase tracking-widest">Done</span>
+                        {% elif has_items %}
+                        <a href="{% url 'collections:all_services' %}"
+                           class="flex-shrink-0 px-4 py-2 border border-white/20 text-luxury-text hover:border-luxury-gold hover:text-luxury-gold transition-colors text-xs uppercase tracking-widest rounded-sm font-bold">
+                            Log &rarr;
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <div class="text-center">
+            <a href="{% url 'home' %}" class="text-luxury-text hover:text-luxury-gold transition-colors text-xs uppercase tracking-widest">
+                Go to My Vault &rarr;
+            </a>
+        </div>
+
+    </main>
+
+    <footer class="border-t border-white/5 py-12 text-center text-luxury-text text-xs tracking-widest uppercase">
+        <p>&copy; 2025 The Collection. Private Vault.</p>
+    </footer>
+
+</body>
+</html>

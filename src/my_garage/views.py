@@ -16,7 +16,7 @@ from my_garage.models import (
     GenericValuationHistory,
 )
 
-from .api.selectors import global_search
+from .api.selectors import global_search, portfolio_get_yoy_change
 from .forms import (
     CollectionTypeForm,
     DynamicCollectionItemForm,
@@ -526,6 +526,13 @@ def collection_item_detail(
     provider = get_collection_services(collection_type.service_provider_key)
     provider_context = provider.get_detail_context(item)
 
+    # Convert valuation_history to a list so Django template filters like |last
+    # work correctly (QuerySets don't support negative indexing).
+    if "valuation_history" in provider_context:
+        provider_context["valuation_history"] = list(
+            provider_context["valuation_history"]
+        )
+
     # Build set of form field names that are system-managed and must not be rendered
     # as editable inputs. Catches both "system": true flag and "system_json" type,
     # regardless of how the DB schema was seeded.
@@ -675,6 +682,105 @@ def collection_item_trigger_enrich(
         "collections:collection_item_detail",
         collection_slug=collection_slug,
         item_id=item_id,
+    )
+
+
+@login_required
+def collection_item_generate_description(
+    request: HttpRequest, collection_slug: str, item_id: int
+) -> JsonResponse:
+    """
+    POST-only AJAX: generate an AI curator's note for a collection item.
+    """
+    if request.method != "POST":
+        return JsonResponse({"error": "POST required"}, status=405)
+
+    collection_type = get_object_or_404(
+        CollectionType, slug=collection_slug, owner=request.user
+    )
+    item = get_object_or_404(
+        DynamicCollectionItem,
+        id=item_id,
+        collection_type=collection_type,
+        owner=request.user,
+    )
+
+    try:
+        from my_garage.services.context_service import ContextService
+
+        ctx_service = ContextService()
+        item_context = ctx_service.get_collection_item_context(item.id, request.user)
+        context_dict = item_context.dict()
+        # The prompt template requires relevant_docs — fetch RAG snippets or default []
+        try:
+            query = f"{item.name} {item.collection_type.name}"
+            context_dict["relevant_docs"] = ctx_service.retrieve_relevant_docs(query)
+        except Exception:
+            context_dict["relevant_docs"] = []
+        generator = CollectionThemeGenerator()
+        description = generator.generate_item_description(context_dict)
+        if not description:
+            return JsonResponse({"error": "Generation failed"}, status=500)
+        return JsonResponse({"success": True, "description": description})
+    except Exception as e:
+        logger.error("Description generation failed: %s", e)
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+@login_required
+def portfolio_insights(request: HttpRequest) -> HttpResponse:
+    """
+    Global portfolio analytics: category breakdown, YoY trend, top items.
+    """
+    all_items = DynamicCollectionItem.objects.filter(owner=request.user).select_related(
+        "collection_type"
+    )
+
+    categories: dict = {}
+    for item in all_items:
+        name = item.collection_type.name
+        if name not in categories:
+            categories[name] = {
+                "name": name,
+                "slug": item.collection_type.slug,
+                "icon": item.collection_type.icon,
+                "count": 0,
+                "value": 0.0,
+                "cost": 0.0,
+            }
+        categories[name]["count"] += 1
+        categories[name]["value"] += float(item.current_market_value or 0)
+        categories[name]["cost"] += float(item.purchase_price or 0)
+
+    category_list = sorted(categories.values(), key=lambda x: x["value"], reverse=True)
+    total_value = sum(c["value"] for c in category_list)
+    total_cost = sum(c["cost"] for c in category_list)
+
+    for c in category_list:
+        c["pct"] = round((c["value"] / total_value * 100) if total_value else 0, 1)
+        c["equity"] = c["value"] - c["cost"]
+
+    yoy_pct_change, yoy_source = portfolio_get_yoy_change(request.user)
+
+    top_items = sorted(
+        [i for i in all_items if i.current_market_value],
+        key=lambda x: x.current_market_value,
+        reverse=True,
+    )[:3]
+
+    return render(
+        request,
+        "my_garage/portfolio_insights.html",
+        {
+            "category_list": category_list,
+            "total_value": total_value,
+            "total_cost": total_cost,
+            "total_equity": total_value - total_cost,
+            "yoy_pct_change": yoy_pct_change,
+            "yoy_source": yoy_source,
+            "top_items": top_items,
+            "total_item_count": all_items.count(),
+        },
     )
 
 

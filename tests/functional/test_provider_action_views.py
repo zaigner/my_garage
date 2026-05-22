@@ -200,8 +200,29 @@ class TestProviderContextInDetailView:
         ):
             response = auth_client.get(f"/collections/{slug}/items/{vehicle_item.id}/")
         assert response.status_code == 200
-        assert b"Valuation History" in response.content
+        # Valuation history now renders in the Valuations tab (Spec 9)
+        assert b"Valuations" in response.content
         assert b"39500" in response.content
+
+    def test_valuation_history_queryset_renders_without_error(
+        self, auth_client, vehicle_item
+    ):
+        """Regression: detail view must not raise ValueError when valuation_history
+        is a real QuerySet (|last filter uses negative indexing which QuerySets
+        don't support — the view must convert to list first)."""
+        from my_garage.models import GenericValuationHistory
+
+        slug = vehicle_item.collection_type.slug
+        GenericValuationHistory.objects.create(
+            item=vehicle_item, value=Decimal("38000.00"), raw_data={}
+        )
+        GenericValuationHistory.objects.create(
+            item=vehicle_item, value=Decimal("40000.00"), raw_data={}
+        )
+        # No mock — the real provider returns a QuerySet for valuation_history
+        response = auth_client.get(f"/collections/{slug}/items/{vehicle_item.id}/")
+        assert response.status_code == 200
+        assert b"Valuations" in response.content
 
 
 # ── Trigger Valuation view ────────────────────────────────────────────────────

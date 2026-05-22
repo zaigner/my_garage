@@ -40,13 +40,14 @@ class TestNavProfileButton:
         response = auth_client.get(HOME_URL)
         assert 'aria-label="User menu"' in response.content.decode()
 
-    def test_search_icon_path_not_on_profile_button(self, auth_client):
-        """The magnifying-glass SVG path must not appear inside the profile button
-        group."""
+    def test_search_button_is_standalone_not_profile_button(self, auth_client):
+        """A dedicated search button with correct aria-label must exist, separate
+        from the profile button."""
         content = auth_client.get(HOME_URL).content.decode()
-        # The old incorrect path for the magnifying glass was:
-        old_search_path = "M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196"
-        assert old_search_path not in content
+        # The search button must have its own aria-label
+        assert 'aria-label="Search' in content
+        # The profile button must still have its own aria-label (user menu)
+        assert 'aria-label="User menu"' in content
 
     def test_profile_dropdown_shows_username(self, auth_client, user):
         response = auth_client.get(HOME_URL)

@@ -198,6 +198,27 @@ OUTPUT FORMAT:
             logger.error(f"AI UI Generation failed: {e}")
             return f"<!-- Error generating UI: {str(e)} -->"
 
+    def generate_item_description(self, item_context: dict) -> str:
+        """Generate an auction-style curator's note for a collection item."""
+        if not self.enabled:
+            return ""
+
+        try:
+            from my_garage.utils.prompt_renderer import PromptRenderer
+
+            renderer = PromptRenderer()
+            prompt = renderer.render(
+                "collection_item_description.j2", context=item_context
+            )
+            response = self.client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=prompt,
+            )
+            return response.text.strip()
+        except Exception as e:
+            logger.error("Item description generation failed: %s", e)
+            return ""
+
     def _get_fallback_schema(self, name: str) -> Dict[str, Any]:
         """Returns a safe default schema if AI fails."""
         return {

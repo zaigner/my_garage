@@ -1,0 +1,151 @@
+{% extends "my_garage/base.html" %}
+
+{% block title %}Portfolio Insights | The Collection{% endblock %}
+
+{% block extra_head %}
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+<style>
+    .salon-bg {
+        background-color: #0B1026;
+        background-image: radial-gradient(circle at 50% 0%, #1a2342 0%, #0B1026 70%);
+    }
+    .detail-card {
+        background-color: #151b33;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="salon-bg min-h-screen text-gray-200 font-sans">
+    <div class="container mx-auto px-4 py-12 max-w-6xl">
+
+        <!-- Breadcrumb -->
+        <nav class="flex mb-6 text-xs uppercase tracking-widest text-gray-500" aria-label="Breadcrumb">
+            <ol class="inline-flex items-center space-x-1 md:space-x-3">
+                <li class="inline-flex items-center">
+                    <a href="{% url 'home' %}" class="hover:text-white transition-colors">Vault</a>
+                </li>
+                <li aria-current="page">
+                    <div class="flex items-center">
+                        <span class="mx-2">/</span>
+                        <span class="text-gray-300">Insights</span>
+                    </div>
+                </li>
+            </ol>
+        </nav>
+
+        <h1 class="text-3xl md:text-4xl font-serif italic text-luxury-gold mb-10">Portfolio Insights</h1>
+
+        <!-- KPI Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+            <div class="detail-card rounded-lg p-6">
+                <p class="text-xs uppercase tracking-widest text-gray-500 mb-2">Total Portfolio Value</p>
+                <p class="text-3xl font-serif text-luxury-white">${{ total_value|floatformat:0 }}</p>
+                {% if yoy_pct_change is not None %}
+                    {% if yoy_pct_change >= 0 %}
+                    <div class="inline-flex items-center gap-1.5 mt-3 px-2.5 py-1 rounded-full border border-green-900 bg-green-900/20 text-green-400 text-xs font-medium">
+                        <i class="fas fa-arrow-up text-[10px]"></i>
+                        <span>+{{ yoy_pct_change }}% {% if yoy_source == "purchase_price" %}vs cost basis{% else %}YoY{% endif %}</span>
+                    </div>
+                    {% else %}
+                    <div class="inline-flex items-center gap-1.5 mt-3 px-2.5 py-1 rounded-full border border-red-900 bg-red-900/20 text-red-400 text-xs font-medium">
+                        <i class="fas fa-arrow-down text-[10px]"></i>
+                        <span>{{ yoy_pct_change }}% {% if yoy_source == "purchase_price" %}vs cost basis{% else %}YoY{% endif %}</span>
+                    </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+
+            <div class="detail-card rounded-lg p-6">
+                <p class="text-xs uppercase tracking-widest text-gray-500 mb-2">Total Equity</p>
+                <p class="text-3xl font-serif {% if total_equity >= 0 %}text-luxury-white{% else %}text-red-400{% endif %}">
+                    {% if total_equity >= 0 %}+{% endif %}${{ total_equity|floatformat:0 }}
+                </p>
+                <p class="text-gray-600 text-xs mt-3 uppercase tracking-wider">Market value minus cost basis</p>
+            </div>
+
+            <div class="detail-card rounded-lg p-6">
+                <p class="text-xs uppercase tracking-widest text-gray-500 mb-2">Items Tracked</p>
+                <p class="text-3xl font-serif text-luxury-white">{{ total_item_count }}</p>
+                <p class="text-gray-600 text-xs mt-3 uppercase tracking-wider">Across {{ category_list|length }} collection{{ category_list|length|pluralize }}</p>
+            </div>
+        </div>
+
+        <!-- Category Allocation -->
+        {% if category_list %}
+        <div class="detail-card rounded-lg p-6 mb-10">
+            <h2 class="text-luxury-gold text-sm uppercase tracking-widest mb-6 border-b border-white/10 pb-3">Category Allocation</h2>
+            <div class="space-y-5">
+                {% for c in category_list %}
+                <div>
+                    <div class="flex justify-between items-baseline mb-2">
+                        <div class="flex items-center gap-2">
+                            {% if c.icon %}<i class="fa-solid {{ c.icon }} text-luxury-gold text-sm w-5"></i>{% endif %}
+                            <a href="{% url 'collections:collection_list' c.slug %}" class="text-sm text-luxury-white hover:text-luxury-gold transition-colors font-medium">{{ c.name }}</a>
+                            <span class="text-[10px] text-gray-600 uppercase tracking-wider">{{ c.count }} item{{ c.count|pluralize }}</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-sm font-mono text-luxury-gold">${{ c.value|floatformat:0 }}</span>
+                            <span class="text-[10px] text-gray-500 ml-2">{{ c.pct }}%</span>
+                        </div>
+                    </div>
+                    <div class="w-full bg-white/5 rounded-full h-1.5">
+                        <div class="bg-luxury-gold h-1.5 rounded-full transition-all duration-700"
+                             style="width: {{ c.pct }}%"></div>
+                    </div>
+                    {% if c.equity != 0 %}
+                    <p class="text-[10px] text-gray-600 mt-1 uppercase tracking-wider">
+                        Equity: {% if c.equity >= 0 %}+{% endif %}${{ c.equity|floatformat:0 }}
+                    </p>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Top Items by Value -->
+        {% if top_items %}
+        <div class="detail-card rounded-lg p-6">
+            <h2 class="text-luxury-gold text-sm uppercase tracking-widest mb-6 border-b border-white/10 pb-3">Top Items by Value</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {% for item in top_items %}
+                <a href="{% url 'collections:collection_item_detail' item.collection_type.slug item.id %}"
+                   class="group block bg-black/20 border border-white/5 rounded-lg overflow-hidden hover:border-luxury-gold/30 transition-all duration-300">
+                    <div class="aspect-[16/9] bg-luxury-black relative overflow-hidden">
+                        {% if item.photo and item.photo.url %}
+                        <img src="{{ item.photo.url }}" alt="{{ item.name }}"
+                             class="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500">
+                        {% else %}
+                        <div class="w-full h-full flex items-center justify-center">
+                            <i class="{{ item.collection_type.icon|default:'fas fa-box' }} text-4xl text-white/10"></i>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="p-4">
+                        <p class="text-[10px] text-gray-500 uppercase tracking-wider mb-1">{{ item.collection_type.name }}</p>
+                        <h3 class="text-sm font-medium text-luxury-white group-hover:text-luxury-gold transition-colors">{{ item.name }}</h3>
+                        <p class="text-lg font-serif text-luxury-gold mt-2">${{ item.current_market_value|floatformat:0 }}</p>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if not category_list %}
+        <div class="text-center py-24">
+            <i class="fas fa-chart-pie text-5xl text-gray-700 mb-4 block"></i>
+            <h3 class="text-xl font-serif italic text-luxury-white mb-2">No data yet</h3>
+            <p class="text-luxury-text text-sm mb-6">Add items and valuations to see your portfolio analytics.</p>
+            <a href="{% url 'collections:collection_type_list' %}"
+               class="inline-block px-6 py-2 border border-luxury-gold text-luxury-gold hover:bg-luxury-gold hover:text-black transition-colors text-xs uppercase tracking-widest rounded-sm font-bold">
+                Browse Collections
+            </a>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}

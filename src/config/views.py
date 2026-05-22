@@ -2,12 +2,18 @@ from datetime import datetime
 
 from django.contrib import messages
 from django.contrib.auth import login
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.decorators import login_required
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 
 from my_garage.api.selectors import portfolio_get_yoy_change
-from my_garage.models import CollectionType, DynamicCollectionItem
+from my_garage.forms import RegistrationForm
+from my_garage.models import (
+    CollectionType,
+    DynamicCollectionItem,
+    GenericServiceRecord,
+    GenericValuationHistory,
+)
 
 
 def get_sort_date(item):
@@ -100,12 +106,34 @@ def register(request: HttpRequest) -> HttpResponse:
     Register a new user.
     """
     if request.method == "POST":
-        form = UserCreationForm(request.POST)
+        form = RegistrationForm(request.POST)
         if form.is_valid():
             user = form.save()
             login(request, user)
-            messages.success(request, "Registration successful. Welcome to The Salon.")
-            return redirect("home")
+            messages.success(
+                request, "Registration successful. Welcome to The Collection."
+            )
+            return redirect("onboarding")
     else:
-        form = UserCreationForm()
+        form = RegistrationForm()
     return render(request, "registration/register.html", {"form": form})
+
+
+@login_required
+def onboarding(request: HttpRequest) -> HttpResponse:
+    """
+    First-time user onboarding checklist. Shown after registration.
+    """
+    user = request.user
+    has_items = DynamicCollectionItem.objects.filter(owner=user).exists()
+    has_valuation = GenericValuationHistory.objects.filter(item__owner=user).exists()
+    has_service = GenericServiceRecord.objects.filter(item__owner=user).exists()
+    return render(
+        request,
+        "pages/onboarding.html",
+        {
+            "has_items": has_items,
+            "has_valuation": has_valuation,
+            "has_service": has_service,
+        },
+    )

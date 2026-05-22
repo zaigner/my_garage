@@ -52,6 +52,11 @@ urlpatterns = [
         views.collection_item_trigger_enrich,
         name="collection_item_trigger_enrich",
     ),
+    path(
+        "<slug:collection_slug>/items/<int:item_id>/generate-description/",
+        views.collection_item_generate_description,
+        name="collection_item_generate_description",
+    ),
     # Dynamic Collections - Service Records
     path(
         "<slug:collection_slug>/items/<int:item_id>/ocr-receipt/",

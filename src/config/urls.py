@@ -6,6 +6,8 @@ from django.contrib import admin
 from django.urls import include, path
 from django.views.generic import RedirectView
 
+from my_garage import views as garage_views
+
 from . import views
 
 urlpatterns = [
@@ -39,6 +41,8 @@ urlpatterns = [
     path("collections/", include("my_garage.collection_urls")),
     # Home
     path("", views.home, name="home"),
+    path("welcome/", views.onboarding, name="onboarding"),
+    path("insights/", garage_views.portfolio_insights, name="portfolio_insights"),
 ]
 
 # Serve media files in development

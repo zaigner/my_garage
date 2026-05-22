@@ -1,6 +1,8 @@
 """Django forms for my_garage."""
 
 from django import forms
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.models import User
 
 from my_garage.models import (
     CollectionType,
@@ -8,6 +10,27 @@ from my_garage.models import (
     GenericServiceRecord,
     GenericUpgrade,
 )
+
+# AUTHENTICATION FORMS
+# ============================================================================
+
+
+class RegistrationForm(UserCreationForm):
+    email = forms.EmailField(
+        required=True, help_text="Required. Used for password reset."
+    )
+
+    class Meta:
+        model = User
+        fields = ("username", "email", "password1", "password2")
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.email = self.cleaned_data["email"]
+        if commit:
+            user.save()
+        return user
+
 
 # DYNAMIC COLLECTION SYSTEM FORMS
 # ============================================================================

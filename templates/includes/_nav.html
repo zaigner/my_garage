@@ -2,16 +2,27 @@
 <nav class="border-b border-white/10 bg-luxury-black/95 backdrop-blur-md sticky top-0 z-50 transition-all duration-300">
     <div class="max-w-7xl mx-auto px-6 py-6 flex justify-between items-center">
         <!-- Left: Hamburger menu with collections dropdown -->
-        <div class="relative group">
-            <button class="text-luxury-white hover:text-luxury-gold transition-colors focus:outline-none">
+        <div class="relative" x-data="{ open: false }" @click.outside="open = false" @keydown.escape.window="open = false">
+            <button @click="open = !open"
+                    class="text-luxury-white hover:text-luxury-gold transition-colors focus:outline-none"
+                    :aria-expanded="open"
+                    aria-label="Navigation menu">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
                 </svg>
             </button>
 
-            <div class="absolute left-0 mt-2 w-64 bg-[#151b33] border border-white/10 rounded-lg shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 transform origin-top-left">
+            <div x-show="open"
+                 x-cloak
+                 x-transition:enter="transition ease-out duration-150"
+                 x-transition:enter-start="opacity-0 scale-95"
+                 x-transition:enter-end="opacity-100 scale-100"
+                 x-transition:leave="transition ease-in duration-100"
+                 x-transition:leave-start="opacity-100 scale-100"
+                 x-transition:leave-end="opacity-0 scale-95"
+                 class="absolute left-0 mt-2 w-64 bg-[#151b33] border border-white/10 rounded-lg shadow-2xl z-50 transform origin-top-left">
                 <div class="py-2">
-                    <button onclick="toggleSearch()" class="w-full text-left px-4 py-3 hover:bg-white/5 flex items-center text-luxury-white group/item">
+                    <button onclick="toggleSearch()" @click="open = false" class="w-full text-left px-4 py-3 hover:bg-white/5 flex items-center text-luxury-white">
                         <i class="fas fa-search w-6 text-luxury-gold"></i>
                         <span class="font-serif italic">Global Search</span>
                         <span class="ml-auto text-[10px] border border-white/20 rounded px-1 text-gray-500">⌘K</span>
@@ -19,34 +30,40 @@
 
                     <div class="border-t border-white/10 my-1"></div>
 
-                    <a href="{% url 'collections:collection_list' 'automobiles' %}" class="block px-4 py-3 hover:bg-white/5 flex items-center text-luxury-white">
+                    <a href="{% url 'collections:collection_list' 'automobiles' %}" @click="open = false" class="block px-4 py-3 hover:bg-white/5 flex items-center text-luxury-white">
                         <i class="fas fa-car w-6 text-luxury-gold"></i>
                         <span class="font-serif italic">Garage</span>
                     </a>
-                    <a href="{% url 'collections:collection_list' 'horology-salon' %}" class="block px-4 py-3 hover:bg-white/5 flex items-center text-luxury-white">
+                    <a href="{% url 'collections:collection_list' 'horology-salon' %}" @click="open = false" class="block px-4 py-3 hover:bg-white/5 flex items-center text-luxury-white">
                         <i class="fas fa-clock w-6 text-luxury-gold"></i>
                         <span class="font-serif italic">Horology Salon</span>
                     </a>
-                    <a href="{% url 'collections:collection_type_list' %}" class="block px-4 py-3 hover:bg-white/5 flex items-center text-luxury-white">
+                    <a href="{% url 'collections:collection_type_list' %}" @click="open = false" class="block px-4 py-3 hover:bg-white/5 flex items-center text-luxury-white">
                         <i class="fas fa-layer-group w-6 text-luxury-gold"></i>
                         <span class="font-serif italic">All Collections</span>
                     </a>
 
                     <div class="border-t border-white/10 my-1"></div>
+                    <a href="{% url 'portfolio_insights' %}" @click="open = false" class="block px-4 py-3 hover:bg-white/5 flex items-center text-luxury-white">
+                        <i class="fas fa-chart-pie w-6 text-luxury-gold"></i>
+                        <span class="font-serif italic">Insights</span>
+                    </a>
+
+                    <div class="border-t border-white/10 my-1"></div>
                     <div class="px-4 py-2 text-[10px] uppercase tracking-widest text-gray-500">Cross-Collection</div>
-                    <a href="{% url 'collections:all_items' %}" class="block px-4 py-3 hover:bg-white/5 flex items-center text-luxury-white">
+                    <a href="{% url 'collections:all_items' %}" @click="open = false" class="block px-4 py-3 hover:bg-white/5 flex items-center text-luxury-white">
                         <i class="fas fa-layer-group w-6 text-luxury-gold"></i>
                         <span class="font-serif italic">All Items</span>
                     </a>
-                    <a href="{% url 'collections:all_valuations' %}" class="block px-4 py-3 hover:bg-white/5 flex items-center text-luxury-white">
+                    <a href="{% url 'collections:all_valuations' %}" @click="open = false" class="block px-4 py-3 hover:bg-white/5 flex items-center text-luxury-white">
                         <i class="fas fa-chart-line w-6 text-luxury-gold"></i>
                         <span class="font-serif italic">Value History</span>
                     </a>
-                    <a href="{% url 'collections:all_services' %}" class="block px-4 py-3 hover:bg-white/5 flex items-center text-luxury-white">
+                    <a href="{% url 'collections:all_services' %}" @click="open = false" class="block px-4 py-3 hover:bg-white/5 flex items-center text-luxury-white">
                         <i class="fas fa-wrench w-6 text-luxury-gold"></i>
                         <span class="font-serif italic">All Services</span>
                     </a>
-                    <a href="{% url 'collections:all_upgrades' %}" class="block px-4 py-3 hover:bg-white/5 flex items-center text-luxury-white">
+                    <a href="{% url 'collections:all_upgrades' %}" @click="open = false" class="block px-4 py-3 hover:bg-white/5 flex items-center text-luxury-white">
                         <i class="fas fa-tools w-6 text-luxury-gold"></i>
                         <span class="font-serif italic">All Upgrades</span>
                     </a>
@@ -55,7 +72,7 @@
                         <div class="border-t border-white/10 my-1"></div>
                         <div class="px-4 py-2 text-[10px] uppercase tracking-widest text-gray-500">Your Collections</div>
                         {% for collection in custom_collections %}
-                            <a href="{% url 'collections:collection_list' collection.slug %}" class="block px-4 py-2 hover:bg-white/5 flex items-center text-gray-300 hover:text-white text-sm">
+                            <a href="{% url 'collections:collection_list' collection.slug %}" @click="open = false" class="block px-4 py-2 hover:bg-white/5 flex items-center text-gray-300 hover:text-white text-sm">
                                 <i class="{{ collection.icon }} w-6 text-gray-500"></i>
                                 <span>{{ collection.name }}</span>
                             </a>
@@ -72,6 +89,13 @@
 
         <!-- Right: Quick Add + User menu or login -->
         <div class="flex items-center gap-4">
+            <button onclick="toggleSearch()"
+                    class="text-luxury-text hover:text-luxury-gold transition-colors"
+                    aria-label="Search (⌘K)">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                </svg>
+            </button>
             {% if user.is_authenticated %}
                 <!-- Quick Add dropdown -->
                 <div class="relative" x-data="{ open: false }" @keydown.escape.window="open = false" @click.outside="open = false">
@@ -142,7 +166,10 @@
                     </div>
                 </div>
             {% else %}
-                <a href="{% url 'login' %}" class="text-luxury-white hover:text-luxury-gold transition-colors text-sm uppercase tracking-widest">Login</a>
+                <div class="flex items-center gap-4">
+                    <a href="{% url 'login' %}" class="text-luxury-white hover:text-luxury-gold transition-colors text-sm uppercase tracking-widest">Login</a>
+                    <a href="{% url 'register' %}" class="px-4 py-2 border border-luxury-gold text-luxury-gold hover:bg-luxury-gold hover:text-black transition-colors text-xs uppercase tracking-widest rounded-sm font-bold">Get Started</a>
+                </div>
             {% endif %}
         </div>
     </div>
