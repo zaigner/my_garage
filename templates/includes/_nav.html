@@ -32,6 +32,25 @@
                         <span class="font-serif italic">All Collections</span>
                     </a>
 
+                    <div class="border-t border-white/10 my-1"></div>
+                    <div class="px-4 py-2 text-[10px] uppercase tracking-widest text-gray-500">Cross-Collection</div>
+                    <a href="{% url 'collections:all_items' %}" class="block px-4 py-3 hover:bg-white/5 flex items-center text-luxury-white">
+                        <i class="fas fa-layer-group w-6 text-luxury-gold"></i>
+                        <span class="font-serif italic">All Items</span>
+                    </a>
+                    <a href="{% url 'collections:all_valuations' %}" class="block px-4 py-3 hover:bg-white/5 flex items-center text-luxury-white">
+                        <i class="fas fa-chart-line w-6 text-luxury-gold"></i>
+                        <span class="font-serif italic">Value History</span>
+                    </a>
+                    <a href="{% url 'collections:all_services' %}" class="block px-4 py-3 hover:bg-white/5 flex items-center text-luxury-white">
+                        <i class="fas fa-wrench w-6 text-luxury-gold"></i>
+                        <span class="font-serif italic">All Services</span>
+                    </a>
+                    <a href="{% url 'collections:all_upgrades' %}" class="block px-4 py-3 hover:bg-white/5 flex items-center text-luxury-white">
+                        <i class="fas fa-tools w-6 text-luxury-gold"></i>
+                        <span class="font-serif italic">All Upgrades</span>
+                    </a>
+
                     {% if custom_collections %}
                         <div class="border-t border-white/10 my-1"></div>
                         <div class="px-4 py-2 text-[10px] uppercase tracking-widest text-gray-500">Your Collections</div>

@@ -6,112 +6,239 @@
 ![Django](https://img.shields.io/badge/django-5.2_LTS-green)
 ![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
-My Garage is not just a spreadsheet — it's a professional-grade, **self-hosted** asset management system for automotive enthusiasts, horologists, and collectors of all kinds. Whether you have a garage full of Porsches, a safe full of Patek Philippes, or a cellar full of vintage wines, My Garage tracks your portfolio's financial performance, manages service history, and plans your next big project.
+My Garage is a professional-grade, **self-hosted** asset management system for automotive enthusiasts, horologists, and collectors of all kinds. Whether you have a garage full of Porsches, a safe full of Patek Philippes, or a cellar full of vintage wines, My Garage tracks your portfolio's financial performance, manages service history, and plans your next big project.
 
 **Own Your Data.** No subscriptions. No third-party accounts. Your collection, your server, your rules.
 
-**What it does:**
-- Tracks vehicles, watches, and any custom collection in one place
-- Pulls real market data to keep your valuations current
+---
+
+## What It Does
+
+- Tracks vehicles, watches, and any custom collection type in one unified platform
+- Pulls real market data to keep valuations current
 - Manages service history, project kanban boards, and cost tracking
-- Runs entirely on your own hardware
+- Shows portfolio-level financial performance with year-over-year value tracking
+- Runs entirely on your own hardware — local dev, Docker Compose, or Kubernetes
 
 ---
 
-## Why My Garage?
+## Core Features
 
-Most collectors rely on messy spreadsheets or disconnected apps. My Garage brings everything together in a unified, self-hosted platform with a focus on **data ownership**, **financial insight**, and **beautiful design**.
+### Unified Collection Architecture
 
-### Intelligent Vehicle Management
-Stop guessing what your car is worth.
-- **Automated Valuations**: Real-time market data integration tracks your vehicle's value against comparable listings.
-- **VIN Decoding**: Automatic spec population using NHTSA data.
-- **"Race Deck" UI**: A dark-mode interface inspired by professional garages, featuring manufacturer-specific typography.
+Everything is a collection. Vehicles and timepieces are pre-configured system collections ("Garage" and "Horology Salon") built on the same engine as your custom collections. Add items, define custom fields, and manage service records and upgrades the same way across every asset type.
 
-### The Horology Salon
-A dedicated space for your timepiece collection.
-- **Luxury Aesthetic**: A refined, dark-blue and gold theme designed for fine watches.
-- **Detailed Specs**: Track movements, reference numbers, complications, and provenance.
-- **Winder View**: Visualize your collection in a virtual watch box.
+- **Custom Schemas**: Define fields (Vintage, Region, Artist, Edition) for any collection type
+- **AI-Generated UI**: Gemini generates a Tailwind + Alpine.js component for each collection's item view
+- **Item Relationships**: Link related items across collections (paired with, part of, inspired by)
+- **File Attachments**: Attach receipts, certificates, appraisals, and manuals to any item
 
-### Dynamic Collections
-Collect anything. Literally anything.
-- **Custom Schemas**: Define your own fields (Vintage, Region, Artist, Edition) using a drag-and-drop builder.
-- **Universal Tracking**: Manage Art, Wine, Sneakers, Rare Books, or Trading Cards with the same power as your vehicles.
+### Portfolio Dashboard
+
+The home page gives a live read on your entire collection's financial state:
+- Total value broken out by asset category (Garage, Horology, custom collections)
+- Year-over-year portfolio value change — backed by daily snapshots or purchase-price baseline when snapshots aren't yet available
+- Recent acquisitions across all collections
+- Global search (⌘K) across every item you own
+
+### Cross-Collection Views
+
+Navigate your entire portfolio from one place:
+- **All Items** — every item across every collection, filterable
+- **Value History** — valuation timeline across all assets
+- **All Services** — unified service record log
+- **All Upgrades** — kanban board spanning every collection
 
 ### Service & Project Management
-Never lose a receipt or forget a part number again.
-- **Digital Service History**: Upload receipts, extract data via OCR, and categorize maintenance automatically.
-- **Project Kanban Boards**: Plan upgrades and restorations with a Trello-style board. Track parts from "Wishlist" to "Installed".
-- **Cost Tracking**: See exactly how much you've invested vs. current market value.
+
+- **Digital Service History**: Upload receipts, extract data via OCR, and categorize maintenance automatically
+- **Project Kanban Boards**: Plan upgrades and restorations with a drag-and-drop board — Wishlist → Ordered → In Progress → Completed
+- **Cost Tracking**: Purchase price vs. current market value equity per item and across the portfolio
 
 ### AI-Powered Intelligence
-- **Smart Valuations**: Pulls real market comps and assembles AI context to estimate what your asset is worth today.
-- **Receipt OCR**: Photograph a service receipt — vendor, date, cost, and line items are extracted automatically.
-- **Condition Grading**: Upload photos of any area; AI grades condition (1–10) and estimates value impact on your portfolio.
-- **Instant Descriptions**: Generate rich, accurate item descriptions from structured data.
-- **Claude Code Integration**: Full MCP server — query your garage, look up valuations, and enrich asset data directly from Claude Code.
+
+- **Smart Valuations**: Live Marketcheck data for vehicles; brand/condition multiplier model for watches
+- **Receipt OCR**: Photograph a service receipt — vendor, date, cost, and line items are extracted automatically via pytesseract
+- **Instant Descriptions**: Generate rich item descriptions from structured collection data
+- **Image Generation**: Create reference vehicle images via Google Gemini
+- **Claude Code Integration**: Full MCP server — query your garage, look up valuations, and enrich asset data directly from Claude Code
+
+### MCP Server
+
+Six tools registered as a real FastMCP server on port 8001:
+
+| Tool | Description |
+|---|---|
+| `lookup_vehicle_details` | Decode any VIN via NHTSA (free, no key) |
+| `search_market_listings` | Find comparable vehicle listings via Marketcheck |
+| `get_sales_stats` | Sold vehicle statistics by make/model/zip |
+| `get_sales_history_by_vin` | Historical sale events for a specific VIN |
+| `get_watch_valuation` | Estimated watch value by brand, condition, and completeness |
+| `generate_vehicle_image` | Generate reference images via Google Gemini |
+| `search_google_images` | Scrape stock photo URLs for any query |
 
 ---
 
-## Built for Developers
+## Stack
 
-My Garage is built on a modern, robust stack designed for scalability and extensibility.
+| Layer | Technology | Port |
+|---|---|---|
+| Web app | Django 5.2 LTS (ASGI via Uvicorn) | 8000 |
+| AI / MCP services | FastAPI + FastMCP | 8001 |
+| Task queue | Celery + Redis | — |
+| Task scheduler | Celery Beat (DB-backed) | — |
+| Primary DB | PostgreSQL (SQLite in dev) | 5432 |
+| Vector / trace store | MongoDB 6.x | 27017 |
+| Cache / broker | Redis 7 | 6379 |
+| AI | Google Gemini (embeddings, image gen) | — |
+| Package management | Pixi (conda-based, hermetic) | — |
 
-- **Backend**: Django 5.2 LTS (Core Logic) + FastAPI (Microservices & MCP Server)
-- **Database**: PostgreSQL (Relational) + MongoDB (Embeddings, RAG, AI Traces)
-- **Async**: Celery + Redis for background tasks (Valuations, OCR)
-- **AI**: Google Gemini for embeddings, image generation & analysis; RAG knowledge layer over your own docs
-- **Package Management**: Pixi for hermetic, reproducible environments
+---
 
 ## Getting Started
 
-We use **pixi** for a zero-headache setup. No virtualenv hell, no missing system libraries.
+### Local Development (Recommended)
 
-### Prerequisites
-- [Pixi](https://prefix.dev/) installed
-- Git
+[Pixi](https://prefix.dev/) manages the Python environment. Docker Compose spins up the infrastructure services.
 
-### Installation
+**Prerequisites:** Pixi, Docker
 
-1. **Clone the repo**
-    ```bash
-    git clone https://github.com/yourusername/my_garage.git
-    cd my_garage
-    ```
+```bash
+# 1. Clone
+git clone https://github.com/zaigner/my-garage.git
+cd my_garage
 
-2. **Install dependencies**
-    ```bash
-    pixi install
-    ```
+# 2. Install Python dependencies
+pixi install
 
-3. **Configure Environment**
-    ```bash
-    cp .env.example .env
-    # Edit .env with your API keys (Marketcheck, Google Gemini, etc.)
-    ```
+# 3. Configure environment
+cp .env.example .env
+# Edit .env — at minimum set SECRET_KEY and REDIS_URL
 
-4. **Start the Engine**
-    Run all services (Django, FastAPI, Celery, Mongo, Redis) with one command:
-    ```bash
-    pixi run start-app
-    ```
+# 4. Start infrastructure (Postgres, Redis, MongoDB)
+docker compose up postgres redis mongodb -d
 
-5. **Drive**
-    Open your browser to `http://localhost:8000`.
+# 5. Apply migrations and start services
+pixi run migrate
+pixi run server       # Django on :8000
+pixi run fastapi      # FastAPI + MCP on :8001
+pixi run worker       # Celery worker (background tasks)
+```
+
+Open `http://localhost:8000` and register an account.
+
+### Full Container Stack (Docker Compose)
+
+Runs everything — app services included — from the built image. Useful for testing the production image before deploying.
+
+```bash
+docker compose --profile app up --build
+```
+
+Django will be available at `http://localhost:8000`.
+
+> **Note:** The production settings enforce `SECURE_SSL_REDIRECT=True`. Set `SECURE_SSL_REDIRECT=False` in your `.env` or the compose `environment` block when testing locally without HTTPS.
+
+### Kubernetes
+
+Production manifests live in `k8s/`. The namespace, ConfigMap, Secrets, and per-service Deployments/StatefulSets/Services are all included.
+
+```bash
+kubectl apply -f k8s/namespace.yaml
+kubectl apply -f k8s/secrets/        # fill in secrets first — see k8s/secrets/README.md
+kubectl apply -f k8s/configmap.yaml
+kubectl apply -f k8s/postgres/
+kubectl apply -f k8s/redis/
+kubectl apply -f k8s/mongodb/
+kubectl apply -f k8s/django/
+kubectl apply -f k8s/fastapi/
+kubectl apply -f k8s/celery/
+```
+
+The Django deployment uses `ghcr.io/zaigner/my-garage:latest`. The image is built with a multi-stage Dockerfile (pixi prod environment → lean Debian runtime) and includes tesseract-ocr for the OCR service.
+
+---
+
+## Key Commands
+
+```bash
+pixi run server           # Django dev server (:8000)
+pixi run fastapi          # FastAPI + MCP server (:8001)
+pixi run worker           # Celery worker
+pixi run beat             # Celery Beat scheduler
+pixi run migrate          # Apply database migrations
+pixi run pytest           # Run all tests
+pixi run lint             # Ruff lint
+pixi run format           # Ruff format
+pixi run refresh-context  # Rebuild BMAD portfolio context file
+pixi run manage build_knowledge_index  # Rebuild RAG index from docs
+```
+
+---
+
+## Environment Variables
+
+Copy `.env.example` to `.env`. The required variables:
+
+| Variable | Required | Purpose |
+|---|---|---|
+| `SECRET_KEY` | Yes | Django secret key |
+| `REDIS_URL` | Yes | Celery broker (`redis://localhost:6379/0`) |
+| `MONGO_URI` | Yes | MongoDB connection (`mongodb://localhost:27017/`) |
+| `GOOGLE_API_KEY` | For AI features | Gemini embeddings, image generation |
+| `MARKETCHECK_API_KEY` | For vehicle valuations | Live market listings + sales stats |
+| `DB_*` | Production only | PostgreSQL connection (dev uses SQLite) |
+
+---
+
+## Project Structure
+
+```
+src/
+  config/                   # Django project config (settings, urls, celery)
+  my_garage/                # Primary Django application
+    models.py               # CollectionType, DynamicCollectionItem, and supporting models
+    views.py                # Collection, item, service, upgrade, kanban views
+    api/                    # DRF ViewSets, selectors (read queries), services (writes)
+    services/               # ContextService — AI context assembly (RAG + structured data)
+    skills/                 # CollectionThemeGenerator — AI schema + UI generation
+    utils/                  # mongo.py, tracing.py, chunker.py, prompt_renderer.py
+    prompts/                # Jinja2 prompt templates (vehicle_valuation, receipt_analysis, etc.)
+    tasks.py                # Celery tasks (OCR, valuations, snapshots, enrichment)
+  fastapi_services/         # FastAPI application (port 8001)
+    mcp/                    # FastMCP server — tool registration and implementations
+    ocr/                    # OCR router (pytesseract + receipt parser)
+tests/
+  unit/                     # Pure Python — utils, context service, selectors
+  functional/               # Django test client — views, models, forms
+  fastapi/                  # FastAPI TestClient — MCP tools, OCR routes
+  eval/                     # MCP tool quality + RAG retrieval evals (hits real APIs)
+k8s/                        # Kubernetes manifests (namespace, deployments, services)
+docs/                       # Implementation plans and UX specs
+```
 
 ---
 
 ## Roadmap
 
-- [x] Vehicle & Timepiece Tracking
-- [x] Dynamic Collection Schemas
-- [x] Kanban Project Management
-- [x] Receipt OCR — extract vendor and cost from service receipt photos
-- [x] Watch Valuation — estimated values via brand, condition, and completeness
-- [ ] **360° Spin Viewer**: Interactive vehicle exploration
-- [ ] **Market Intelligence**: Price alerts and detailed depreciation curves
-- [ ] **WatchCharts Integration**: Live secondary market data for timepieces
+- [x] Unified collection architecture — all asset types on one engine
+- [x] Vehicle tracking (Garage collection) with VIN decoding
+- [x] Timepiece tracking (Horology Salon collection) with condition grading
+- [x] Custom collection schemas with AI-generated UI components
+- [x] Kanban project boards for upgrades and restorations
+- [x] Receipt OCR — vendor, date, and cost extracted from photos
+- [x] Vehicle market valuations via Marketcheck
+- [x] Watch valuations — brand/condition/completeness model
+- [x] Portfolio dashboard with year-over-year value tracking
+- [x] Cross-collection unified views (all items, all services, all upgrades, value history)
+- [x] MCP server — Claude Code integration with 6 registered tools
+- [x] RAG knowledge layer — MongoDB-backed vector search over project docs
+- [x] Docker Compose + Kubernetes deployment
+- [ ] **WatchCharts Integration**: Live secondary market data for timepieces (currently a mock model)
+- [ ] **Price Alerts**: Notify when a comparable listing drops below a threshold
+- [ ] **Depreciation Curves**: Visual value history charts per item
+
+---
 
 ## Contributing
 
