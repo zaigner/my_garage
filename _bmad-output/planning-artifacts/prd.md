@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [step-01-init, step-02-discovery, step-02b-vision, step-02c-executive-summary, step-03-success, step-04-journeys, step-05-domain-skipped, step-06-innovation-skipped, step-07-project-type, step-08-scoping, step-09-functional, step-10-nonfunctional, step-11-polish, step-12-complete]
+stepsCompleted: [step-01-init, step-02-discovery, step-02b-vision, step-02c-executive-summary, step-03-success, step-04-journeys, step-05-domain, step-06-innovation, step-07-project-type, step-08-scoping, step-09-functional, step-10-nonfunctional, step-11-polish, step-12-complete]
 status: complete
 completedAt: '2026-05-29'
 inputDocuments:
@@ -9,21 +9,20 @@ inputDocuments:
   - docs/UPGRADES_KANBAN_GUIDE.md
   - docs/UX-enhancement.md
   - docs/schemas/FIELD_TYPES.md
-  - _bmad-output/planning-artifacts/epics-ux-enhancement-suite.md
+classification:
+  projectType: web_app
+  domain: legaltech_personal_estate
+  complexity: high
+  projectContext: brownfield
 workflowType: prd
 project: my_garage
 author: Zaigner77
 date: '2026-05-29'
-classification:
-  projectType: web_app
-  domain: personal_finance_asset_management
-  complexity: medium
-  projectContext: brownfield
 ---
 
 # Product Requirements Document — my_garage
 
-**Feature:** Net Financial Position (NFP)
+**Feature:** Estate & Legacy
 **Author:** Zaigner77
 **Date:** 2026-05-29
 
@@ -31,51 +30,19 @@ classification:
 
 ## Executive Summary
 
-my_garage is a Django 5.2 personal asset management platform tracking vehicles, timepieces, and user-defined dynamic collections as financial investments. This PRD defines the **Net Financial Position (NFP)** feature — a cross-cutting financial clarity layer replacing the platform's incomplete `equity` calculation (`current_market_value - purchase_price`) with a true, all-in cost basis: purchase price plus every dollar spent on services and completed upgrades.
+my_garage is a Django 5.2 personal asset management platform for collectors tracking vehicles, timepieces, and user-defined collections as financial investments. This PRD defines the **Estate & Legacy** feature — a trust and estate planning layer that makes every item in a collector's portfolio discoverable, valued, documented, and transferable at the owner's time of death.
 
-**NFP formula:**
+The feature solves a structural gap in estate execution for physical collections: heirs and executors have no reliable way to discover what exists, establish what it's worth, or cleanly assign items per the owner's wishes. my_garage already holds the complete picture — purchase history, valuation timelines, service records, photos, and provenance — for every asset. The Estate & Legacy feature attaches legal intent to that existing data: each item can be designated to a named beneficiary, and the entire portfolio can be administered by a designated executor with controlled, auditable access.
 
-```
-Total Cost Basis = Purchase Price
-                 + Σ(service record costs)
-                 + Σ(upgrade costs | status = INSTALLED or COMPLETED)
+**Tagline:** *Keep your collection current and forever.*
 
-Net Position     = Current Market Value − Total Cost Basis
-                   positive = gain  |  negative = loss
-```
-
-The feature surfaces NFP at three levels:
-
-1. **List views** — per-row mini breakdown: Cost Basis / Market Value / Net Position, colour-coded and symbol-prefixed, across all asset type list pages
-2. **Detail views** — full itemised financial breakdown on each asset's detail page
-3. **Portfolio level** — aggregate NFP on the home dashboard (`/`) and Insights page (`/insights/`)
-
-**Asset type coverage:**
-
-| Asset Type | Service Costs | Upgrade Costs | NFP Completeness |
-|---|---|---|---|
-| Vehicle | `ServiceRecord` (existing) | `Upgrade` INSTALLED (existing) | Full |
-| DynamicCollectionItem | `GenericServiceRecord` (existing) | `GenericUpgrade` COMPLETED (existing) | Full |
-| Timepiece | Deferred to migration story | `GenericUpgrade` COMPLETED via new `GenericRelation` | Partial — upgrades only |
-
-Timepiece service record tracking is deferred to a separate migration story that will refactor `GenericServiceRecord` to a true `GenericForeignKey` and unify all asset types under a single service record model — avoiding new Timepiece-specific models and maintaining a single pattern across the application.
+**Classification:** Web application (brownfield) · Personal estate planning / legaltech-adjacent · High complexity (multi-role access control, sensitive PII, contingent access triggers) · Django 5.2 + FastAPI platform · Phase 1 MVP → Phase 2 full suite → Phase 3 legal integration.
 
 ### What Makes This Special
 
-Most asset trackers show collectors what their assets are worth. my_garage's NFP feature shows what they *truly cost* — surfacing the gap between purchase price and all-in ownership spend. This transforms the platform from a valuation dashboard into an honest investment ledger.
+No estate planning tool has the asset-level richness that my_garage already maintains. Competitors (Everplans, Trust & Will, attorney-managed inventories) require owners to manually describe and value each item — a snapshot that goes stale. my_garage's estate layer is *live*: valuations update automatically, service records accumulate, and the inventory stays current without additional effort. When a beneficiary or executor gains access, they receive a complete, date-of-access snapshot of every asset — current market value, full cost basis, condition history — not a spreadsheet filled out years ago.
 
-The core insight: a vehicle up $8,000 in market value but requiring $12,000 in service and upgrades tells a different investment story than one requiring $2,000. Seeing that difference at a glance — in list rows and in depth on detail pages — is the feature's value.
-
----
-
-## Project Classification
-
-| Attribute | Value |
-|---|---|
-| Project Type | Web App — Django MPA (templates + Alpine.js + Tailwind CSS) |
-| Domain | Personal Finance / Asset Management (no regulatory compliance) |
-| Complexity | Medium — cross-cutting calculation across 3 asset types, multiple views and templates across 3 URL namespaces |
-| Project Context | Brownfield — mature codebase, established selector/service pattern, 304+ passing tests, financial fields present on all models |
+**Core insight: the hardest problem in estate execution for physical collections is discovery, not distribution.** Once heirs know exactly what exists and what it's worth, the legal execution becomes tractable. This feature solves discovery completely.
 
 ---
 
@@ -83,325 +50,396 @@ The core insight: a vehicle up $8,000 in market value but requiring $12,000 in s
 
 ### User Success
 
-- Every asset list view shows a mini financial breakdown — Cost Basis / Market Value / Net Position — without additional navigation.
-- Net Position uses dual signalling: `+$4,450` in green for gain, `−$4,400` in red for loss, `—` neutral for unavailable. Legible without reading the numbers.
-- Every asset detail page shows a full financial breakdown: Purchase Price, Service Costs Total, Upgrade Costs Total, Cost Basis, Current Market Value, Net Position.
-- The home dashboard and Insights page show aggregate NFP summing correctly across all Vehicles, Timepieces, and DynamicCollectionItems.
-- Timepiece upgrade tracking UI is identical to the DynamicCollectionItem upgrade UI — no inconsistency between asset types.
-- A user with real assets, real service records, and real completed upgrades sees numbers that honestly reflect their total investment without manual calculation.
+**Owner (estate planner):**
+- Designates a beneficiary for every asset in their portfolio in a single session
+- Assigns a trusted executor to their full account with a single action
+- Returns to update beneficiary assignments after adding new assets (living estate plan behavior)
 
-### Personal Success
+**Executor:**
+- Activates access and navigates the full portfolio without external help or documentation
+- Receives a complete, dated snapshot of every asset — current market value, purchase history, cost basis, service records, photos
+- Exports a court-ready PDF inventory in one action
 
-- The platform is an honest investment ledger, not just a valuation dashboard.
-- The Insights page aggregate NFP answers: "Is my collection worth what I've put into it?"
+**Beneficiary:**
+- Sees only their designated items — no access to assets assigned to others
+- Understands the value, history, and provenance of each designated item without contacting anyone else
+
+### Business Success
+
+- **Setup adoption:** ≥50% of active users designate at least one beneficiary within 90 days of feature launch
+- **Completion rate:** ≥30% of users who begin beneficiary setup assign beneficiaries to all items
+- **Living plan behavior:** ≥40% of new asset additions trigger a beneficiary update within 30 days
+- **Executor designation:** ≥25% of active users designate an executor
+- **Zero failure-mode executions:** No executor or beneficiary unable to access what they needed due to a feature deficiency
+
+**Failure signals:** Estate plan goes stale relative to collection · Executor cannot navigate or export the inventory · Beneficiary contacts owner asking "what do I do with this?"
 
 ### Technical Success
 
-- `net_financial_position` is a nullable `DecimalField` cached on each asset model, recalculated synchronously via `post_save` and `post_delete` signals on all supporting models.
-- Cache invalidation triggers:
-  - Vehicle: `ServiceRecord` CUD + `Upgrade` CUD
-  - DynamicCollectionItem: `GenericServiceRecord` CUD + `GenericUpgrade` CUD
-  - Timepiece: `GenericUpgrade` CUD (service records deferred to migration story)
-- `GenericRelation` added to `Timepiece` model pointing to `GenericUpgrade` — no new Timepiece-specific models required.
-- List pages serve NFP from the cached field — no aggregation queries at render time.
-- Existing 304-test suite passes without regression.
-- Unit tests cover NFP for all three asset types including: null market value, zero service records, zero upgrades, post-delete cache refresh.
+- Access control is strictly scoped — no cross-contamination between beneficiaries, no accidental full-portfolio exposure
+- Valuation snapshot captures exact `current_market_value` for all assets at activation time with immutable audit trail
+- PDF export includes all assets, valuations, photos, cost basis, and beneficiary assignments
+- Access credentials are single-use, time-limited, and cryptographically non-guessable
+- Activating estate access never modifies, deletes, or alters the owner's original records
 
 ### Measurable Outcomes
 
-| Outcome | Measure |
-|---|---|
-| NFP in all asset list views | All 3 list page templates show mini breakdown |
-| NFP on all asset detail pages | All 3 detail page templates show full breakdown |
-| Portfolio aggregate correct | Home + Insights show sum matching per-asset NFP totals |
-| Timepiece upgrade tracking | GenericUpgrade UI available on Timepiece detail, NFP reflects COMPLETED upgrades |
-| No regression | 304+ tests pass, ruff clean |
-| Cache accuracy | NFP field updates on every service/upgrade CUD operation |
+| Outcome | Target | Timeframe |
+|---|---|---|
+| Users with ≥1 beneficiary assigned | 50% of active users | 90 days post-launch |
+| Users with all items assigned | 30% of users who begin setup | 90 days post-launch |
+| Executor designations | 25% of active users | 90 days post-launch |
+| Estate plan update after new asset | 40% of new asset additions | Ongoing |
+| Successful executor access activations | 100% (zero failures) | All time |
+| PDF export generation without error | 99.9% success rate | All time |
 
 ---
 
 ## Product Scope
 
-### MVP — Minimum Viable Product
+### MVP — Phase 1
 
-**Models & Migrations**
-- `net_financial_position` nullable `DecimalField` added to `Vehicle`, `Timepiece`, `DynamicCollectionItem`
-- `GenericRelation` added to `Timepiece` model pointing to `GenericUpgrade` (no migration — GenericFK lives on `GenericUpgrade`)
-- Django admin updated to surface upgrade management for Timepieces
+Solves the core discovery problem end-to-end for a single owner–executor–beneficiary flow:
 
-**Calculation Layer (`api/selectors.py`)**
-- `get_vehicle_nfp_breakdown(vehicle)` → dict: purchase_price, service_total, upgrade_total, cost_basis, market_value, net_position
-- `get_timepiece_nfp_breakdown(timepiece)` → dict: purchase_price, upgrade_total, cost_basis, market_value, net_position
-- `get_collection_item_nfp_breakdown(item)` → dict: purchase_price, service_total, upgrade_total, cost_basis, market_value, net_position
-- `get_portfolio_nfp_summary(user)` → aggregate NFP + per-type breakdown, max 3 queries
+- `Beneficiary` model: name, relationship, contact info, optional conditional note per assignment
+- Per-item beneficiary assignment for all asset types (Vehicle, Timepiece, DynamicCollectionItem)
+- Single executor designation per user account with view-only portfolio access
+- Manual estate access activation by owner
+- Immutable valuation snapshot at access activation
+- Estate inventory PDF export (all assets, valuations, beneficiary assignments, cost basis)
+- Executor read-only portal: full portfolio view, item detail, export capability
+- Beneficiary scoped view: designated items only
 
-**Service Layer (`api/services.py`)**
-- `refresh_asset_nfp(asset)` — recalculates and saves `net_financial_position`. Registered as `post_save` and `post_delete` signal handler on: `ServiceRecord`, `Upgrade`, `GenericServiceRecord`, `GenericUpgrade`.
+### Growth Features — Phase 2
 
-**List View UI**
-- Mini NFP row component: Cost Basis / Market Value / Net Position with `+`/`−` prefix and green/red colour coding. Consistent across all 3 asset type list pages. Responsive: inline on desktop, stacked on mobile.
+- Inactivity dead man's switch (configurable 90/180/365 days → owner ping → executor notify)
+- Multi-beneficiary splits with percentage allocation per item
+- Backup executor designation
+- Emergency access code generation (printable, for storage with physical will)
+- Charitable/institutional bequest designation
+- Storage and physical location fields on all asset types
+- Unassigned asset reminder notifications (Celery Beat)
+- "Estate completeness" dashboard indicator
 
-**Detail View UI**
-- Financial Position card: itemised cost components → cost basis → net position (gain/loss styled).
-- Null-safe: `—` with tooltip "Add a valuation to calculate net position" when market value unset.
+### Vision — Phase 3
 
-**Timepiece Upgrade UI**
-- Upgrade add/edit/delete views for Timepieces matching the DynamicCollectionItem upgrade UI.
-- Status flow: Wishlist → Ordered → In Progress → Completed → Cancelled.
-
-**Portfolio Level**
-- Home dashboard: aggregate NFP card alongside existing portfolio value.
-- Insights page: NFP KPI card + per-asset-type NFP breakdown rows.
-
-**Tests**
-- Unit: NFP calculation for all 3 asset types, all edge cases including post-delete cache refresh.
-- Functional: NFP display in list views, detail views, home, and Insights. Portfolio aggregate query count assertion.
-
-### Growth Features (Post-MVP)
-
-- NFP-based sorting and filtering in list views
-- "Top/bottom performers by NFP" widget on Insights page
-- NFP comparison chart across asset types
-
-### Vision (Future)
-
-- Historical NFP time series as market values and costs change over time
-- PDF/CSV export of complete financial position
-- NFP-based alerts when total costs exceed current market value
+- Death certificate upload + verification workflow for executor access activation
+- Legal document attachment linking (will, trust, POA) per item or full estate
+- Attorney read-only share link (time-limited, no account required)
+- Time-locked beneficiary assignments (release date condition)
+- External estate attorney / trust administrator integration hooks
 
 ---
 
 ## User Journeys
 
-### Journey 1: The Honest Reckoning (Primary — First NFP View)
+### Journey 1: The Collector Prepares — Marcus Sets Up His Estate Plan
 
-**Persona:** Zaigner77 — meticulous collector tracking every acquisition and service record. Has used my_garage for a year but has never seen the full cost picture in one place.
+*Primary User / Happy Path*
 
-**Opening Scene:**
-Zaigner77 opens my_garage after seeing a similar BMW sell for $48,000 at auction. He navigates to the Vehicles list expecting to confirm his investment is up.
+Marcus is 58, a lifelong car enthusiast and watch collector. He has three vehicles, eleven timepieces, and a growing bourbon collection in my_garage — all meticulously catalogued with service records, valuations, and photos. His estate attorney recently asked him to prepare an asset inventory for his will, and Marcus realized that while he knows exactly what everything is worth, his wife and two adult children have no idea.
 
-**Rising Action:**
-Each vehicle row now shows a mini financial breakdown. His BMW row:
-`Cost Basis: $52,400 | Market Value: $48,000 | Net Position: −$4,400` (red, `−` prefixed)
+He opens my_garage and notices a new **"Estate & Legacy"** section in the sidebar. The system walks him through two setup steps: first, designating his oldest son Daniel as **executor**. Then, item by item, he works through his collection. The 1972 Porsche 911 goes to Daniel. The AP Royal Oak goes to his daughter Priya. The bourbon collection splits equally. For his daily driver, he adds a note: *"Sell at market value, split proceeds between the kids."*
 
-The number surprises him. He clicks through to the detail page.
+Forty minutes later, Marcus is done. He feels relief — for the first time, the collection he's spent decades building has a plan. He prints the estate access code and tucks it with his will at his attorney's office.
 
-**Climax:**
-The Financial Position section:
+Six weeks later, when he picks up a vintage Omega Seamaster, it takes three minutes to assign it to Priya. The estate plan stays current.
 
-```
-Purchase Price:       $44,000
-Service Records:       $5,200  (4 records: tires, oil, brakes, inspection)
-Completed Upgrades:    $3,200  (carbon spoiler, performance air filter)
-──────────────────────────────
-Cost Basis:           $52,400
-Current Market Value:  $48,000
-Net Position:          −$4,400
-```
-
-He's in the red — but knows exactly why.
-
-**Resolution:**
-He opens Insights. His watch collection carries a positive NFP that offsets the vehicle loss. Total portfolio NFP: +$3,600. A complete, honest picture.
-
-**Requirements:** FR1, FR4, FR6–FR8, FR12, FR15, FR17, FR21, FR22
+**Capabilities revealed:** Estate setup UI, executor designation, per-item assignment, conditional notes, access code generation, PDF export, return/update flow on new asset addition.
 
 ---
 
-### Journey 2: The Timepiece Project (Primary — Timepiece Upgrade Tracking)
+### Journey 2: The Executor Activates — Daniel Faces the Unthinkable
 
-**Persona:** Zaigner77 — wants to add a custom aftermarket strap to his Submariner and track the cost against its NFP.
+*Secondary User / Executor Access Path*
 
-**Opening Scene:**
-He opens the Horology Salon, navigates to the Submariner detail page. For the first time, an "Upgrades" section is present — the same pattern he knows from his collection items.
+Daniel is 34 when his father Marcus passes unexpectedly. Amid grief and logistics, Daniel's attorney hands him a printed card from Marcus's estate files: *"my_garage Estate Access — Executor Code: [code]"* and a URL.
 
-**Rising Action:**
-He clicks "+ Add Project": name "Milanese Mesh Strap," cost $180, status Wishlist. He saves. The NFP doesn't change — WISHLIST doesn't count. Three days later the strap arrives and he marks the upgrade COMPLETED.
+Daniel has never used my_garage. He visits the link, enters the code, and is in within two minutes. The system presents Marcus's complete portfolio — 15 assets across three categories, each with current market value, full purchase and service history, photos, and a designated beneficiary. Two items have no beneficiary — rims Marcus added after setup. Daniel flags those for probate.
 
-**Climax:**
-The Financial Position section updates:
+He clicks **"Export Estate Inventory"** and receives a dated PDF. He sends it to the estate attorney. The attorney's response: *"This is the cleanest inventory I've seen in 30 years of practice."*
 
-```
-Purchase Price:       $9,200
-Completed Upgrades:     $180  ← strap now counts
-──────────────────────────────
-Cost Basis:           $9,380
-Current Market Value:  $14,500
-Net Position:          +$5,120  (was +$5,300)
-```
-
-**Resolution:**
-The Submariner list row reflects the change. Only COMPLETED upgrades count — the rule is consistent across all asset types. The Timepiece upgrade UI is identical to what he uses for his wine collection.
-
-**Requirements:** FR3, FR11, FR13, FR18, FR24–FR28
+**Capabilities revealed:** Code-based access (no account required), read-only portfolio portal, beneficiary assignment visibility, unassigned item flagging, PDF export, storage/location fields.
 
 ---
 
-### Journey 3: The True Cost (Primary — Collection Item Service Record)
+### Journey 3: The Beneficiary Discovers Her Legacy — Priya Gets the Call
 
-**Persona:** Zaigner77 — just had his wine cellar temperature system professionally serviced. $350 invoice.
+*Secondary User / Beneficiary Scoped Access*
 
-**Opening Scene:**
-He opens his Wine Collection, navigates to the cellar item, and clicks "+ Add Service."
+Priya is 31 and lives across the country. She knew her father collected watches but never paid close attention. Daniel sends her an access link from the executor portal tied specifically to her designated items.
 
-**Rising Action:**
-The GenericServiceRecord form: date, vendor, category Maintenance, cost $350. He saves.
+Priya sees **three items**: the AP Royal Oak, a vintage Rolex Datejust, and a note: *"The Datejust was the first watch I ever bought with my own money. I always meant to tell you the story."*
 
-**Climax:**
-The item's Financial Position section updates:
+Each watch has its full history — when Marcus bought it, what he paid, service records, current estimated value, photos. Priya exports her personal inventory, contacts an insurer, and schedules a meeting with an estate jeweler — all from the information in my_garage.
 
-```
-Purchase Price:       $2,400
-Service Records:        $350  ← just added
-Completed Upgrades:       $0
-──────────────────────────────
-Cost Basis:           $2,750
-Current Market Value:  $3,200
-Net Position:          +$450  (was +$800)
-```
-
-The NFP dropped by exactly $350. The list row and Insights aggregate updated immediately.
-
-**Resolution:**
-Service costs count everywhere they should. The investment story gets more honest with every record added.
-
-**Requirements:** FR2, FR9, FR14, FR19
+**Capabilities revealed:** Beneficiary-scoped access (designated items only), item detail with full history, personal export, owner notes per assignment.
 
 ---
 
-### Journey 4: The Incomplete Asset (Edge Case — Missing Market Value)
+### Journey 4: The Gap in the Plan — Marcus Forgot One
 
-**Persona:** Zaigner77 — recently acquired a Pomerol bottle, pending appraisal. No market value set.
+*Primary User / Edge Case: Unassigned Asset at Activation*
 
-**Opening Scene:**
-He opens the Wine Collection list. The new bottle row appears with purchase price ($380) and one storage evaluation record ($25), but `current_market_value` is null.
+Marcus added a 2021 BMW M3 eight months after completing his estate plan and forgot to assign it. When Daniel activates executor access, the BMW M3 appears with a **yellow "Unassigned"** badge. The system surfaces it clearly: *"These assets have no beneficiary designation. They will need to be handled through the probate process."*
 
-**Climax:**
-Mini breakdown shows: `Cost Basis: $405 | Market Value: — | Net Position: —`
+The system had sent Marcus two quiet reminders — he dismissed both. The gap was his choice, not a system failure.
 
-No crash. No misleading $0. Tooltip on the `—`: "Market value not set — add a valuation to calculate net position."
-
-**Resolution:**
-He adds a valuation estimate. NFP populates immediately.
-
-**Requirements:** FR5, FR16, FR20, FR29
+**Capabilities revealed:** Unassigned asset detection and surfacing, owner reminder notifications (Phase 2), probate fallback communication, "add asset → assign beneficiary" prompt flow.
 
 ---
 
-### Journey Requirements Traceability
+### Journey Requirements Summary
 
-| Journey | FRs Covered |
+| Journey | Core Capabilities Required |
 |---|---|
-| 1 — Honest Reckoning | FR1, FR4, FR6–FR8, FR12, FR15, FR17, FR21, FR22 |
-| 2 — Timepiece Project | FR3, FR11, FR13, FR18, FR24–FR28 |
-| 3 — True Cost | FR2, FR9, FR14, FR19 |
-| 4 — Incomplete Asset | FR5, FR16, FR20, FR29 |
+| Marcus — Setup | Estate setup UI, executor designation, per-item assignment, conditional notes, access code gen, PDF export |
+| Daniel — Executor | Code-based access, read-only portal, unassigned item flagging, PDF export, storage fields |
+| Priya — Beneficiary | Scoped access (assigned items only), item detail + history, owner notes, personal export |
+| Marcus — Edge Case | Unassigned asset detection, owner reminders (Phase 2), executor unassigned-item surfacing |
 
 ---
 
-## Web App Specific Requirements
+## Domain-Specific Requirements
 
-### Project-Type Overview
+### Privacy & PII Handling
 
-Django 5.2 MPA — all views server-rendered, enhanced with Alpine.js for interactivity. No SPA framework. NFP values are server-rendered; Alpine.js handles tooltip show/hide only. All calculations execute server-side with the cached field as the sole data source for list pages.
+- Beneficiary PII (name, contact, relationship) is stored only within the owner's account — never shared across users or used for platform analytics
+- Beneficiary contact information is used solely for access delivery — not for platform communication
+- Owner can delete all beneficiary records at any time with full cascade (invitations revoked, access terminated)
+- Estate access logs are retained for the lifetime of the owner account and excluded from routine cleanup cycles
 
-### Browser Matrix
+### Data Durability & Integrity
 
-| Browser | Support Level |
+- Estate plan records are append-preferred — edits create audit trail entries rather than silent overwrites
+- Valuation snapshots at estate access activation are immutable — no modification or deletion permitted after lock
+- PDF export records (date, asset valuations, assignments) are stored as read-only audit entries
+- Owner account deletion requires explicit confirmation that estate plan and beneficiary data will be permanently destroyed — no silent cascade
+
+### Access Control & Security
+
+- Executor and beneficiary access credentials are cryptographically random, single-use where possible, and revocable by owner at any time
+- Executor sessions are read-only — no write operations permitted on any asset record
+- Beneficiary access is scoped at the ORM level — not UI-level hiding
+- All executor and beneficiary access events are logged with timestamp, IP, and action type
+
+### Legal Admissibility Considerations
+
+- PDF estate inventory export includes: generation date/time (UTC), owner identity, valuation date and source, per-item purchase price / current market value / cost basis / beneficiary name and relationship, and footer: *"Generated by my_garage personal asset management platform — for estate planning reference purposes"*
+- The platform makes no legal representations — exports are reference documents, not legal instruments. Disclaimer required on all estate-adjacent UI and exports.
+
+### Risk Mitigations
+
+| Risk | Mitigation |
 |---|---|
-| Chrome / Chromium (latest 2 versions) | Full |
-| Firefox (latest 2 versions) | Full |
-| Safari (latest 2 versions) | Full |
-| Edge (latest 2 versions) | Full |
-| IE / Legacy | Not supported |
+| Owner dies before estate plan setup | Inactivity dead man's switch (Phase 2) + prominent onboarding prompt |
+| Executor code lost or stolen | Single-use codes; owner can regenerate and revoke |
+| Beneficiary data exposed to wrong person | ORM-level row filtering on every request |
+| Estate plan goes stale | Unassigned asset badge; Phase 2 reminder notifications |
+| PDF export used as legal instrument | Prominent disclaimer on all exports |
+| Beneficiary data retained after owner's death | Executor account expires 12 months after activation (owner-configurable) |
 
-Tailwind CSS (CDN) and Alpine.js 3.x define the effective browser floor. No polyfills required.
+---
+
+## Innovation & Novel Patterns
+
+### Detected Innovation Areas
+
+**1. The Living Estate Plan**
+Every estate planning tool produces a static snapshot. my_garage's estate layer is structurally different: embedded in an active asset management platform, the estate plan updates automatically as the collection evolves. Valuations refresh on schedule. Service records accumulate. When an owner adds a new asset, the system prompts for beneficiary assignment immediately. The estate plan is never more than one action out of date. No competitor achieves this because no competitor is also the owner's asset management system.
+
+**2. Asset-Rich Handover**
+Existing estate inventory tools capture name, estimated value, and location. my_garage's handover includes full purchase history, cost basis, service and maintenance records, condition assessments, photos, AI-generated valuations, and owner personal notes. A beneficiary receiving a watch receives everything the owner ever recorded about that object.
+
+**3. Discovery-First Estate Planning**
+The conventional framing is distribution: *who gets what*. The actual hard problem for physical collections is discovery: *what exists, what is it worth, where is it*. my_garage solves discovery completely as a byproduct of normal platform use. Distribution (beneficiary assignment) becomes a lightweight layer on top of an already-solved discovery problem.
+
+### Competitive Landscape
+
+| Competitor | Inventory Richness | Auto-Updating | Asset-Native |
+|---|---|---|---|
+| Everplans | Low (text fields) | No | No |
+| Trust & Will | None (legal docs only) | No | No |
+| Attorney inventory | None (client-provided) | No | No |
+| Spreadsheet | Manual | No | No |
+| **my_garage Estate** | **High (full history)** | **Yes** | **Yes** |
+
+The gap is structural. Competitors can't close it without becoming asset management platforms themselves.
+
+### Validation Approach
+
+- **Executor usability test:** Can a person who has never used my_garage navigate the portfolio, identify all assets, and export the inventory within 15 minutes of receiving an access code? Target: 90% success rate.
+- **Living plan behavior:** Do owners return to update assignments after adding new assets, unprompted? Target: ≥40% within 30 days.
+- **Estate plan completeness:** % of users who begin beneficiary setup and assign all items before session end.
+
+### Innovation Risks
+
+| Risk | Mitigation |
+|---|---|
+| Owners treat estate setup as one-time task | Proactive unassigned-asset reminders; "Estate completeness" indicator on dashboard |
+| Executor unfamiliar with platform abandons onboarding | Code-only access, no account required; executor portal is fully self-contained |
+| Asset-rich data overwhelming non-collector beneficiaries | Beneficiary view is simplified — value, photo, owner note, one-click export |
+
+---
+
+## Project Scoping
+
+### MVP Strategy
+
+**Approach:** Experience MVP — minimum needed for an owner to feel their legacy is genuinely secured. Proves the core value proposition end-to-end: owner sets up estate plan → executor gains access → executor exports inventory.
+
+**Resource profile:** Solo developer. Scope decisions favor sequential simplicity.
+
+**MVP gate:** *Can an executor who has never used my_garage access the full portfolio, understand every asset's value, and export a complete inventory within 15 minutes of receiving an access code?*
+
+### MVP Capability Set (Phase 1)
+
+**Journeys fully supported:** Marcus setup · Daniel executor activation · Priya beneficiary view · Unassigned asset detection (no reminder notifications — Phase 2)
+
+| Capability | Rationale |
+|---|---|
+| `Beneficiary` model (name, relationship, contact, note) | Foundation of all estate assignment logic |
+| Per-item beneficiary assignment — Vehicle, Timepiece, DynamicCollectionItem | Core distribution mechanic |
+| Single executor designation per account | Enables estate administration |
+| Manual estate access activation by owner | Simplest, most legally defensible trigger |
+| Valuation snapshot at activation (immutable) | Date-of-death value record |
+| `EstateAccessToken` — code-based executor access, no account required | Executor onboarding must be frictionless |
+| Executor read-only portal — full portfolio, item detail, beneficiary assignments | Core executor experience |
+| Beneficiary scoped view — designated items only, ORM-filtered | Core beneficiary experience |
+| Unassigned asset detection + badge in executor view | Executor knows what needs probate |
+| Estate inventory PDF export | Court-ready handover document |
+
+**Deferred from MVP:** Inactivity dead man's switch · Multi-beneficiary splits · Printable emergency access card · Unassigned asset reminder notifications · Storage/location fields
+
+### Risk Mitigation
+
+**Technical:**
+
+| Risk | Likelihood | Mitigation |
+|---|---|---|
+| Token-based executor session conflicting with Django auth | Medium | Separate session key + middleware; executor views decorator-gated |
+| PDF generation quality / legal format | Medium | Prototype `weasyprint` early against sample data before full build |
+| ORM-level beneficiary scoping leaking data | Low | Explicit QuerySet filter on every beneficiary view |
+
+**Market:**
+
+| Risk | Mitigation |
+|---|---|
+| Owners never return to update estate plan | Phase 2 reminders; Phase 1 unassigned-asset badge creates natural return trigger |
+| Executor abandons onboarding | Code-only access, no account creation; portal is self-contained |
+
+**Resource (Solo Developer):**
+
+| Risk | Contingency |
+|---|---|
+| PDF generation overruns | Ship Phase 1 without PDF; add as Phase 1b patch. Web portal still delivers executor value. |
+| Phase 2 scope creep | Hard cutoff: any feature requiring new Celery async infrastructure is Phase 2. |
+
+---
+
+## Web Application Requirements
+
+### Architecture
+
+The Estate & Legacy feature is a brownfield addition to an existing Django 5.2 MPA. All new views use the existing server-rendered template pattern (Tailwind CSS + Alpine.js). No new frontend framework is introduced.
+
+**Three authentication paths:**
+1. **Owner** — standard Django session auth (`IsAuthenticated`); estate views filtered by `owner=request.user`
+2. **Executor** — token-based; access code maps to `EstateAccessToken` (UUID + expiry); read-only middleware enforces zero write operations; no my_garage account required
+3. **Beneficiary** — scoped invitation link from executor portal; maps to `BeneficiaryAccessGrant`; items filtered at ORM level to designated-only; no account required
+
+**Browser support:** Chrome, Firefox, Safari, Edge — last 2 major versions. No IE11.
+
+**SEO:** Not applicable. All estate views are behind auth or token-gated.
+
+**Real-time:** None required for Phase 1. Unassigned asset reminders use existing Celery Beat pattern.
 
 ### Responsive Design
 
-- **Mobile (< 640px):** Mini breakdown stacks vertically — Cost Basis, Market Value, Net Position on separate lines. Net Position badge prominent.
-- **Tablet (640px–1024px):** Inline if space permits; stacked fallback.
-- **Desktop (> 1024px):** Full inline mini breakdown, three values in a row. Detail page financial section as a card with component rows.
+- Owner estate management views: desktop-primary, mobile-responsive
+- Executor portal: mobile-capable — executor may access in stressful circumstances away from home
+- Beneficiary view: mobile-first — beneficiaries likely open access link on phone
 
-Existing Tailwind responsive utilities apply. No new CSS frameworks or breakpoints.
+### Accessibility
 
-### SEO
+- Executor portal and beneficiary view: **WCAG 2.1 AA** — contrast ratio ≥4.5:1, keyboard-navigable, labelled form fields, descriptive error messages
+- Owner estate management views: WCAG 2.1 A (platform standard)
 
-Not applicable — all views require `IsAuthenticated`. No public-facing pages added or modified.
+### Implementation Notes
 
-### Implementation Considerations
-
-- NFP display uses existing Tailwind utility classes and luxury token palette (`luxury-gold`, `luxury-black`, `luxury-card`). No new CSS.
-- Custom template filter `nfp_display` registered in existing `my_garage_tags`: formats `DecimalField` with sign prefix, currency formatting, `—` null fallback.
-- Performance targets and accessibility standards are governed by NFR1–NFR10.
+- URL namespace: `/estate/`
+- Executor and beneficiary sessions use separate session keys — no collision with owner Django sessions
+- PDF generation: `reportlab` or `weasyprint` — new dependency in `pyproject.toml`
+- No new DRF API endpoints for Phase 1 — all estate operations are synchronous Django views
 
 ---
 
 ## Functional Requirements
 
-> **Capability contract for all downstream work.**
-> UX designers, architects, and epic authors work only from this list. Any capability not listed here does not exist in the final product.
+### Estate Plan Management
 
-### Net Financial Position Calculation
+- **FR1:** Owner can designate a single executor for their account by name and contact information
+- **FR2:** Owner can view their current executor designation and update it at any time
+- **FR3:** Owner can remove their executor designation
+- **FR4:** Owner can manually activate estate access, granting the designated executor immediate portfolio access
+- **FR5:** Owner can view an estate plan completeness summary showing which assets have and have not been assigned a beneficiary
+- **FR6:** Owner can view a consolidated list of all beneficiary assignments across their entire portfolio
 
-- FR1: The system calculates NFP for any Vehicle: `Market Value − (Purchase Price + Σ ServiceRecord.total_cost + Σ Upgrade.cost [INSTALLED])`
-- FR2: The system calculates NFP for any DynamicCollectionItem: `Market Value − (Purchase Price + Σ GenericServiceRecord.total_cost + Σ GenericUpgrade.cost [COMPLETED])`
-- FR3: The system calculates NFP for any Timepiece: `Market Value − (Purchase Price + Σ GenericUpgrade.cost [COMPLETED])` — service costs excluded until migration story ships
-- FR4: The system produces a cost-component breakdown per asset: purchase price, service costs total, upgrade costs total, cost basis, market value, net position
-- FR5: The system represents NFP as null when market value is not set — no zero substitution, no error raised
+### Beneficiary Management
 
-### NFP Cache Management
+- **FR7:** Owner can create a reusable beneficiary profile with name, relationship type, and contact information
+- **FR8:** Owner can edit and delete beneficiary profiles
+- **FR9:** Owner can assign a beneficiary to any Vehicle in their portfolio
+- **FR10:** Owner can assign a beneficiary to any Timepiece in their portfolio
+- **FR11:** Owner can assign a beneficiary to any DynamicCollectionItem in any collection
+- **FR12:** Owner can add a conditional note to any beneficiary assignment (e.g., "do not sell," "hold in trust")
+- **FR13:** Owner can remove or change a beneficiary assignment on any asset at any time
+- **FR14:** Owner can designate an asset for charitable or institutional bequest (non-individual beneficiary)
 
-- FR6: The system stores a cached `net_financial_position` value on each Vehicle, Timepiece, and DynamicCollectionItem
-- FR7: The system refreshes a Vehicle's cached NFP when any associated ServiceRecord is created, updated, or deleted
-- FR8: The system refreshes a Vehicle's cached NFP when any associated Upgrade is created, updated, or deleted
-- FR9: The system refreshes a DynamicCollectionItem's cached NFP when any associated GenericServiceRecord is created, updated, or deleted
-- FR10: The system refreshes a DynamicCollectionItem's cached NFP when any associated GenericUpgrade is created, updated, or deleted
-- FR11: The system refreshes a Timepiece's cached NFP when any associated GenericUpgrade is created, updated, or deleted
+### Estate Access & Security
 
-### Asset List View Financial Display
+- **FR15:** System generates a cryptographically random estate access code on owner request
+- **FR16:** Executor can activate read-only portfolio access using an access code without creating a my_garage account
+- **FR17:** Owner can revoke an executor's access code before or after it has been used
+- **FR18:** System logs all executor and beneficiary access events with timestamp and action type
+- **FR19:** Executor can generate and share a scoped beneficiary access link for any designated beneficiary
+- **FR20:** Beneficiary can access their designated items via a link without creating a my_garage account
+- **FR21:** Beneficiary access links are scoped at the data layer — a beneficiary cannot access items designated to other beneficiaries
 
-- FR12: The collector can view a financial summary (cost basis, market value, net position) for each Vehicle in the Vehicle list
-- FR13: The collector can view a financial summary for each Timepiece in the Timepiece list
-- FR14: The collector can view a financial summary for each item in any DynamicCollectionItem list
-- FR15: The collector can distinguish gain from loss on any list row via both colour and symbol simultaneously — not colour alone
-- FR16: The collector sees NFP displayed as unavailable — not zero, not error — when market value is unset
+### Executor Portal
 
-### Asset Detail View Financial Display
+- **FR22:** Executor can view the complete portfolio of all assets across all asset types (Vehicle, Timepiece, all collections)
+- **FR23:** Executor can view full item detail for any asset including purchase history, valuation history, service records, photos, and owner notes
+- **FR24:** Executor can see which beneficiary each asset is assigned to
+- **FR25:** Executor can identify all assets with no beneficiary assignment, with a clear visual indicator
+- **FR26:** Executor can view the valuation snapshot captured at the moment estate access was activated
+- **FR27:** Executor cannot modify, create, or delete any asset record or estate plan data
 
-- FR17: The collector can view a full financial breakdown on the Vehicle detail page: each cost component, cost basis, market value, net position
-- FR18: The collector can view a full financial breakdown on the Timepiece detail page: purchase price, completed upgrade costs, cost basis, market value, net position
-- FR19: The collector can view a full financial breakdown on the DynamicCollectionItem detail page: each cost component, cost basis, market value, net position
-- FR20: The collector sees contextual guidance when market value is unset, directing them to add a valuation
+### Beneficiary Experience
 
-### Portfolio-Level Financial Aggregation
+- **FR28:** Beneficiary can view only the assets specifically designated to them — no other portfolio items are accessible
+- **FR29:** Beneficiary can view full item detail for their designated assets including current value, purchase history, service records, photos, and the owner's personal note for that item
+- **FR30:** Beneficiary can export a personal inventory of only their designated items
 
-- FR21: The collector can view an aggregate NFP across all assets on the home dashboard
-- FR22: The collector can view aggregate NFP broken down by asset type on the Insights page
-- FR23: The collector can view per-asset-type NFP totals alongside existing portfolio allocation metrics on the Insights page
+### Estate Inventory Export
 
-### Timepiece Upgrade Tracking
+- **FR31:** Executor can generate a complete estate inventory PDF covering all assets, their valuations at activation date, cost basis, service history summary, storage location (if provided), and beneficiary assignments
+- **FR32:** Generated PDF includes: generation date/time (UTC), owner name, valuation snapshot date, and a legal disclaimer stating the document is for estate planning reference only
+- **FR33:** System records each PDF export with generation timestamp for audit purposes
+- **FR34:** Executor can regenerate the estate inventory PDF at any time while access is active
 
-- FR24: The collector can add a GenericUpgrade project to a Timepiece (name, brand, part number, status, cost, ordered date, completion date, notes)
-- FR25: The collector can edit an existing Timepiece upgrade project
-- FR26: The collector can delete a Timepiece upgrade project
-- FR27: The collector can advance a Timepiece upgrade through: Wishlist → Ordered → In Progress → Completed → Cancelled
-- FR28: The collector can view all upgrade projects for a Timepiece on the Timepiece detail page
+### Asset Coverage & Inventory Integrity
 
-### Display Accessibility & Formatting
+- **FR35:** All three asset types (Vehicle, Timepiece, DynamicCollectionItem) support beneficiary assignment through a uniform interface
+- **FR36:** Assets added to the portfolio after estate plan setup appear in the executor portal, even if they have no beneficiary assignment
+- **FR37:** Unassigned assets are flagged prominently in the executor portal with a clear status indicator
 
-- FR29: The system displays NFP values with sign prefix (`+`/`−`) and currency formatting; `—` when null
-- FR30: NFP gain/loss signals use both colour and symbol — interpretable without colour perception
-- FR31: All NFP monetary values have `aria-label` attributes describing value and meaning in plain language
-- FR32: Interactive NFP elements (tooltips, hint links) are keyboard-navigable via `Tab` and activatable via `Enter`/`Space`
+### Valuation Snapshot & Audit Integrity
 
-### Out of Scope — Separate Migration Story
-
-> Tracked for a future story. NOT in scope for this PRD:
-> - Service record tracking for Timepieces via `GenericServiceRecord`
-> - Refactor `GenericServiceRecord.item` from FK to `GenericForeignKey`
-> - Migrate Vehicle `ServiceRecord` + `Upgrade` to the generic pattern
-> - Retire Vehicle-specific service/upgrade models
+- **FR38:** System captures an immutable valuation snapshot (current_market_value for all assets) at the exact moment estate access is activated
+- **FR39:** Valuation snapshots cannot be modified or deleted after capture
+- **FR40:** System maintains a change history for estate plan modifications (assignments created, updated, deleted)
+- **FR41:** When an owner deletes their account, all beneficiary PII and estate plan records are permanently destroyed — requires explicit owner confirmation
 
 ---
 
@@ -409,59 +447,32 @@ Not applicable — all views require `IsAuthenticated`. No public-facing pages a
 
 ### Performance
 
-- NFR1: Asset list pages must not exhibit perceptible load time increase after NFP display is added. NFP data served from cached field — no aggregation queries at list render time.
-- NFR2: NFP cache refresh completes within the HTTP request/response cycle. Updated values visible on next page load without a separate user action.
-- NFR3: Portfolio NFP aggregate uses `aggregate(Sum(...))` per asset type — max 3 queries total, not per-asset iteration. A query count regression test asserts this bound.
-- NFR4: NFP breakdown selector on detail pages is permitted one additional aggregation query per render. Must be optimised before shipping if profiling shows user-perceptible degradation.
+- **NFR1:** Estate management page (owner — full asset list with assignment status) loads within 2 seconds for portfolios up to 100 items
+- **NFR2:** Executor portal initial load (complete portfolio view) completes within 3 seconds — no pagination; executor must see the complete picture immediately
+- **NFR3:** Beneficiary scoped view loads within 2 seconds regardless of total portfolio size (ORM filter applied server-side)
+- **NFR4:** PDF estate inventory export completes within 10 seconds for portfolios up to 100 items; larger portfolios handled asynchronously via Celery with a progress indicator
+- **NFR5:** Estate access activation (valuation snapshot + token issuance) completes within 5 seconds
 
 ### Security
 
-- NFR5: All views displaying NFP require `IsAuthenticated`. No NFP values accessible to unauthenticated users.
-- NFR6: All ORM queries fetching assets for NFP filter by `owner=request.user`. No cross-user NFP visibility through any view, endpoint, or aggregate.
-- NFR7: `refresh_asset_nfp` validates asset ownership before writing — does not accept arbitrary asset IDs from user input.
+- **NFR6:** All estate access tokens (executor codes, beneficiary links) are generated using cryptographically secure random functions (Python `secrets` module); tokens are never sequential or guessable
+- **NFR7:** Executor access tokens expire after 72 hours if unused; activated executor sessions expire after 30 days of inactivity
+- **NFR8:** Beneficiary access links are single-use for initial activation; once activated, the beneficiary session is maintained for 30 days
+- **NFR9:** Executor and beneficiary sessions use a separate session namespace from owner Django sessions — no session key collision possible
+- **NFR10:** Beneficiary data isolation is enforced at the ORM query level on every request — UI-layer filtering alone is insufficient
+- **NFR11:** All estate-related access events (token activation, portal views, PDF exports, beneficiary link generation) are written to an immutable audit log
+- **NFR12:** Beneficiary PII is stored only within the owner's account and is never transmitted to third parties or used for platform analytics
+- **NFR13:** All data in transit encrypted via HTTPS (TLS 1.2 minimum); database-at-rest encryption follows the platform's existing PostgreSQL configuration
 
 ### Accessibility
 
-- NFR8: NFP gain/loss indicators satisfy WCAG 2.1 SC 1.4.1 (Use of Colour) — dual signal (colour + symbol) required, per FR30.
-- NFR9: All NFP monetary values rendered in HTML include `aria-label` describing value and meaning (e.g. `aria-label="Net Position: gain of $4,450"`).
-- NFR10: Interactive NFP elements are keyboard-reachable (`Tab`) and activatable (`Enter`/`Space`) with visible Tailwind focus ring.
+- **NFR14:** Executor portal and beneficiary view meet **WCAG 2.1 AA** — minimum contrast ratio 4.5:1, all interactive elements keyboard-navigable, form fields have associated labels, error messages are descriptive
+- **NFR15:** Owner estate management views meet WCAG 2.1 A (platform standard)
+- **NFR16:** PDF exports use readable font sizes (minimum 10pt body text) and logical reading order for screen reader compatibility
 
-### Code Quality & Testability
+### Data Reliability & Durability
 
-- NFR11: All new code passes `pixi run -- ruff check .` (zero errors) and `pixi run -- ruff format --check .` (zero diffs).
-- NFR12: Existing 304-test suite passes without regression (`pixi run pytest tests/unit/ tests/functional/ -x -q`).
-- NFR13: Unit tests cover NFP calculation for all 3 asset types: nominal case, null market value, zero service records, zero upgrades, post-delete cache refresh.
-- NFR14: Portfolio aggregate query bound (NFR3) verified by functional test using `django.test.utils.CaptureQueriesContext`.
-- NFR15: All model changes accompanied by generated migrations committed in the same changeset.
-
----
-
-## Project Scoping & Risk Analysis
-
-### MVP Strategy
-
-**Approach:** Problem-solving MVP — NFP must be honest and consistent across every asset type simultaneously. A partial rollout (Vehicles only, or NFP without Timepiece upgrade tracking) is not a valid shipping state.
-
-**Resource profile:** Solo developer. Sequential: models → calculation layer → service layer → UI → tests.
-
-**Timepiece boundary:** Timepieces use the existing `GenericUpgrade` model via a new `GenericRelation` — no new models introduced. Timepiece service record tracking ships in the separate migration story that will also unify Vehicles under the generic pattern.
-
-### Risk Mitigation
-
-**Cache invalidation completeness (High)**
-- Risk: `post_delete` signal handlers missed — NFP goes stale after record deletion.
-- Mitigation: `refresh_asset_nfp` registered as both `post_save` and `post_delete` handler for all supporting models. Test: create record → verify NFP → delete record → verify NFP recalculated correctly.
-
-**Migration ordering (Low)**
-- Risk: Dependency issues adding `net_financial_position` across 3 models simultaneously.
-- Mitigation: `GenericRelation` on Timepiece requires no migration. Three `DecimalField` additions are independent. Single `makemigrations` run after all model changes in place.
-
-**Portfolio aggregate N+1 (Low)**
-- Risk: `get_portfolio_nfp_summary` iterates per asset rather than using bulk aggregation.
-- Mitigation: `aggregate(Sum('net_financial_position'))` per asset type. Bounded by functional test using `CaptureQueriesContext`.
-
-**Separate migration story (Scope control)**
-The following are explicitly out of scope and tracked as a future story:
-- `GenericServiceRecord` GenericFK refactor
-- Vehicle model unification under generic pattern
-- Timepiece service record tracking
+- **NFR17:** Valuation snapshots are stored in an append-only table — no `UPDATE` or `DELETE` operations permitted after creation
+- **NFR18:** Estate plan records (beneficiary assignments, executor designation, access tokens) are excluded from any routine data cleanup, archival, or TTL policies
+- **NFR19:** Database migrations affecting estate models must include a rollback script and be tested against production data volume before deployment
+- **NFR20:** PDF export records (timestamp, asset count, export hash) are retained for the lifetime of the owner account

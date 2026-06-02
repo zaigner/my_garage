@@ -2,9 +2,81 @@ from datetime import date, timedelta
 from decimal import Decimal
 from typing import Any, Dict, List, Optional, Tuple
 
-from django.db.models import Q
+from django.contrib.contenttypes.models import ContentType
+from django.db.models import Q, Sum
 
-from my_garage.models import DynamicCollectionItem, PortfolioSnapshot
+from my_garage.models import DynamicCollectionItem, GenericUpgrade, PortfolioSnapshot
+
+
+def get_item_nfp_breakdown(item: DynamicCollectionItem) -> Dict[str, Any]:
+    """
+    Calculate the full NFP cost breakdown for a DynamicCollectionItem.
+
+    Returns a dict with:
+      purchase_price, service_total, upgrade_total,
+      cost_basis, market_value, net_position
+
+    net_position is None when current_market_value is None.
+    purchase_price is allowed to be None; cost_basis treats it as zero.
+
+    Upgrades are resolved from both the direct FK (item=) and the
+    GenericForeignKey (content_type/object_id) paths to handle all
+    linking conventions in use.
+    """
+    purchase_price = item.purchase_price
+    market_value = item.current_market_value
+
+    service_agg = item.service_records.aggregate(total=Sum("total_cost"))
+    service_total = service_agg["total"] or Decimal("0.00")
+
+    ct = ContentType.objects.get_for_model(DynamicCollectionItem)
+    upgrade_agg = GenericUpgrade.objects.filter(
+        Q(item=item) | Q(content_type=ct, object_id=item.pk),
+        status="COMPLETED",
+    ).aggregate(total=Sum("cost"))
+    upgrade_total = upgrade_agg["total"] or Decimal("0.00")
+
+    cost_basis = (purchase_price or Decimal("0.00")) + service_total + upgrade_total
+
+    if market_value is None:
+        net_position = None
+    else:
+        net_position = market_value - cost_basis
+
+    return {
+        "purchase_price": purchase_price,
+        "service_total": service_total,
+        "upgrade_total": upgrade_total,
+        "cost_basis": cost_basis,
+        "market_value": market_value,
+        "net_position": net_position,
+    }
+
+
+def get_portfolio_nfp_summary(user) -> Optional[Decimal]:
+    """
+    Return the aggregate net_financial_position across all DynamicCollectionItem
+    owned by this user. Single aggregate query — no per-item iteration.
+    Returns None when no items have NFP set.
+    """
+    result = DynamicCollectionItem.objects.filter(owner=user).aggregate(
+        total=Sum("net_financial_position")
+    )
+    return result["total"]
+
+
+def get_portfolio_nfp_by_collection(user) -> Dict[str, Optional[Decimal]]:
+    """
+    Return per-collection-type NFP totals for a user.
+    Single aggregate query grouped by collection_type name.
+    Returns a dict: {collection_type_name: nfp_total_or_None}
+    """
+    rows = (
+        DynamicCollectionItem.objects.filter(owner=user)
+        .values("collection_type__name")
+        .annotate(nfp=Sum("net_financial_position"))
+    )
+    return {row["collection_type__name"]: row["nfp"] for row in rows}
 
 
 def global_search(user, query: str) -> List[Dict[str, Any]]:

@@ -6,7 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 
-from my_garage.api.selectors import portfolio_get_yoy_change
+from my_garage.api.selectors import get_portfolio_nfp_summary, portfolio_get_yoy_change
 from my_garage.forms import RegistrationForm
 from my_garage.models import (
     CollectionType,
@@ -83,6 +83,7 @@ def home(request: HttpRequest) -> HttpResponse:
         )[:3]
 
         yoy_pct_change, yoy_source = portfolio_get_yoy_change(request.user)
+        portfolio_nfp = get_portfolio_nfp_summary(request.user)
 
         context.update(
             {
@@ -95,6 +96,7 @@ def home(request: HttpRequest) -> HttpResponse:
                 "recent_acquisitions": recent_acquisitions,
                 "yoy_pct_change": yoy_pct_change,
                 "yoy_source": yoy_source,
+                "portfolio_nfp": portfolio_nfp,
             }
         )
 

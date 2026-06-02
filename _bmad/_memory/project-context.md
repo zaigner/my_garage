@@ -140,7 +140,7 @@ pixi run refresh-context    # Refresh this BMAD context file
 
 ## Current Project State
 
-> Auto-refreshed by `pixi run refresh-context`. Last updated: 2026-05-27 09:45 UTC
+> Auto-refreshed by `pixi run refresh-context`. Last updated: 2026-06-02 15:07 UTC
 
 | Metric | Value |
 |---|---|
@@ -148,5 +148,5 @@ pixi run refresh-context    # Refresh this BMAD context file
 | Collection items | 3 |
 | Collections value | $56,995.00 |
 | **Total portfolio value** | **$56,995.00** |
-| Last refresh | 2026-05-27 09:45 UTC |
+| Last refresh | 2026-06-02 15:07 UTC |
 

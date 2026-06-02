@@ -107,28 +107,42 @@
                                     </div>
 
                                     <!-- Details -->
-                                    <div class="px-4 py-3 flex items-center justify-between border-t border-white/5">
-                                        <div class="min-w-0 mr-4">
-                                            <h3 class="text-base salon-font text-white truncate">{{ item.name }}</h3>
-                                            <!-- Show first display field as subtitle if present -->
-                                            {% for field_name in collection_type.list_display_fields %}
-                                                {% if forloop.first %}
-                                                    {% with value=item.custom_fields|get_item:field_name %}
-                                                        {% if value %}
-                                                            <p class="text-luxury-gold text-xs uppercase tracking-wider truncate">{{ value }}</p>
-                                                        {% endif %}
-                                                    {% endwith %}
-                                                {% endif %}
-                                            {% endfor %}
-                                        </div>
-                                        <div class="text-right shrink-0">
-                                            {% if item.current_market_value %}
-                                                <span class="block uppercase tracking-widest text-[10px] text-gray-600 mb-0.5">Value</span>
-                                                <span class="font-mono text-white text-sm">${{ item.current_market_value|floatformat:0 }}</span>
-                                            {% elif item.purchase_price %}
-                                                <span class="block uppercase tracking-widest text-[10px] text-gray-600 mb-0.5">Paid</span>
-                                                <span class="font-mono text-gray-300 text-sm">${{ item.purchase_price|floatformat:0 }}</span>
+                                    <div class="px-4 py-3 border-t border-white/5">
+                                        <h3 class="text-base salon-font text-white truncate mb-2">{{ item.name }}</h3>
+                                        <!-- Show first display field as subtitle if present -->
+                                        {% for field_name in collection_type.list_display_fields %}
+                                            {% if forloop.first %}
+                                                {% with value=item.custom_fields|get_item:field_name %}
+                                                    {% if value %}
+                                                        <p class="text-luxury-gold text-xs uppercase tracking-wider truncate mb-2">{{ value }}</p>
+                                                    {% endif %}
+                                                {% endwith %}
                                             {% endif %}
+                                        {% endfor %}
+                                        <!-- Mini NFP Breakdown -->
+                                        <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 pt-2 border-t border-white/5">
+                                            <div class="flex flex-col">
+                                                <span class="uppercase tracking-widest text-[9px] text-gray-600 mb-0.5">Cost Basis</span>
+                                                <span class="font-mono text-gray-300 text-xs">{{ item.total_cost_basis|currency_display }}</span>
+                                            </div>
+                                            <span class="hidden sm:block text-white/10">|</span>
+                                            <div class="flex flex-col">
+                                                <span class="uppercase tracking-widest text-[9px] text-gray-600 mb-0.5">Market Value</span>
+                                                <span class="font-mono text-white text-xs">{{ item.current_market_value|currency_display }}</span>
+                                            </div>
+                                            <span class="hidden sm:block text-white/10">|</span>
+                                            <div class="flex flex-col">
+                                                <span class="uppercase tracking-widest text-[9px] text-gray-600 mb-0.5">Net Position</span>
+                                                {% if item.net_financial_position is not None %}
+                                                    <span class="font-mono text-xs font-semibold {{ item.net_financial_position|nfp_color_class }}"
+                                                          aria-label="Net Position: {% if item.net_financial_position >= 0 %}gain{% else %}loss{% endif %} of {{ item.net_financial_position|nfp_display }}">
+                                                        {{ item.net_financial_position|nfp_display }}
+                                                    </span>
+                                                {% else %}
+                                                    <span class="font-mono text-gray-600 text-xs"
+                                                          aria-label="Net Position: not calculated — market value not set">—</span>
+                                                {% endif %}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

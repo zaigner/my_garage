@@ -19,6 +19,22 @@ class VehicleServiceError(Exception):
     services provider pattern instead."""
 
 
+def refresh_item_nfp(item) -> None:
+    """
+    Recalculate and persist net_financial_position and total_cost_basis
+    for a DynamicCollectionItem.
+
+    Called synchronously from signal handlers — completes within the
+    HTTP request/response cycle. Uses update_fields to avoid a full save.
+    """
+    from my_garage.api.selectors import get_item_nfp_breakdown
+
+    breakdown = get_item_nfp_breakdown(item)
+    item.net_financial_position = breakdown["net_position"]
+    item.total_cost_basis = breakdown["cost_basis"]
+    item.save(update_fields=["net_financial_position", "total_cost_basis"])
+
+
 def process_generic_service_record_ocr(record) -> dict:
     """
     Call the FastAPI OCR service for a GenericServiceRecord's receipt image.

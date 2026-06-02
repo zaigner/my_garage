@@ -1,4 +1,5 @@
 {% extends "my_garage/base.html" %}
+{% load my_garage_extras %}
 
 {% block title %}Portfolio Insights | The Collection{% endblock %}
 
@@ -38,7 +39,7 @@
         <h1 class="text-3xl md:text-4xl font-serif italic text-luxury-gold mb-10">Portfolio Insights</h1>
 
         <!-- KPI Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
             <div class="detail-card rounded-lg p-6">
                 <p class="text-xs uppercase tracking-widest text-gray-500 mb-2">Total Portfolio Value</p>
                 <p class="text-3xl font-serif text-luxury-white">${{ total_value|floatformat:0 }}</p>
@@ -58,11 +59,25 @@
             </div>
 
             <div class="detail-card rounded-lg p-6">
+                <p class="text-xs uppercase tracking-widest text-gray-500 mb-2">Net Financial Position</p>
+                {% if portfolio_nfp is not None %}
+                    <p class="text-3xl font-serif {{ portfolio_nfp|nfp_color_class }}"
+                       aria-label="Total Net Financial Position: {% if portfolio_nfp >= 0 %}gain{% else %}loss{% endif %} of {{ portfolio_nfp|nfp_display }}">
+                        {{ portfolio_nfp|nfp_display }}
+                    </p>
+                {% else %}
+                    <p class="text-3xl font-serif text-gray-600"
+                       aria-label="Total Net Financial Position: not calculated">—</p>
+                {% endif %}
+                <p class="text-gray-600 text-xs mt-3 uppercase tracking-wider">All-in cost vs. market value</p>
+            </div>
+
+            <div class="detail-card rounded-lg p-6">
                 <p class="text-xs uppercase tracking-widest text-gray-500 mb-2">Total Equity</p>
                 <p class="text-3xl font-serif {% if total_equity >= 0 %}text-luxury-white{% else %}text-red-400{% endif %}">
                     {% if total_equity >= 0 %}+{% endif %}${{ total_equity|floatformat:0 }}
                 </p>
-                <p class="text-gray-600 text-xs mt-3 uppercase tracking-wider">Market value minus cost basis</p>
+                <p class="text-gray-600 text-xs mt-3 uppercase tracking-wider">Market value minus purchase price</p>
             </div>
 
             <div class="detail-card rounded-lg p-6">
@@ -94,11 +109,20 @@
                         <div class="bg-luxury-gold h-1.5 rounded-full transition-all duration-700"
                              style="width: {{ c.pct }}%"></div>
                     </div>
-                    {% if c.equity != 0 %}
-                    <p class="text-[10px] text-gray-600 mt-1 uppercase tracking-wider">
-                        Equity: {% if c.equity >= 0 %}+{% endif %}${{ c.equity|floatformat:0 }}
-                    </p>
-                    {% endif %}
+                    <div class="flex gap-4 mt-1">
+                        {% if c.equity != 0 %}
+                        <p class="text-[10px] text-gray-600 uppercase tracking-wider">
+                            Equity: {% if c.equity >= 0 %}+{% endif %}${{ c.equity|floatformat:0 }}
+                        </p>
+                        {% endif %}
+                        {% if c.nfp is not None %}
+                        <p class="text-[10px] uppercase tracking-wider {{ c.nfp|nfp_color_class }}">
+                            NFP: {{ c.nfp|nfp_display }}
+                        </p>
+                        {% else %}
+                        <p class="text-[10px] text-gray-600 uppercase tracking-wider">NFP: —</p>
+                        {% endif %}
+                    </div>
                 </div>
                 {% endfor %}
             </div>

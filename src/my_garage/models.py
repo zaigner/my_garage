@@ -145,6 +145,22 @@ class DynamicCollectionItem(models.Model):
         help_text="Current estimated value",
     )
 
+    # NFP fields: cached, refreshed by signals on item/service-record/upgrade saves
+    total_cost_basis = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Cached cost basis: purchase price + services + completed upgrades",
+    )
+    net_financial_position = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Cached NFP: market value minus all-in cost basis",
+    )
+
     # Visual & Notes
     photo = models.ImageField(
         upload_to="collections/%Y/%m/",

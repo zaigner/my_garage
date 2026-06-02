@@ -12,4 +12,4 @@ class MyGarageConfig(AppConfig):
 
     def ready(self):
         """Import signal handlers when app is ready."""
-        pass
+        from my_garage import signals  # noqa: F401

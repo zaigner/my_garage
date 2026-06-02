@@ -314,35 +314,73 @@
 
             <!-- Sidebar -->
             <div class="lg:col-span-1">
-                <!-- Financial Summary -->
+                <!-- Financial Position -->
                 <div class="detail-card rounded-lg p-6 mb-6">
-                    <h2 class="text-luxury-gold text-sm uppercase tracking-widest mb-4 border-b border-white/10 pb-2">Financial Summary</h2>
+                    <h2 class="text-luxury-gold text-sm uppercase tracking-widest mb-4 border-b border-white/10 pb-2">Financial Position</h2>
 
-                    {% if item.purchase_price %}
-                        <div class="mb-4">
-                            <p class="text-xs uppercase tracking-widest text-gray-600 mb-1">Purchase Price</p>
-                            <p class="text-2xl font-mono text-white">${{ item.purchase_price|floatformat:2 }}</p>
-                            {% if item.purchase_date %}
-                                <p class="text-xs text-gray-500 mt-1">{{ item.purchase_date }}</p>
-                            {% endif %}
-                        </div>
-                    {% endif %}
-
-                    {% if item.current_market_value %}
-                        <div class="mb-4">
-                            <p class="text-xs uppercase tracking-widest text-gray-600 mb-1">Current Value</p>
-                            <p class="text-2xl font-mono text-luxury-gold">${{ item.current_market_value|floatformat:2 }}</p>
-                        </div>
-                    {% endif %}
-
-                    {% if item.equity %}
-                        <div class="pt-4 border-t border-white/10">
-                            <p class="text-xs uppercase tracking-widest text-gray-600 mb-1">Equity</p>
-                            <p class="text-2xl font-mono {% if item.equity >= 0 %}text-luxury-gold{% else %}text-red-400{% endif %}">
-                                ${{ item.equity|floatformat:2 }}
+                    <!-- Cost components -->
+                    <div class="space-y-3 mb-4">
+                        <div class="flex justify-between items-baseline">
+                            <p class="text-xs uppercase tracking-widest text-gray-600">Purchase Price</p>
+                            <p class="font-mono text-white text-sm">
+                                {{ nfp_breakdown.purchase_price|currency_display }}
                             </p>
                         </div>
-                    {% endif %}
+                        {% if nfp_breakdown.purchase_date %}
+                        <p class="text-[10px] text-gray-600 -mt-2">{{ item.purchase_date }}</p>
+                        {% endif %}
+                        <div class="flex justify-between items-baseline">
+                            <p class="text-xs uppercase tracking-widest text-gray-600">Service Costs</p>
+                            <p class="font-mono text-gray-300 text-sm">
+                                {{ nfp_breakdown.service_total|currency_display }}
+                            </p>
+                        </div>
+                        <div class="flex justify-between items-baseline">
+                            <p class="text-xs uppercase tracking-widest text-gray-600">Upgrades</p>
+                            <p class="font-mono text-gray-300 text-sm">
+                                {{ nfp_breakdown.upgrade_total|currency_display }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Cost Basis total -->
+                    <div class="flex justify-between items-baseline py-3 border-t border-b border-white/10 mb-4">
+                        <p class="text-xs uppercase tracking-widest text-gray-400 font-semibold">Cost Basis</p>
+                        <p class="font-mono text-white font-semibold">
+                            {{ nfp_breakdown.cost_basis|currency_display }}
+                        </p>
+                    </div>
+
+                    <!-- Market Value -->
+                    <div class="flex justify-between items-baseline mb-3">
+                        <p class="text-xs uppercase tracking-widest text-gray-600">Market Value</p>
+                        <p class="font-mono text-luxury-gold text-sm">
+                            {{ nfp_breakdown.market_value|currency_display }}
+                        </p>
+                    </div>
+
+                    <!-- Net Position -->
+                    <div class="flex justify-between items-baseline pt-3 border-t border-white/10">
+                        <p class="text-xs uppercase tracking-widest text-gray-600">Net Position</p>
+                        {% if nfp_breakdown.net_position is not None %}
+                            <p class="font-mono text-lg font-semibold {{ nfp_breakdown.net_position|nfp_color_class }}"
+                               aria-label="Net Position: {% if nfp_breakdown.net_position >= 0 %}gain{% else %}loss{% endif %} of {{ nfp_breakdown.net_position|nfp_display }}">
+                                {{ nfp_breakdown.net_position|nfp_display }}
+                            </p>
+                        {% else %}
+                            <span x-data="{ show: false }" class="relative cursor-help"
+                                  @mouseenter="show=true" @mouseleave="show=false"
+                                  @focus="show=true" @blur="show=false"
+                                  tabindex="0" role="tooltip">
+                                <p class="font-mono text-gray-600 text-lg"
+                                   aria-label="Net Position: not calculated — market value not set">—</p>
+                                <span x-show="show" x-cloak
+                                      class="absolute right-0 bottom-full mb-2 w-52 bg-gray-900 border border-white/10 text-gray-300 text-xs rounded p-2 leading-relaxed z-10">
+                                    Add a valuation to calculate net position
+                                </span>
+                            </span>
+                        {% endif %}
+                    </div>
                 </div>
 
                 <!-- Provider Actions (conditionally rendered by service registry) -->

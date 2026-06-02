@@ -16,7 +16,13 @@ from my_garage.models import (
     GenericValuationHistory,
 )
 
-from .api.selectors import global_search, portfolio_get_yoy_change
+from .api.selectors import (
+    get_item_nfp_breakdown,
+    get_portfolio_nfp_by_collection,
+    get_portfolio_nfp_summary,
+    global_search,
+    portfolio_get_yoy_change,
+)
 from .forms import (
     CollectionTypeForm,
     DynamicCollectionItemForm,
@@ -555,6 +561,8 @@ def collection_item_detail(
         and value not in (None, "", [], {})
     ]
 
+    nfp_breakdown = get_item_nfp_breakdown(item)
+
     return render(
         request,
         "my_garage/collection_item_detail.html",
@@ -569,6 +577,7 @@ def collection_item_detail(
             "relationships_to": relationships_to,
             "system_field_names": system_field_names,
             "display_custom_fields": display_custom_fields,
+            "nfp_breakdown": nfp_breakdown,
             **provider_context,
         },
     )
@@ -762,6 +771,12 @@ def portfolio_insights(request: HttpRequest) -> HttpResponse:
 
     yoy_pct_change, yoy_source = portfolio_get_yoy_change(request.user)
 
+    # NFP aggregation — two queries: one aggregate, one grouped by collection type
+    portfolio_nfp = get_portfolio_nfp_summary(request.user)
+    nfp_by_collection = get_portfolio_nfp_by_collection(request.user)
+    for c in category_list:
+        c["nfp"] = nfp_by_collection.get(c["name"])
+
     top_items = sorted(
         [i for i in all_items if i.current_market_value],
         key=lambda x: x.current_market_value,
@@ -776,6 +791,7 @@ def portfolio_insights(request: HttpRequest) -> HttpResponse:
             "total_value": total_value,
             "total_cost": total_cost,
             "total_equity": total_value - total_cost,
+            "portfolio_nfp": portfolio_nfp,
             "yoy_pct_change": yoy_pct_change,
             "yoy_source": yoy_source,
             "top_items": top_items,
