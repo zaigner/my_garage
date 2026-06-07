@@ -82,6 +82,9 @@ def home(request: HttpRequest) -> HttpResponse:
             reverse=True,
         )[:3]
 
+        total_items_count = all_collection_items.count()
+        total_collection_types_count = collection_types.count()
+
         yoy_pct_change, yoy_source = portfolio_get_yoy_change(request.user)
         portfolio_nfp = get_portfolio_nfp_summary(request.user)
 
@@ -97,6 +100,8 @@ def home(request: HttpRequest) -> HttpResponse:
                 "yoy_pct_change": yoy_pct_change,
                 "yoy_source": yoy_source,
                 "portfolio_nfp": portfolio_nfp,
+                "total_items_count": total_items_count,
+                "total_collection_types_count": total_collection_types_count,
             }
         )
 
