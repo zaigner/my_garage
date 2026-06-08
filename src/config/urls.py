@@ -17,6 +17,7 @@ urlpatterns = [
     path("accounts/", include("django.contrib.auth.urls")),
     path("accounts/register/", views.register, name="register"),
     path("accounts/profile/", views.profile, name="profile"),
+    path("accounts/delete/", views.delete_account, name="delete_account"),
     # API
     path("api/", include("config.api_router")),
     # ── Phase 4 redirects ─────────────────────────────────────────────────────

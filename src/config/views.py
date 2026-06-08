@@ -1,12 +1,17 @@
 from datetime import datetime
 
 from django.contrib import messages
-from django.contrib.auth import login
+from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
+from django.views.decorators.http import require_POST
 
-from my_garage.api.selectors import get_portfolio_nfp_summary, portfolio_get_yoy_change
+from my_garage.api.selectors import (
+    get_estate_dashboard_context,
+    get_portfolio_nfp_summary,
+    portfolio_get_yoy_change,
+)
 from my_garage.forms import ProfileForm, RegistrationForm
 from my_garage.models import (
     CollectionType,
@@ -140,9 +145,30 @@ def profile(request: HttpRequest) -> HttpResponse:
 
     total_items = DynamicCollectionItem.objects.filter(owner=user).count()
 
+    estate_ctx = get_estate_dashboard_context(user)
+    executor = estate_ctx["executor"]
     return render(
-        request, "pages/profile.html", {"form": form, "total_items": total_items}
+        request,
+        "pages/profile.html",
+        {
+            "form": form,
+            "total_items": total_items,
+            "executor_designated": executor is not None,
+            "estate_executor_name": executor.name if executor else "",
+            "estate_items_total": estate_ctx["items_total"],
+            "estate_items_assigned": estate_ctx["items_assigned"],
+            "estate_completeness_pct": estate_ctx["completeness_pct"],
+        },
     )
+
+
+@login_required
+@require_POST
+def delete_account(request: HttpRequest) -> HttpResponse:
+    user = request.user
+    logout(request)
+    user.delete()
+    return redirect("home")
 
 
 @login_required

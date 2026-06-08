@@ -229,6 +229,114 @@
             </div>
         </div>
 
+        <!-- Card 4: Estate & Legacy -->
+        <div class="bg-luxury-card border border-white/5 rounded-xl p-8">
+            <h2 class="text-luxury-gold text-sm uppercase tracking-widest border-b border-white/10 pb-3 mb-6">
+                Estate &amp; Legacy
+            </h2>
+            <div class="space-y-4">
+                <!-- Executor status -->
+                <div class="flex items-start gap-3">
+                    {% if executor_designated %}
+                        <span class="mt-1 w-2 h-2 rounded-full bg-green-400 flex-shrink-0"></span>
+                        <div>
+                            <p class="text-xs uppercase tracking-widest text-gray-400">Executor</p>
+                            <p class="text-luxury-white text-sm mt-0.5">{{ estate_executor_name }}</p>
+                        </div>
+                    {% else %}
+                        <span class="mt-1 w-2 h-2 rounded-full bg-yellow-400 flex-shrink-0"></span>
+                        <div>
+                            <p class="text-xs uppercase tracking-widest text-gray-400">Executor</p>
+                            <p class="text-yellow-400 text-sm mt-0.5">No executor designated</p>
+                        </div>
+                    {% endif %}
+                </div>
+                <!-- Completeness -->
+                <div>
+                    <p class="text-xs uppercase tracking-widest text-gray-400 mb-1">Plan Completeness</p>
+                    {% if estate_items_total == 0 %}
+                        <p class="text-gray-500 text-sm">No items yet</p>
+                    {% else %}
+                        <p class="text-luxury-white text-sm">
+                            <span class="{% if estate_completeness_pct == 100 %}text-green-400{% elif estate_completeness_pct >= 50 %}text-luxury-gold{% else %}text-yellow-400{% endif %} font-semibold">
+                                {{ estate_items_assigned }}
+                            </span>
+                            <span class="text-gray-400"> / {{ estate_items_total }} items assigned</span>
+                        </p>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="mt-6">
+                <a href="{% url 'estate:estate_dashboard' %}"
+                   class="inline-block bg-luxury-gold text-black font-bold uppercase text-xs tracking-widest
+                          hover:bg-yellow-600 rounded-sm px-6 py-3 transition-colors">
+                    Manage Estate Plan &rarr;
+                </a>
+            </div>
+        </div>
+
+        <!-- Card 5: Danger Zone -->
+        <div x-data="{ showDeleteModal: false, confirmText: '' }"
+             class="bg-luxury-card border border-red-900/40 rounded-xl p-8">
+            <h2 class="text-red-400 text-sm uppercase tracking-widest border-b border-red-900/40 pb-3 mb-6">
+                Danger Zone
+            </h2>
+            <p class="text-gray-400 text-sm mb-6">
+                Permanently delete your account and all associated data including your estate plan,
+                beneficiary profiles, and collection items. This action cannot be undone.
+            </p>
+            <button @click="showDeleteModal = true; confirmText = ''"
+                    type="button"
+                    class="border border-red-700 text-red-400 font-bold uppercase text-xs tracking-widest
+                           hover:bg-red-900/30 rounded-sm px-6 py-3 transition-colors">
+                Delete Account
+            </button>
+
+            <!-- Confirmation modal -->
+            <div x-show="showDeleteModal"
+                 x-cloak
+                 class="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
+                 @keydown.escape.window="showDeleteModal = false; confirmText = ''">
+                <div class="bg-luxury-card border border-red-900/60 rounded-xl p-8 max-w-md w-full mx-4 space-y-6"
+                     @click.outside="showDeleteModal = false; confirmText = ''">
+                    <h3 class="text-red-400 text-lg font-semibold">Delete Account?</h3>
+                    <p class="text-gray-300 text-sm leading-relaxed">
+                        This will permanently delete your account, all collection items, your estate plan,
+                        and all beneficiary data. <strong class="text-red-400">This cannot be undone.</strong>
+                    </p>
+                    <div class="space-y-2">
+                        <label class="block text-xs uppercase tracking-widest text-gray-400">
+                            Type <span class="text-red-400 font-semibold">delete account</span> to confirm
+                        </label>
+                        <input x-model="confirmText"
+                               type="text"
+                               autocomplete="off"
+                               placeholder="delete account"
+                               class="w-full bg-black/40 border border-white/10 text-luxury-white rounded-sm px-3 py-2 text-sm
+                                      focus:outline-none focus:border-red-600 placeholder-gray-600" />
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <form method="post" action="{% url 'delete_account' %}">
+                            {% csrf_token %}
+                            <button type="submit"
+                                    :disabled="confirmText.toLowerCase() !== 'delete account'"
+                                    :class="confirmText.toLowerCase() === 'delete account'
+                                        ? 'bg-red-700 hover:bg-red-600 text-white cursor-pointer'
+                                        : 'bg-red-900/30 text-red-900 cursor-not-allowed'"
+                                    class="font-bold uppercase text-xs tracking-widest rounded-sm px-6 py-3 transition-colors">
+                                Permanently Delete My Account
+                            </button>
+                        </form>
+                        <button @click="showDeleteModal = false; confirmText = ''"
+                                type="button"
+                                class="text-gray-400 hover:text-luxury-white uppercase text-xs tracking-widest transition-colors">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </main>
 
     <footer class="border-t border-white/5 py-12 text-center text-luxury-text text-xs tracking-widest uppercase">
