@@ -156,6 +156,10 @@
                                 <p class="text-xs text-gray-500 uppercase tracking-widest">Signed in as</p>
                                 <p class="text-luxury-gold font-serif italic truncate">{{ user.username }}</p>
                             </div>
+                            <a href="{% url 'profile' %}"
+                               class="block px-4 py-2 hover:bg-white/5 text-sm text-luxury-white hover:text-luxury-gold transition-colors">
+                                My Account
+                            </a>
                             <form method="post" action="{% url 'logout' %}">
                                 {% csrf_token %}
                                 <button type="submit" class="w-full text-left px-4 py-2 hover:bg-white/5 text-sm text-red-400 hover:text-red-300 transition-colors">

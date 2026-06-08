@@ -7,7 +7,7 @@ from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 
 from my_garage.api.selectors import get_portfolio_nfp_summary, portfolio_get_yoy_change
-from my_garage.forms import RegistrationForm
+from my_garage.forms import ProfileForm, RegistrationForm
 from my_garage.models import (
     CollectionType,
     DynamicCollectionItem,
@@ -124,6 +124,25 @@ def register(request: HttpRequest) -> HttpResponse:
     else:
         form = RegistrationForm()
     return render(request, "registration/register.html", {"form": form})
+
+
+@login_required
+def profile(request: HttpRequest) -> HttpResponse:
+    user = request.user
+    if request.method == "POST":
+        form = ProfileForm(request.POST, instance=user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Profile updated successfully.")
+            return redirect("profile")
+    else:
+        form = ProfileForm(instance=user)
+
+    total_items = DynamicCollectionItem.objects.filter(owner=user).count()
+
+    return render(
+        request, "pages/profile.html", {"form": form, "total_items": total_items}
+    )
 
 
 @login_required

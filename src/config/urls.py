@@ -16,6 +16,7 @@ urlpatterns = [
     # Authentication
     path("accounts/", include("django.contrib.auth.urls")),
     path("accounts/register/", views.register, name="register"),
+    path("accounts/profile/", views.profile, name="profile"),
     # API
     path("api/", include("config.api_router")),
     # ── Phase 4 redirects ─────────────────────────────────────────────────────

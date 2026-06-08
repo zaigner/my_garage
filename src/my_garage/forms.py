@@ -32,6 +32,39 @@ class RegistrationForm(UserCreationForm):
         return user
 
 
+class ProfileForm(forms.ModelForm):
+    email = forms.EmailField(
+        required=True,
+        widget=forms.EmailInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "email@example.com",
+                "autocomplete": "email",
+            }
+        ),
+    )
+
+    class Meta:
+        model = User
+        fields = ["first_name", "last_name", "email"]
+        widgets = {
+            "first_name": forms.TextInput(
+                attrs={
+                    "class": "form-control",
+                    "placeholder": "First name",
+                    "autocomplete": "given-name",
+                }
+            ),
+            "last_name": forms.TextInput(
+                attrs={
+                    "class": "form-control",
+                    "placeholder": "Last name",
+                    "autocomplete": "family-name",
+                }
+            ),
+        }
+
+
 # DYNAMIC COLLECTION SYSTEM FORMS
 # ============================================================================
 

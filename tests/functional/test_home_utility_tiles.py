@@ -153,9 +153,9 @@ class TestHomeUtilityTilesRender:
         content = auth_client.get("/").content.decode()
         assert "Coming Soon" in content
 
-    def test_my_account_tile_links_to_password_change(self, auth_client):
+    def test_my_account_tile_links_to_profile(self, auth_client):
         content = auth_client.get("/").content.decode()
-        assert "/accounts/password_change/" in content
+        assert "/accounts/profile/" in content
 
     def test_utility_tiles_not_rendered_for_unauthenticated_user(self):
         content = Client().get("/").content.decode()
