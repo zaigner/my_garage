@@ -5,7 +5,10 @@ from django.contrib.auth.decorators import login_required
 from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
-from my_garage.api.selectors import get_item_estate_assignment
+from my_garage.api.selectors import (
+    get_estate_dashboard_context,
+    get_item_estate_assignment,
+)
 from my_garage.api.services import assign_beneficiary, remove_beneficiary_assignment
 from my_garage.forms import (
     BeneficiaryAssignmentForm,
@@ -17,6 +20,12 @@ from my_garage.models import (
     DynamicCollectionItem,
     EstateExecutor,
 )
+
+
+@login_required
+def estate_dashboard(request: HttpRequest) -> HttpResponse:
+    context = get_estate_dashboard_context(request.user)
+    return render(request, "my_garage/estate/dashboard.html", context)
 
 
 @login_required

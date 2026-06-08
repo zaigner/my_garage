@@ -7,6 +7,7 @@ from . import estate_views
 app_name = "estate"
 
 urlpatterns = [
+    path("", estate_views.estate_dashboard, name="estate_dashboard"),
     path("beneficiaries/", estate_views.beneficiary_list, name="beneficiary_list"),
     path(
         "beneficiaries/add/",

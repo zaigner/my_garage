@@ -3,11 +3,13 @@ from decimal import Decimal
 from typing import Any, Dict, List, Optional, Tuple
 
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import Q, Sum
+from django.db.models import Exists, OuterRef, Q, Sum
 
 from my_garage.models import (
     BeneficiaryAssignment,
     DynamicCollectionItem,
+    EstateChangeLog,
+    EstateExecutor,
     GenericUpgrade,
     PortfolioSnapshot,
 )
@@ -193,3 +195,44 @@ def portfolio_get_yoy_change(
 
     pct_change = ((current_total - past_value) / past_value) * Decimal("100")
     return pct_change.quantize(Decimal("0.1")), source
+
+
+def get_estate_dashboard_context(user) -> Dict[str, Any]:
+    """
+    Assemble all data needed for the estate dashboard in exactly 3 ORM queries.
+
+    Returns:
+        executor         — EstateExecutor instance or None
+        items            — list of DynamicCollectionItem annotated with `is_assigned`
+        items_total      — int
+        items_assigned   — int
+        completeness_pct — int 0-100 (0 when items_total == 0)
+        recent_log       — list of up to 10 EstateChangeLog entries (newest first)
+    """
+    executor = EstateExecutor.objects.filter(owner=user).first()  # Q1
+
+    items = list(
+        DynamicCollectionItem.objects.filter(owner=user)
+        .select_related("collection_type", "estate_assignment__beneficiary")
+        .annotate(
+            is_assigned=Exists(
+                BeneficiaryAssignment.objects.filter(item_id=OuterRef("pk"))
+            )
+        )
+        .order_by("collection_type__name", "name")
+    )  # Q2
+
+    items_total = len(items)
+    items_assigned = sum(1 for item in items if item.is_assigned)
+    completeness_pct = int(items_assigned / items_total * 100) if items_total > 0 else 0
+
+    recent_log = list(EstateChangeLog.objects.filter(owner=user)[:10])  # Q3
+
+    return {
+        "executor": executor,
+        "items": items,
+        "items_total": items_total,
+        "items_assigned": items_assigned,
+        "completeness_pct": completeness_pct,
+        "recent_log": recent_log,
+    }
