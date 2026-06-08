@@ -1,0 +1,109 @@
+{% extends "my_garage/base.html" %}
+
+{% block title %}Beneficiaries | Estate & Legacy{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-6 py-10 space-y-10">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between">
+    <div>
+      <p class="text-luxury-gold text-xs uppercase tracking-widest mb-1">Estate &amp; Legacy</p>
+      <h1 class="text-2xl font-semibold text-luxury-white">Beneficiaries</h1>
+    </div>
+    <a href="{% url 'estate:beneficiary_list' %}"
+       class="text-xs text-gray-400 hover:text-luxury-gold transition-colors">
+      <i class="fa-solid fa-scale-balanced mr-1"></i> Estate Home
+    </a>
+  </div>
+
+  <!-- Add Beneficiary Form -->
+  <div class="bg-luxury-card border border-white/5 rounded-xl p-8">
+    <h2 class="text-luxury-gold text-xs uppercase tracking-widest border-b border-white/10 pb-2 mb-6">
+      Add Beneficiary
+    </h2>
+    <form method="post" action="{% url 'estate:beneficiary_create' %}" novalidate>
+      {% csrf_token %}
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+        <div>
+          <label class="block text-xs uppercase tracking-widest text-gray-400 mb-1">Name</label>
+          {{ form.name }}
+          {% if form.name.errors %}
+            <p class="text-red-400 text-xs mt-1">{{ form.name.errors.0 }}</p>
+          {% endif %}
+        </div>
+        <div>
+          <label class="block text-xs uppercase tracking-widest text-gray-400 mb-1">Relationship</label>
+          {{ form.relationship }}
+          {% if form.relationship.errors %}
+            <p class="text-red-400 text-xs mt-1">{{ form.relationship.errors.0 }}</p>
+          {% endif %}
+        </div>
+        <div>
+          <label class="block text-xs uppercase tracking-widest text-gray-400 mb-1">Contact Info</label>
+          {{ form.contact_info }}
+        </div>
+        <div>
+          <label class="block text-xs uppercase tracking-widest text-gray-400 mb-1">Notes</label>
+          {{ form.notes }}
+        </div>
+      </div>
+      <button type="submit"
+              class="bg-luxury-gold text-black font-bold uppercase text-xs tracking-widest hover:bg-yellow-600 rounded-sm px-6 py-3 transition-colors">
+        Add Beneficiary
+      </button>
+    </form>
+  </div>
+
+  <!-- Beneficiary List -->
+  <div class="bg-luxury-card border border-white/5 rounded-xl p-8">
+    <h2 class="text-luxury-gold text-xs uppercase tracking-widest border-b border-white/10 pb-2 mb-6">
+      Your Beneficiaries
+    </h2>
+
+    {% if beneficiaries %}
+      <ul class="divide-y divide-white/5">
+        {% for b in beneficiaries %}
+          <li class="flex items-center justify-between py-4">
+            <div>
+              <p class="text-luxury-white font-medium">{{ b.name }}</p>
+              <p class="text-xs text-gray-400">{{ b.relationship }}{% if b.contact_info %} &middot; {{ b.contact_info|truncatechars:60 }}{% endif %}</p>
+            </div>
+            <form method="post" action="{% url 'estate:beneficiary_delete' b.pk %}"
+                  onsubmit="return confirm('Remove {{ b.name }}? This cannot be undone.');">
+              {% csrf_token %}
+              <button type="submit"
+                      class="text-xs text-red-400 hover:text-red-300 transition-colors uppercase tracking-widest">
+                Remove
+              </button>
+            </form>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="text-gray-500 text-sm">No beneficiaries added yet. Use the form above to get started.</p>
+    {% endif %}
+  </div>
+
+</div>
+
+<style>
+  .form-control {
+    background: #0B1026;
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #F5F5F5;
+    border-radius: 0.25rem;
+    padding: 0.5rem 0.75rem;
+    width: 100%;
+    font-size: 0.875rem;
+  }
+  .form-control:focus {
+    outline: none;
+    border-color: #D4AF37;
+    box-shadow: 0 0 0 2px rgba(212,175,55,0.15);
+  }
+  select.form-control option {
+    background: #0B1026;
+  }
+</style>
+{% endblock %}

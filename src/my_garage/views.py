@@ -17,6 +17,7 @@ from my_garage.models import (
 )
 
 from .api.selectors import (
+    get_item_estate_assignment,
     get_item_nfp_breakdown,
     get_portfolio_nfp_by_collection,
     get_portfolio_nfp_summary,
@@ -24,6 +25,7 @@ from .api.selectors import (
     portfolio_get_yoy_change,
 )
 from .forms import (
+    BeneficiaryAssignmentForm,
     CollectionTypeForm,
     DynamicCollectionItemForm,
     GenericServiceRecordForm,
@@ -563,6 +565,11 @@ def collection_item_detail(
 
     nfp_breakdown = get_item_nfp_breakdown(item)
 
+    estate_assignment = get_item_estate_assignment(item, request.user)
+    estate_form = BeneficiaryAssignmentForm(
+        instance=estate_assignment, owner=request.user
+    )
+
     return render(
         request,
         "my_garage/collection_item_detail.html",
@@ -577,6 +584,8 @@ def collection_item_detail(
             "relationships_to": relationships_to,
             "system_field_names": system_field_names,
             "display_custom_fields": display_custom_fields,
+            "estate_assignment": estate_assignment,
+            "estate_form": estate_form,
             "nfp_breakdown": nfp_breakdown,
             **provider_context,
         },

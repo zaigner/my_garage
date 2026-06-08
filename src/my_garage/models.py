@@ -443,6 +443,104 @@ class CollectionItemRelationship(models.Model):
         return f"{self.from_item.name} {label} {self.to_item.name}"
 
 
+# ── Estate & Legacy ───────────────────────────────────────────────────────────
+
+
+class Beneficiary(models.Model):
+    RELATIONSHIP_CHOICES = [
+        ("Spouse", "Spouse"),
+        ("Child", "Child"),
+        ("Sibling", "Sibling"),
+        ("Parent", "Parent"),
+        ("Friend", "Friend"),
+        ("Charity", "Charity"),
+        ("Other", "Other"),
+    ]
+
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="beneficiaries",
+    )
+    name = models.CharField(max_length=200)
+    relationship = models.CharField(max_length=50, choices=RELATIONSHIP_CHOICES)
+    contact_info = models.TextField(blank=True)
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self):
+        return f"{self.name} ({self.relationship})"
+
+
+class EstateExecutor(models.Model):
+    owner = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="estate_executor",
+    )
+    name = models.CharField(max_length=200)
+    contact_info = models.TextField(blank=True)
+    designated_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Executor for {self.owner.username}: {self.name}"
+
+
+class BeneficiaryAssignment(models.Model):
+    item = models.OneToOneField(
+        "DynamicCollectionItem",
+        on_delete=models.CASCADE,
+        related_name="estate_assignment",
+    )
+    beneficiary = models.ForeignKey(
+        Beneficiary,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="assignments",
+    )
+    conditional_note = models.TextField(blank=True)
+    is_charitable = models.BooleanField(default=False)
+    charitable_org = models.CharField(max_length=200, blank=True)
+    assigned_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        if self.is_charitable:
+            return f"{self.item.name} → {self.charitable_org} (charitable)"
+        if self.beneficiary:
+            return f"{self.item.name} → {self.beneficiary.name}"
+        return f"{self.item.name} → Unassigned"
+
+
+class EstateChangeLog(models.Model):
+    ACTION_CHOICES = [
+        ("ASSIGNED", "Assigned"),
+        ("CHANGED", "Changed"),
+        ("REMOVED", "Removed"),
+    ]
+
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="estate_change_logs",
+    )
+    action = models.CharField(max_length=20, choices=ACTION_CHOICES)
+    item_name = models.CharField(max_length=200)
+    beneficiary_name = models.CharField(max_length=200, blank=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-timestamp"]
+
+    def __str__(self):
+        return f"{self.timestamp:%Y-%m-%d} {self.action} — {self.item_name}"
+
+
 class PortfolioSnapshot(models.Model):
     """
     Daily total portfolio value per user. One row per (user, date).

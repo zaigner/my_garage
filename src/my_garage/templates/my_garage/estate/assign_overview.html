@@ -1,0 +1,77 @@
+{% extends "my_garage/base.html" %}
+
+{% block title %}Assignment Overview | Estate & Legacy{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-6 py-10 space-y-10">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between">
+    <div>
+      <p class="text-luxury-gold text-xs uppercase tracking-widest mb-1">Estate &amp; Legacy</p>
+      <h1 class="text-2xl font-semibold text-luxury-white">Assignment Overview</h1>
+    </div>
+    <a href="{% url 'estate:beneficiary_list' %}"
+       class="text-xs text-gray-400 hover:text-luxury-gold transition-colors">
+      <i class="fa-solid fa-scale-balanced mr-1"></i> Estate Home
+    </a>
+  </div>
+
+  <!-- Items Table -->
+  <div class="bg-luxury-card border border-white/5 rounded-xl overflow-hidden">
+    {% if items %}
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-white/10 text-xs uppercase tracking-widest text-gray-400">
+            <th class="text-left px-6 py-3">Item</th>
+            <th class="text-left px-6 py-3">Collection</th>
+            <th class="text-left px-6 py-3">Assigned To</th>
+            <th class="text-left px-6 py-3">Note</th>
+            <th class="px-6 py-3"></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-white/5">
+          {% for item in items %}
+            <tr class="hover:bg-white/[0.02] transition-colors">
+              <td class="px-6 py-4 text-luxury-white font-medium">{{ item.name }}</td>
+              <td class="px-6 py-4 text-gray-400">{{ item.collection_type.name }}</td>
+              <td class="px-6 py-4">
+                {% with a=item.estate_assignment %}
+                  {% if a %}
+                    {% if a.is_charitable %}
+                      <span class="text-luxury-gold text-xs">{{ a.charitable_org }}</span>
+                      <span class="ml-1 text-[10px] text-gray-500">(charitable)</span>
+                    {% elif a.beneficiary %}
+                      <span class="text-luxury-white text-xs">{{ a.beneficiary.name }}</span>
+                    {% else %}
+                      <span class="px-2 py-0.5 rounded bg-yellow-900/40 text-yellow-400 text-[10px] uppercase tracking-widest">Unassigned</span>
+                    {% endif %}
+                  {% else %}
+                    <span class="px-2 py-0.5 rounded bg-red-900/30 text-red-400 text-[10px] uppercase tracking-widest">Unassigned</span>
+                  {% endif %}
+                {% endwith %}
+              </td>
+              <td class="px-6 py-4 text-gray-500 text-xs max-w-xs truncate">
+                {% if item.estate_assignment.conditional_note %}
+                  {{ item.estate_assignment.conditional_note|truncatechars:60 }}
+                {% endif %}
+              </td>
+              <td class="px-6 py-4 text-right">
+                <a href="{% url 'collections:collection_item_detail' collection_slug=item.collection_type.slug item_id=item.id %}"
+                   class="text-xs text-gray-400 hover:text-luxury-gold transition-colors">
+                  Edit <i class="fa-solid fa-arrow-right ml-1"></i>
+                </a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="px-6 py-12 text-center">
+        <p class="text-gray-500 text-sm">No collection items found. Add items to your collections first.</p>
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

@@ -5,8 +5,11 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 
 from my_garage.models import (
+    Beneficiary,
+    BeneficiaryAssignment,
     CollectionType,
     DynamicCollectionItem,
+    EstateExecutor,
     GenericServiceRecord,
     GenericUpgrade,
 )
@@ -63,6 +66,85 @@ class ProfileForm(forms.ModelForm):
                 }
             ),
         }
+
+
+# ESTATE & LEGACY FORMS
+# ============================================================================
+
+
+class BeneficiaryForm(forms.ModelForm):
+    class Meta:
+        model = Beneficiary
+        fields = ["name", "relationship", "contact_info", "notes"]
+        widgets = {
+            "name": forms.TextInput(
+                attrs={"class": "form-control", "placeholder": "Full name"}
+            ),
+            "relationship": forms.Select(attrs={"class": "form-control"}),
+            "contact_info": forms.Textarea(
+                attrs={
+                    "class": "form-control",
+                    "rows": 2,
+                    "placeholder": "Email, phone, or address (optional)",
+                }
+            ),
+            "notes": forms.Textarea(
+                attrs={
+                    "class": "form-control",
+                    "rows": 2,
+                    "placeholder": "Any additional notes (optional)",
+                }
+            ),
+        }
+
+
+class EstateExecutorForm(forms.ModelForm):
+    class Meta:
+        model = EstateExecutor
+        fields = ["name", "contact_info"]
+        widgets = {
+            "name": forms.TextInput(
+                attrs={"class": "form-control", "placeholder": "Full name"}
+            ),
+            "contact_info": forms.Textarea(
+                attrs={
+                    "class": "form-control",
+                    "rows": 3,
+                    "placeholder": "Email, phone, or address (optional)",
+                }
+            ),
+        }
+
+
+class BeneficiaryAssignmentForm(forms.ModelForm):
+    class Meta:
+        model = BeneficiaryAssignment
+        fields = ["beneficiary", "conditional_note", "is_charitable", "charitable_org"]
+        widgets = {
+            "beneficiary": forms.Select(attrs={"class": "form-control"}),
+            "conditional_note": forms.Textarea(
+                attrs={
+                    "class": "form-control",
+                    "rows": 2,
+                    "placeholder": "Optional: describe any conditions on this bequest",
+                }
+            ),
+            "charitable_org": forms.TextInput(
+                attrs={
+                    "class": "form-control",
+                    "placeholder": "Organization name (if charitable)",
+                }
+            ),
+        }
+
+    def __init__(self, *args, owner=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if owner is not None:
+            self.fields["beneficiary"].queryset = Beneficiary.objects.filter(
+                owner=owner
+            )
+        self.fields["beneficiary"].required = False
+        self.fields["beneficiary"].empty_label = "— Select beneficiary —"
 
 
 # DYNAMIC COLLECTION SYSTEM FORMS

@@ -5,7 +5,12 @@ from typing import Any, Dict, List, Optional, Tuple
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q, Sum
 
-from my_garage.models import DynamicCollectionItem, GenericUpgrade, PortfolioSnapshot
+from my_garage.models import (
+    BeneficiaryAssignment,
+    DynamicCollectionItem,
+    GenericUpgrade,
+    PortfolioSnapshot,
+)
 
 
 def get_item_nfp_breakdown(item: DynamicCollectionItem) -> Dict[str, Any]:
@@ -51,6 +56,19 @@ def get_item_nfp_breakdown(item: DynamicCollectionItem) -> Dict[str, Any]:
         "market_value": market_value,
         "net_position": net_position,
     }
+
+
+def get_item_estate_assignment(
+    item: DynamicCollectionItem, user
+) -> Optional[BeneficiaryAssignment]:
+    """Return the BeneficiaryAssignment for this item, or None if unassigned."""
+    try:
+        assignment = item.estate_assignment
+        if assignment.item.collection_type.owner != user:
+            return None
+        return assignment
+    except BeneficiaryAssignment.DoesNotExist:
+        return None
 
 
 def get_portfolio_nfp_summary(user) -> Optional[Decimal]:

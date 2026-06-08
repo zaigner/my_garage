@@ -40,6 +40,8 @@ urlpatterns = [
     path("garage/", include("my_garage.urls", namespace="my_garage")),
     # Dynamic Collections (separate mount point)
     path("collections/", include("my_garage.collection_urls")),
+    # Estate & Legacy
+    path("estate/", include("my_garage.estate_urls", namespace="estate")),
     # Home
     path("", views.home, name="home"),
     path("welcome/", views.onboarding, name="onboarding"),

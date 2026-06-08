@@ -1,0 +1,27 @@
+{% extends "my_garage/base.html" %}
+
+{% block title %}Remove Beneficiary | Estate & Legacy{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto px-6 py-16">
+  <div class="bg-luxury-card border border-white/5 rounded-xl p-8 text-center">
+    <i class="fa-solid fa-triangle-exclamation text-red-400 text-3xl mb-4"></i>
+    <h2 class="text-luxury-white text-xl font-semibold mb-2">Remove Beneficiary</h2>
+    <p class="text-gray-400 text-sm mb-6">
+      Are you sure you want to remove <span class="text-luxury-white font-medium">{{ beneficiary.name }}</span>?
+      This will permanently delete their profile.
+    </p>
+    <form method="post" class="flex gap-3 justify-center">
+      {% csrf_token %}
+      <button type="submit"
+              class="bg-red-600 hover:bg-red-700 text-white font-bold uppercase text-xs tracking-widest rounded-sm px-6 py-3 transition-colors">
+        Remove
+      </button>
+      <a href="{% url 'estate:beneficiary_list' %}"
+         class="bg-transparent border border-white/20 text-luxury-white hover:border-luxury-gold hover:text-luxury-gold font-bold uppercase text-xs tracking-widest rounded-sm px-6 py-3 transition-colors">
+        Cancel
+      </a>
+    </form>
+  </div>
+</div>
+{% endblock %}

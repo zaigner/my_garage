@@ -694,6 +694,72 @@
             {% endif %}
         </div>
 
+        <!-- Estate Assignment -->
+        <div class="bg-luxury-card border border-white/5 rounded-xl p-6 mt-6">
+          <h2 class="text-luxury-gold text-xs uppercase tracking-widest border-b border-white/10 pb-2 mb-4">
+            <i class="fa-solid fa-scale-balanced mr-1"></i> Estate Assignment
+          </h2>
+
+          {% if estate_assignment %}
+            <div class="mb-4 space-y-1">
+              {% if estate_assignment.is_charitable %}
+                <p class="text-luxury-white text-sm font-medium">{{ estate_assignment.charitable_org }}</p>
+                <p class="text-xs text-gray-400">Charitable designation</p>
+              {% elif estate_assignment.beneficiary %}
+                <p class="text-luxury-white text-sm font-medium">{{ estate_assignment.beneficiary.name }}</p>
+                <p class="text-xs text-gray-400">{{ estate_assignment.beneficiary.relationship }}</p>
+              {% else %}
+                <p class="text-gray-500 text-sm">Beneficiary removed — item is Unassigned</p>
+              {% endif %}
+              {% if estate_assignment.conditional_note %}
+                <p class="text-xs text-gray-400 italic mt-1">{{ estate_assignment.conditional_note }}</p>
+              {% endif %}
+            </div>
+          {% else %}
+            <p class="text-gray-500 text-sm mb-4">Unassigned — no beneficiary designated for this item.</p>
+          {% endif %}
+
+          <form method="post" action="{% url 'estate:item_assign' collection_slug=collection_type.slug item_id=item.id %}" novalidate>
+            {% csrf_token %}
+            <div class="space-y-3 mb-4">
+              <div>
+                <label class="block text-xs uppercase tracking-widest text-gray-400 mb-1">Beneficiary</label>
+                {{ estate_form.beneficiary }}
+              </div>
+              <div>
+                <label class="block text-xs uppercase tracking-widest text-gray-400 mb-1">Conditional Note</label>
+                {{ estate_form.conditional_note }}
+              </div>
+              <div class="flex items-center gap-3">
+                <label class="flex items-center gap-2 text-xs text-gray-400 cursor-pointer">
+                  {{ estate_form.is_charitable }}
+                  <span>Charitable designation</span>
+                </label>
+              </div>
+              <div>
+                <label class="block text-xs uppercase tracking-widest text-gray-400 mb-1">Organization (if charitable)</label>
+                {{ estate_form.charitable_org }}
+              </div>
+            </div>
+            <div class="flex items-center gap-4">
+              <button type="submit"
+                      class="bg-luxury-gold text-black font-bold uppercase text-xs tracking-widest hover:bg-yellow-600 rounded-sm px-5 py-2 transition-colors">
+                {% if estate_assignment %}Update{% else %}Assign{% endif %}
+              </button>
+              {% if estate_assignment %}
+                <form method="post" action="{% url 'estate:item_assign_remove' collection_slug=collection_type.slug item_id=item.id %}"
+                      onsubmit="return confirm('Remove estate assignment?');">
+                  {% csrf_token %}
+                  <button type="submit"
+                          class="text-xs text-red-400 hover:text-red-300 uppercase tracking-widest transition-colors">
+                    Remove
+                  </button>
+                </form>
+              {% endif %}
+            </div>
+          </form>
+        </div>
+
     </div>
 </div>
 
