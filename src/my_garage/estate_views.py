@@ -9,10 +9,15 @@ from my_garage.api.selectors import (
     get_estate_dashboard_context,
     get_item_estate_assignment,
 )
-from my_garage.api.services import assign_beneficiary, remove_beneficiary_assignment
+from my_garage.api.services import (
+    activate_estate_plan,
+    assign_beneficiary,
+    remove_beneficiary_assignment,
+)
 from my_garage.forms import (
     BeneficiaryAssignmentForm,
     BeneficiaryForm,
+    EstateActivateForm,
     EstateExecutorForm,
 )
 from my_garage.models import (
@@ -181,6 +186,39 @@ def item_assign_remove(
         "collections:collection_item_detail",
         collection_slug=collection_slug,
         item_id=item_id,
+    )
+
+
+@login_required
+def estate_activate(request: HttpRequest) -> HttpResponse:
+    executor = EstateExecutor.objects.filter(owner=request.user).first()
+    can_activate = executor is not None
+
+    if request.method == "POST" and can_activate:
+        form = EstateActivateForm(request.POST)
+        if form.is_valid():
+            raw_token = activate_estate_plan(request.user)
+            request.session["estate_activation_token"] = raw_token
+            return redirect("estate:activate_success")
+    else:
+        form = EstateActivateForm()
+
+    return render(
+        request,
+        "my_garage/estate/activate.html",
+        {"form": form, "executor": executor, "can_activate": can_activate},
+    )
+
+
+@login_required
+def estate_activate_success(request: HttpRequest) -> HttpResponse:
+    raw_token = request.session.pop("estate_activation_token", None)
+    if raw_token is None:
+        return redirect("estate:activate")
+    return render(
+        request,
+        "my_garage/estate/activate_success.html",
+        {"raw_token": raw_token},
     )
 
 

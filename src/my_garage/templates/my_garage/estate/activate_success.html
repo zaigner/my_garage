@@ -1,0 +1,68 @@
+{% extends "my_garage/base.html" %}
+
+{% block title %}Access Code Generated | Estate & Legacy{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto px-6 py-10 space-y-8">
+
+  <!-- Header -->
+  <div>
+    <p class="text-luxury-gold text-xs uppercase tracking-widest mb-1">Estate &amp; Legacy</p>
+    <h1 class="text-2xl font-semibold text-luxury-white">Access Code Generated</h1>
+  </div>
+
+  <!-- Warning banner -->
+  <div class="bg-yellow-900/30 border border-yellow-600/40 rounded-xl p-4 flex items-start gap-3">
+    <i class="fa-solid fa-triangle-exclamation text-yellow-400 mt-0.5"></i>
+    <div class="space-y-1">
+      <p class="text-yellow-300 text-sm font-semibold">Save this code now — it will not be shown again.</p>
+      <p class="text-yellow-200/80 text-xs">
+        This code cannot be recovered once you leave this page. Share it directly and securely with your executor.
+      </p>
+    </div>
+  </div>
+
+  <!-- Token display -->
+  <div class="bg-luxury-card border border-white/10 rounded-xl p-6 space-y-3">
+    <p class="text-xs uppercase tracking-widest text-gray-400">Executor Access Code</p>
+    <div class="bg-black/40 rounded-lg px-5 py-4 font-mono text-luxury-gold text-base tracking-wide break-all select-all">
+      {{ raw_token }}
+    </div>
+    <p class="text-gray-500 text-xs">
+      Select all and copy the code above. Your executor will enter it at
+      <span class="text-gray-400">/estate/portal/</span> to access your estate portfolio.
+    </p>
+  </div>
+
+  <!-- What happens next -->
+  <div class="bg-luxury-card border border-white/5 rounded-xl p-6 space-y-3">
+    <h2 class="text-luxury-white text-sm font-semibold uppercase tracking-widest">What happens next</h2>
+    <ul class="space-y-2 text-gray-400 text-sm">
+      <li class="flex items-start gap-2">
+        <i class="fa-solid fa-check text-green-400 mt-0.5 text-xs"></i>
+        A valuation snapshot of your entire portfolio has been locked at today's values.
+      </li>
+      <li class="flex items-start gap-2">
+        <i class="fa-solid fa-check text-green-400 mt-0.5 text-xs"></i>
+        Your executor can use the code above to access a read-only view of your portfolio.
+      </li>
+      <li class="flex items-start gap-2">
+        <i class="fa-solid fa-check text-green-400 mt-0.5 text-xs"></i>
+        You can generate a new code at any time — the old code will be deactivated automatically.
+      </li>
+    </ul>
+  </div>
+
+  <!-- Actions -->
+  <div class="flex items-center gap-4">
+    <a href="{% url 'estate:estate_dashboard' %}"
+       class="bg-luxury-gold text-black font-bold uppercase text-xs tracking-widest rounded-sm px-5 py-2 hover:bg-yellow-600 transition-colors">
+      Continue to Dashboard
+    </a>
+    <a href="{% url 'estate:activate' %}" class="text-xs text-gray-400 hover:text-luxury-gold transition-colors">
+      Generate a new code
+    </a>
+  </div>
+
+</div>
+{% endblock %}

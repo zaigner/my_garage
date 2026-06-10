@@ -1,0 +1,73 @@
+{% extends "my_garage/base.html" %}
+
+{% block title %}Activate Estate Access | Estate & Legacy{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto px-6 py-10 space-y-8">
+
+  <!-- Header -->
+  <div>
+    <p class="text-luxury-gold text-xs uppercase tracking-widest mb-1">Estate &amp; Legacy</p>
+    <h1 class="text-2xl font-semibold text-luxury-white">Activate Estate Access</h1>
+    <p class="text-gray-400 text-sm mt-2">
+      Generating an access code locks a valuation snapshot of your entire portfolio and
+      produces a one-time code for your executor. The code cannot be recovered after this page closes.
+    </p>
+  </div>
+
+  <!-- Executor status -->
+  <div class="bg-luxury-card border border-white/5 rounded-xl p-6 space-y-2">
+    <p class="text-xs uppercase tracking-widest text-gray-400">Designated Executor</p>
+    {% if executor %}
+      <p class="text-luxury-white font-semibold">{{ executor.name }}</p>
+      {% if executor.contact_info %}
+        <p class="text-gray-400 text-sm">{{ executor.contact_info }}</p>
+      {% endif %}
+    {% else %}
+      <p class="text-yellow-400 text-sm font-medium">No executor designated</p>
+    {% endif %}
+  </div>
+
+  <!-- Activation form -->
+  <form method="post" novalidate>
+    {% csrf_token %}
+    <div class="bg-luxury-card border border-white/5 rounded-xl p-6 space-y-6">
+
+      <div class="space-y-2">
+        <h2 class="text-luxury-white font-semibold text-sm uppercase tracking-widest">Confirmation Required</h2>
+        <label class="flex items-start gap-3 cursor-pointer">
+          {{ form.confirmed }}
+          <span class="text-gray-300 text-sm leading-relaxed">{{ form.confirmed.label }}</span>
+        </label>
+        {% if form.confirmed.errors %}
+          <p class="text-red-400 text-xs">{{ form.confirmed.errors.0 }}</p>
+        {% endif %}
+      </div>
+
+      <div class="pt-2">
+        <button type="submit"
+                {% if not can_activate %}disabled{% endif %}
+                class="bg-luxury-gold text-black font-bold uppercase text-xs tracking-widest rounded-sm px-6 py-3 transition-colors
+                       {% if not can_activate %}opacity-50 cursor-not-allowed{% else %}hover:bg-yellow-600{% endif %}">
+          Activate Estate Access
+        </button>
+
+        {% if not can_activate %}
+          <p class="text-yellow-500 text-xs mt-3">
+            You must <a href="{% url 'estate:executor' %}" class="underline hover:text-yellow-400">designate an executor</a>
+            before activating estate access.
+          </p>
+        {% endif %}
+      </div>
+    </div>
+  </form>
+
+  <!-- Back link -->
+  <div>
+    <a href="{% url 'estate:estate_dashboard' %}" class="text-xs text-gray-400 hover:text-luxury-gold transition-colors">
+      &larr; Back to Estate Dashboard
+    </a>
+  </div>
+
+</div>
+{% endblock %}

@@ -725,6 +725,10 @@
               <div>
                 <label class="block text-xs uppercase tracking-widest text-gray-400 mb-1">Beneficiary</label>
                 {{ estate_form.beneficiary }}
+                <a href="{% url 'estate:beneficiary_list' %}"
+                   class="inline-block mt-1 text-xs text-luxury-gold hover:text-yellow-400 transition-colors">
+                  + Add new beneficiary
+                </a>
               </div>
               <div>
                 <label class="block text-xs uppercase tracking-widest text-gray-400 mb-1">Conditional Note</label>

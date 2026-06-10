@@ -21,6 +21,12 @@ urlpatterns = [
     ),
     path("executor/", estate_views.executor_view, name="executor"),
     path("executor/remove/", estate_views.executor_remove, name="executor_remove"),
+    path("activate/", estate_views.estate_activate, name="activate"),
+    path(
+        "activate/success/",
+        estate_views.estate_activate_success,
+        name="activate_success",
+    ),
     path("assign/", estate_views.assign_overview, name="assign_overview"),
     path(
         "assign/<slug:collection_slug>/items/<int:item_id>/",

@@ -5,8 +5,11 @@ Vehicle-specific functions were retired in Phase 5. New functions follow
 the collection services pattern.
 """
 
+import hashlib
 import logging
 import os
+import secrets
+from datetime import date
 
 import requests
 from django.conf import settings
@@ -75,6 +78,53 @@ def assign_beneficiary(
         item_name=item.name,
         beneficiary_name=beneficiary_name,
     )
+
+
+def activate_estate_plan(user) -> str:
+    """
+    Generate an executor access token and lock a valuation snapshot for all
+    portfolio items. Returns the raw token once — it is never persisted.
+
+    On reactivation, the existing active token is deactivated (not deleted)
+    to preserve the audit trail.
+    """
+    from my_garage.models import (
+        DynamicCollectionItem,
+        EstateAccessToken,
+        ValuationSnapshot,
+    )
+
+    # Deactivate any existing active token (OneToOne — at most one row)
+    EstateAccessToken.objects.filter(owner=user, is_active=True).update(is_active=False)
+
+    # Generate and hash new token
+    raw_token = secrets.token_urlsafe(32)
+    token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
+
+    EstateAccessToken.objects.create(owner=user, token_hash=token_hash, is_active=True)
+
+    # Bulk-create valuation snapshots for all items — single query
+    today = date.today()
+    items = DynamicCollectionItem.objects.filter(owner=user)
+    snapshots = []
+    for item in items:
+        mv = item.current_market_value
+        cb = item.purchase_price  # raw purchase cost; None when unknown (per spec)
+        eq = (mv - cb) if (mv is not None and cb is not None) else None
+        snapshots.append(
+            ValuationSnapshot(
+                item=item,
+                owner=user,
+                snapshot_date=today,
+                market_value=mv,
+                cost_basis=cb,
+                equity=eq,
+                snapshot_trigger="ESTATE_ACTIVATION",
+            )
+        )
+    ValuationSnapshot.objects.bulk_create(snapshots)
+
+    return raw_token
 
 
 def remove_beneficiary_assignment(item, user) -> None:

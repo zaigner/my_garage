@@ -147,6 +147,15 @@ class BeneficiaryAssignmentForm(forms.ModelForm):
         self.fields["beneficiary"].empty_label = "— Select beneficiary —"
 
 
+class EstateActivateForm(forms.Form):
+    confirmed = forms.BooleanField(
+        required=True,
+        label="I understand this code must be kept secure and cannot be recovered.",
+        widget=forms.CheckboxInput(attrs={"class": "form-checkbox"}),
+        error_messages={"required": "You must confirm before activating."},
+    )
+
+
 # DYNAMIC COLLECTION SYSTEM FORMS
 # ============================================================================
 

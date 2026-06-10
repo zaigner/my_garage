@@ -541,6 +541,59 @@ class EstateChangeLog(models.Model):
         return f"{self.timestamp:%Y-%m-%d} {self.action} — {self.item_name}"
 
 
+class EstateAccessToken(models.Model):
+    # ForeignKey (not OneToOneField) allows keeping deactivated tokens as audit trail.
+    # Service enforces: only one is_active=True per owner at any time.
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="estate_access_tokens",
+    )
+    token_hash = models.CharField(max_length=64)
+    issued_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    last_used_at = models.DateTimeField(null=True, blank=True)
+    use_count = models.IntegerField(default=0)
+
+    def __str__(self):
+        return f"EstateAccessToken for {self.owner.username} (active={self.is_active})"
+
+
+class ValuationSnapshot(models.Model):
+    TRIGGER_CHOICES = [
+        ("ESTATE_ACTIVATION", "Estate Activation"),
+        ("MANUAL", "Manual"),
+    ]
+
+    item = models.ForeignKey(
+        "DynamicCollectionItem",
+        on_delete=models.CASCADE,
+        related_name="valuation_snapshots",
+    )
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="valuation_snapshots",
+    )
+    snapshot_date = models.DateField()
+    market_value = models.DecimalField(
+        max_digits=14, decimal_places=2, null=True, blank=True
+    )
+    cost_basis = models.DecimalField(
+        max_digits=14, decimal_places=2, null=True, blank=True
+    )
+    equity = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
+    snapshot_trigger = models.CharField(max_length=30, choices=TRIGGER_CHOICES)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Snapshot {self.snapshot_date} — {self.item.name}"
+
+
 class PortfolioSnapshot(models.Model):
     """
     Daily total portfolio value per user. One row per (user, date).
