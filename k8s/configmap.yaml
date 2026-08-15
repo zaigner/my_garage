@@ -8,7 +8,9 @@ metadata:
   namespace: my-garage
 data:
   DJANGO_SETTINGS_MODULE: config.settings.production
-  ALLOWED_HOSTS: my-garage.local        # Update when you have a real domain
+  # The Traefik LoadBalancer address is listed so the app is reachable without a
+  # DNS entry. Django returns 400 DisallowedHost for any Host not in this list.
+  ALLOWED_HOSTS: my-garage.local,192.168.50.200
 
   # PostgreSQL
   DB_HOST: postgres

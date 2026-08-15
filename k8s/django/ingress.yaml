@@ -2,20 +2,55 @@
 #   /api/mcp  →  fastapi:8001   (MCP + FastAPI endpoints)
 #   /         →  django:8000    (everything else)
 #
-# Internal DNS: add "192.168.50.202 my-garage.local" to your router or Pi-hole.
-# MetalLB will assign an IP from the 192.168.50.200-210 pool (.202+ is free).
-# Addresses are owned by zaigner/infra/homelab.yml -- change them there.
+# Reachable two ways, so neither depends on the other:
+#   https://my-garage.local/     once DNS maps it to the Traefik LB address
+#   https://192.168.50.200/      always -- the hostless rule below matches any Host
+#
+# The Traefik LoadBalancer currently holds 192.168.50.200. Addresses are owned by
+# zaigner/infra/homelab.yml -- change them there.
+#
+# HTTPS is required, not optional: config/settings/production.py sets
+# SESSION_COOKIE_SECURE and CSRF_COOKIE_SECURE, so over plain HTTP the browser
+# never returns the session or CSRF cookie and login silently fails. Traefik
+# serves its built-in self-signed certificate (expect a one-time browser
+# warning) and forwards X-Forwarded-Proto, which SECURE_PROXY_SSL_HEADER trusts.
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: my-garage
   namespace: my-garage
   annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: web
+    # Must include websecure. With "web" alone Traefik serves no HTTPS router,
+    # so Django's SECURE_SSL_REDIRECT sends the browser to an https:// URL that
+    # returns 404 -- a closed loop.
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
 spec:
+  tls:
+    # No secretName: Traefik falls back to its default self-signed certificate.
+    - hosts:
+        - my-garage.local
   rules:
     - host: my-garage.local
       http:
+        paths:
+          - path: /api/mcp
+            pathType: Prefix
+            backend:
+              service:
+                name: fastapi
+                port:
+                  number: 8001
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: django
+                port:
+                  number: 8000
+    # Hostless catch-all: matches any Host header, so browsing the LoadBalancer
+    # address directly works without a DNS entry. ALLOWED_HOSTS in
+    # k8s/configmap.yaml must list that address or Django returns 400.
+    - http:
         paths:
           - path: /api/mcp
             pathType: Prefix
