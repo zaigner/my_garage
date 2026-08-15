@@ -34,7 +34,12 @@ spec:
         name: mongo-data
       spec:
         accessModes: [ReadWriteOnce]
-        storageClassName: nfs-client   # Synology NAS at 192.168.1.103
+        # local-path, NOT nfs-client. MongoDB's WiredTiger engine requires POSIX
+        # locking and write-ordering guarantees that NFS does not provide; running
+        # on the NAS corrupted this volume's metadata (2026-08-14, after ~8k crash
+        # restarts). Single-replica StatefulSet gains nothing from network storage.
+        # Trade-off: the data is pinned to whichever node first schedules the pod.
+        storageClassName: local-path
         resources:
           requests:
             storage: 10Gi
