@@ -1,0 +1,42 @@
+# Kustomization for the stateless application tier.
+#
+# This is what `deploy.yml` applies on every merge to main, and it is the reason
+# manifest changes now reach the cluster at all. Before it existed the pipeline
+# only ran `kubectl set image`, so edits to probes, resources, or rollout
+# strategy sat in git looking deployed while the cluster ran the old spec.
+#
+# MANAGED HERE — reconciled automatically on every deploy:
+#   django, fastapi, celery-worker, celery-beat
+#
+# DELIBERATELY NOT MANAGED HERE — apply these by hand:
+#   namespace.yaml, configmap.yaml          Cluster setup, changes rarely.
+#   */service.yaml, django/ingress.yaml     Networking; a bad automatic apply
+#                                           could take the site off the network.
+#   postgres/, mongodb/, redis/             Stateful. An unintended change to a
+#                                           StatefulSet can restart or, worse,
+#                                           re-provision a database.
+#   ci/                                     The runner would be reconfiguring
+#                                           itself mid-job.
+#
+# That split keeps the runner's RBAC narrow (see ci/rbac.yaml): it can patch
+# Deployments in the my-garage namespace and nothing else. Widening this file
+# means widening that Role — do both deliberately, or not at all.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: my-garage
+
+resources:
+  - django/deployment.yaml
+  - fastapi/deployment.yaml
+  - celery/worker-deployment.yaml
+  - celery/beat-deployment.yaml
+
+# The deploy workflow rewrites newTag to the short SHA of the commit that was
+# built, so the image and the manifests always come from the same commit.
+#
+# `latest` is only the placeholder committed to git. Do not deploy by editing it
+# here — a tag pinned by hand would be silently overwritten on the next merge.
+images:
+  - name: ghcr.io/zaigner/my-garage
+    newTag: latest

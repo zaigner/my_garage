@@ -27,32 +27,73 @@ jobs:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
     steps:
+      # Deploy the manifests from the same commit the image was built from.
+      # github.sha would be the tip of main, which may have moved on since the
+      # Build workflow started — that would pair new manifests with an old image.
+      - name: Check out the commit that was built
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
       - name: Resolve image tag
         id: tag
         run: |
           # Use the short SHA of the commit that triggered the Build workflow
           echo "sha=$(echo ${{ github.event.workflow_run.head_sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
 
-      - name: Roll out new image
+      - name: Pin image tag in kustomization
         run: |
           set -euo pipefail
-          IMAGE="ghcr.io/${{ github.repository_owner }}/my-garage:${{ steps.tag.outputs.sha }}"
-          echo "Deploying image: $IMAGE"
+          TAG="${{ steps.tag.outputs.sha }}"
 
-          # Update each application Deployment with the new image
-          kubectl set image deployment/django        django=$IMAGE -n my-garage
-          kubectl set image deployment/fastapi       fastapi=$IMAGE -n my-garage
-          kubectl set image deployment/celery-worker worker=$IMAGE  -n my-garage
-          kubectl set image deployment/celery-beat   beat=$IMAGE    -n my-garage
+          # The committed placeholder is `latest`; point it at this build.
+          sed -i "s|^\( *\)newTag: .*|\1newTag: ${TAG}|" k8s/kustomization.yaml
 
-          # Wait for Django rollout to complete (primary service).
-          # Image pulls on a Pi are slow -- 120s was not enough in practice.
-          kubectl rollout status deployment/django -n my-garage --timeout=600s
+          # Fail loudly rather than deploying `latest` if the sed ever misses,
+          # which would silently ship whatever `latest` happened to point at.
+          grep -q "newTag: ${TAG}" k8s/kustomization.yaml \
+            || { echo "::error::failed to pin image tag ${TAG}"; exit 1; }
 
-          echo "Deploy complete: $IMAGE"
+          echo "Deploying manifests at tag ${TAG}:"
+          kubectl kustomize k8s | grep -E "^\s+image:|^  name:"
+
+      - name: Show what will change
+        # Informational only. `kubectl diff` needs dry-run create rights the
+        # runner's Role does not grant, so a failure here must not fail the job.
+        continue-on-error: true
+        run: kubectl diff -k k8s || true
+
+      - name: Apply manifests
+        run: |
+          set -euo pipefail
+
+          # Server-side apply. The previous pipeline set the image imperatively
+          # with `kubectl set image`, leaving that field owned by a different
+          # field manager; --force-conflicts transfers ownership to this apply.
+          # It can be dropped once every Deployment has been applied this way.
+          kubectl apply -k k8s --server-side --force-conflicts
+
+      - name: Wait for rollouts
+        run: |
+          set -euo pipefail
+
+          # Every workload, not just Django — a crash-looping worker used to
+          # sail through as a green deploy.
+          # Image pulls on a Pi are slow; 120s was not enough in practice.
+          for deployment in django fastapi celery-worker celery-beat; do
+            echo "── waiting for ${deployment}"
+            kubectl rollout status "deployment/${deployment}" \
+              -n my-garage --timeout=600s
+          done
+
+          echo "Deploy complete: ${{ steps.tag.outputs.sha }}"
 
       - name: Show pod state on failure
         if: failure()
         run: |
           kubectl get pods -n my-garage -o wide
-          kubectl logs -n my-garage -l app=django --tail=50 || true
+          kubectl describe pods -n my-garage -l app=django | tail -40 || true
+          for app in django fastapi celery-worker celery-beat; do
+            echo "── logs: ${app}"
+            kubectl logs -n my-garage -l "app=${app}" --tail=50 || true
+          done
