@@ -46,6 +46,15 @@
     textarea::placeholder {
         color: rgba(255, 255, 255, 0.3);
     }
+    /* Boolean schema fields render as checkboxes — keep them off the
+       full-width input styling above and tint them to the gold accent. */
+    input[type="checkbox"] {
+        width: 1.15rem;
+        height: 1.15rem;
+        accent-color: #D4AF37;
+        vertical-align: middle;
+        cursor: pointer;
+    }
 </style>
 {% endblock %}
 

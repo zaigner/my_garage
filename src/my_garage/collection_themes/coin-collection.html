@@ -1,0 +1,156 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+
+<div class="min-h-screen bg-gradient-to-br from-[#0a1520] to-[#1b2a3a] text-gray-200 font-lato antialiased selection:bg-amber-700 selection:text-white py-8 px-4 sm:px-6 lg:px-8"
+     style="font-family: 'Lato', sans-serif;"
+     x-data="{ view: 'grid' }">
+
+    <!-- Overall Container with thematic background -->
+    <div class="max-w-7xl mx-auto">
+
+        <!-- Back Link -->
+        <a href="{% url 'collections:collection_type_list' %}" class="inline-flex items-center text-gray-400 hover:text-amber-400 transition-colors duration-200 mb-6 group">
+            <svg class="w-4 h-4 mr-1 transform rotate-180 group-hover:-translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+            Back to Collections
+        </a>
+
+        <!-- Header Section -->
+        <header class="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 sm:p-8 mb-8 shadow-2xl relative overflow-hidden">
+            <!-- Subtle Gold Ring Pattern -->
+            <div class="absolute inset-0 z-0 opacity-10 pointer-events-none">
+                <svg class="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
+                    <circle cx="50" cy="50" r="30" stroke="#d4af37" stroke-width="0.5" fill="none" />
+                    <circle cx="50" cy="50" r="40" stroke="#d4af37" stroke-width="0.2" fill="none" />
+                    <circle cx="50" cy="50" r="20" stroke="#d4af37" stroke-width="0.7" fill="none" />
+                </svg>
+            </div>
+            <div class="relative z-10">
+                <h1 class="text-4xl sm:text-5xl font-playfair-display font-bold text-amber-300 mb-3 drop-shadow-lg" style="font-family: 'Playfair Display', serif;">
+                    {{ collection_type.name }}
+                </h1>
+                <p class="text-gray-300 text-lg mb-6 leading-relaxed">
+                    {{ collection_type.description }}
+                </p>
+
+                <!-- Stats -->
+                <div class="flex flex-wrap gap-x-8 gap-y-4 text-sm sm:text-base">
+                    <div class="flex items-center">
+                        <span class="font-semibold text-amber-400 mr-2">Total Items:</span>
+                        <span class="text-gray-300">{{ collection_type.total_items }}</span>
+                    </div>
+                    <div class="flex items-center">
+                        <span class="font-semibold text-amber-400 mr-2">Collection Value:</span>
+                        <span class="text-gray-300 font-mono">${{ collection_type.total_market_value|floatformat:2 }}</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Action Bar -->
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8">
+            <div class="flex space-x-3 w-full sm:w-auto">
+                <a href="{% url 'collections:collection_item_add' collection_type.slug %}"
+                   class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition-all duration-200 transform hover:-translate-y-0.5 primary-button">
+                    <svg class="w-5 h-5 mr-2 -ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                    Add New Coin
+                </a>
+                <a href="{% url 'collections:collection_type_edit' collection_type.slug %}"
+                   class="inline-flex items-center px-6 py-3 border border-amber-600 text-base font-medium rounded-md text-amber-300 bg-transparent hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition-all duration-200 transform hover:-translate-y-0.5 secondary-button">
+                    <svg class="w-5 h-5 mr-2 -ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                    Edit Collection
+                </a>
+            </div>
+        </div>
+
+        <!-- Search and View Toggle -->
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-6 mb-8 p-4 bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg">
+            <div class="relative w-full sm:max-w-md">
+                <input type="text" placeholder="Search for coins by name or type..."
+                       class="w-full pl-12 pr-4 py-3 bg-transparent border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-gray-200 placeholder-gray-500 shadow-inner-lg shadow-gray-900/50">
+                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </span>
+            </div>
+
+            <div class="flex space-x-2">
+                <button @click="view = 'grid'"
+                        :class="{ 'bg-amber-600 text-white': view === 'grid', 'bg-white/10 text-gray-400 hover:bg-white/20': view !== 'grid' }"
+                        class="p-3 rounded-lg transition-colors duration-200 flex items-center justify-center border border-transparent"
+                        aria-label="Toggle Grid View">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zm0 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zm0 11a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                </button>
+                <button @click="view = 'list'"
+                        :class="{ 'bg-amber-600 text-white': view === 'list', 'bg-white/10 text-gray-400 hover:bg-white/20': view !== 'list' }"
+                        class="p-3 rounded-lg transition-colors duration-200 flex items-center justify-center border border-transparent"
+                        aria-label="Toggle List View">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 9a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM9 13a1 1 0 011-1h6a1 1 0 110 2h-6a1 1 0 01-1-1zM3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"></path></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Item Cards Display -->
+        <div :class="{ 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8': view === 'grid', 'flex flex-col gap-6': view === 'list' }">
+            {% for item in items %}
+                <div class="bg-white/5 backdrop-blur-md border border-white/10 rounded-xl p-5 shadow-2xl relative overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-amber-500/20 group">
+                    <!-- Subtle coin motif background -->
+                    <div class="absolute inset-0 z-0 opacity-5 pointer-events-none">
+                        <svg class="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
+                            <circle cx="50" cy="50" r="15" stroke="#d4af37" stroke-width="0.1" fill="none" />
+                            <circle cx="50" cy="50" r="25" stroke="#d4af37" stroke-width="0.05" fill="none" />
+                        </svg>
+                    </div>
+
+                    <div :class="{ 'flex flex-col': view === 'grid', 'flex items-center gap-6': view === 'list' }">
+                        <div :class="{ 'w-full h-48 mb-4': view === 'grid', 'w-28 h-28 flex-shrink-0': view === 'list' }" class="rounded-lg overflow-hidden bg-gray-800 flex items-center justify-center border-2 border-amber-600 p-1 group-hover:border-amber-400 transition-colors duration-200">
+                            {% if item.photo %}
+                                <img src="{{ item.photo.url }}" alt="{{ item.name }}" class="object-cover w-full h-full rounded-md shadow-md">
+                            {% else %}
+                                <div class="text-gray-500 flex flex-col items-center justify-center text-center p-4">
+                                    <svg class="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                                    <span class="text-sm">No Image</span>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div :class="{ 'w-full': view === 'grid' }">
+                            <h3 class="text-xl font-playfair-display font-bold text-amber-300 mb-2 leading-tight group-hover:text-amber-200 transition-colors duration-200">
+                                {{ item.name }}
+                            </h3>
+                            <div class="space-y-1 text-gray-400 text-sm">
+                                <p><span class="font-semibold text-gray-300">Market Value:</span> <span class="text-amber-400 font-mono">${{ item.current_market_value|floatformat:2 }}</span></p>
+                                <p><span class="font-semibold text-gray-300">Purchase Price:</span> <span class="font-mono">${{ item.purchase_price|floatformat:2 }}</span></p>
+                                <!-- Add more key fields as needed -->
+                            </div>
+
+                            <div class="mt-4 pt-4 border-t border-white/10">
+                                <a href="{% url 'collections:collection_item_detail' collection_type.slug item.id %}"
+                                   class="inline-flex items-center text-amber-500 hover:text-amber-300 transition-colors duration-200 font-medium group-hover:underline">
+                                    View Details
+                                    <svg class="w-4 h-4 ml-1 transform group-hover:translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <!-- Empty State -->
+                <div class="col-span-full text-center py-20 bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl shadow-2xl">
+                    <svg class="mx-auto h-24 w-24 text-gray-600 mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                    <h3 class="mt-2 text-3xl font-playfair-display font-medium text-amber-300">Your collection awaits its first treasure!</h3>
+                    <p class="mt-4 text-gray-400 text-lg">
+                        It looks like there are no coins in this collection yet. Time to add a precious piece.
+                    </p>
+                    <div class="mt-8">
+                        <a href="{% url 'collections:collection_item_add' collection_type.slug %}"
+                           class="inline-flex items-center px-8 py-4 border border-transparent text-lg font-medium rounded-md shadow-lg text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition-all duration-200 transform hover:-translate-y-1">
+                            <svg class="w-6 h-6 mr-3 -ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                            Add Your First Coin
+                        </a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+    </div>
+</div>

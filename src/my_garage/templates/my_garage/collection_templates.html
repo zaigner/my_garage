@@ -1,0 +1,95 @@
+{% extends "my_garage/base.html" %}
+
+{% block title %}Collection Templates{% endblock %}
+
+{% block extra_head %}
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+<style>
+    .salon-font {
+        font-family: 'Cinzel', serif;
+    }
+    .salon-bg {
+        background-color: #0B1026;
+        background-image: radial-gradient(circle at 50% 0%, #1a2342 0%, #0B1026 70%);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="salon-bg min-h-screen text-gray-200 font-sans">
+    <div class="container mx-auto px-4 py-12 max-w-5xl" x-data="{ picked: [] }">
+
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row justify-between items-center mb-10 border-b border-white/10 pb-6">
+            <div>
+                <h1 class="text-4xl md:text-5xl font-bold salon-font text-luxury-gold mb-2">Collection Templates</h1>
+                <p class="text-gray-400 text-sm uppercase tracking-widest">Ready-made, no setup required</p>
+            </div>
+            <div class="mt-6 md:mt-0">
+                <a href="{% url 'collections:collection_type_list' %}" class="px-6 py-2 border border-white/20 text-white/70 hover:text-white hover:border-white/50 rounded-sm uppercase text-xs tracking-widest transition-colors">
+                    Back to Collections
+                </a>
+            </div>
+        </div>
+
+        {% if all_adopted %}
+            <div class="py-24 text-center border border-dashed border-white/10 rounded-lg bg-[#151b33]">
+                <i class="fa-solid fa-circle-check text-6xl text-luxury-gold/60 mb-4"></i>
+                <h3 class="text-xl salon-font text-gray-300 mb-2">Every Template Adopted</h3>
+                <p class="text-gray-500 text-sm mb-6">You already have all of them. Build something custom next.</p>
+                <a href="{% url 'collections:collection_type_create' %}"
+                   class="px-6 py-2 bg-luxury-gold text-black font-bold rounded-sm uppercase text-xs tracking-widest hover:bg-yellow-600 transition-colors inline-block">
+                    Create Collection Type
+                </a>
+            </div>
+        {% else %}
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {% for entry in catalog %}
+                    {% if entry.already_owned %}
+                    <div class="p-5 rounded-lg bg-[#151b33]/50 border border-luxury-gold/25 opacity-60">
+                        <div class="flex items-center mb-3">
+                            <i class="{{ entry.icon }} text-2xl text-luxury-gold mr-3 w-8 text-center"></i>
+                            <h3 class="salon-font text-lg text-gray-300">{{ entry.name }}</h3>
+                        </div>
+                        <p class="text-gray-500 text-xs leading-relaxed mb-3">{{ entry.preview }}</p>
+                        <p class="text-luxury-gold text-[0.65rem] uppercase tracking-widest">
+                            <i class="fa-solid fa-check mr-1"></i>In your vault
+                        </p>
+                    </div>
+                    {% else %}
+                    <label class="p-5 rounded-lg bg-[#151b33] border cursor-pointer transition-colors block"
+                           :class="picked.includes('{{ entry.slug }}') ? 'border-luxury-gold' : 'border-white/10 hover:border-white/30'">
+                        <input type="checkbox" name="blueprints" value="{{ entry.slug }}"
+                               x-model="picked" class="sr-only">
+                        <div class="flex items-center mb-3">
+                            <i class="{{ entry.icon }} text-2xl mr-3 w-8 text-center"
+                               :class="picked.includes('{{ entry.slug }}') ? 'text-luxury-gold' : 'text-gray-500'"></i>
+                            <h3 class="salon-font text-lg text-white flex-1">{{ entry.name }}</h3>
+                            <i class="fa-solid fa-check text-luxury-gold"
+                               x-cloak x-show="picked.includes('{{ entry.slug }}')"></i>
+                        </div>
+                        <p class="text-gray-400 text-xs leading-relaxed mb-3">{{ entry.preview }}</p>
+                        <p class="text-gray-600 text-[0.65rem] uppercase tracking-widest">
+                            {{ entry.field_count }} fields{% if entry.is_system %} &middot; AI valuation{% endif %}
+                        </p>
+                    </label>
+                    {% endif %}
+                {% endfor %}
+            </div>
+
+            <div class="flex justify-center pt-2">
+                <button type="submit" x-bind:disabled="picked.length === 0"
+                        class="px-8 py-3 bg-luxury-gold text-black font-bold rounded-sm uppercase text-xs tracking-widest transition-opacity hover:bg-yellow-600 disabled:opacity-30 disabled:cursor-not-allowed">
+                    <span x-show="picked.length === 0">Select templates to add</span>
+                    <span x-cloak x-show="picked.length > 0">
+                        Add <span x-text="picked.length"></span> to my vault &rarr;
+                    </span>
+                </button>
+            </div>
+        </form>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

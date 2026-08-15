@@ -19,6 +19,10 @@ from my_garage.models import (
     GenericServiceRecord,
     GenericValuationHistory,
 )
+from my_garage.services.collection_provisioning import (
+    get_catalog,
+    provision_collections,
+)
 
 
 def get_sort_date(item):
@@ -175,11 +179,28 @@ def delete_account(request: HttpRequest) -> HttpResponse:
 def onboarding(request: HttpRequest) -> HttpResponse:
     """
     First-time user onboarding checklist. Shown after registration.
+
+    POST adopts the starter collections the user ticked, creating them
+    fully-formed so there is no schema-building step to work through.
     """
     user = request.user
+
+    if request.method == "POST":
+        created = provision_collections(user, request.POST.getlist("blueprints"))
+        if created:
+            names = ", ".join(ctype.name for ctype in created)
+            messages.success(
+                request,
+                f"Added {len(created)} collection{'s' if len(created) > 1 else ''}: {names}.",  # noqa: E501
+            )
+        else:
+            messages.info(request, "No new collections were added.")
+        return redirect("onboarding")
+
     has_items = DynamicCollectionItem.objects.filter(owner=user).exists()
     has_valuation = GenericValuationHistory.objects.filter(item__owner=user).exists()
     has_service = GenericServiceRecord.objects.filter(item__owner=user).exists()
+    catalog = get_catalog(user)
     return render(
         request,
         "pages/onboarding.html",
@@ -187,5 +208,8 @@ def onboarding(request: HttpRequest) -> HttpResponse:
             "has_items": has_items,
             "has_valuation": has_valuation,
             "has_service": has_service,
+            "catalog": catalog,
+            "has_collections": any(entry["already_owned"] for entry in catalog),
+            "all_adopted": all(entry["already_owned"] for entry in catalog),
         },
     )

@@ -9,6 +9,7 @@ app_name = "collections"
 urlpatterns = [
     # Dynamic Collections - Collection Type Management
     path("", views.collection_type_list, name="collection_type_list"),
+    path("templates/", views.collection_templates, name="collection_templates"),
     path("create/", views.collection_type_create, name="collection_type_create"),
     path("<slug:slug>/edit/", views.collection_type_edit, name="collection_type_edit"),
     # API for AI Schema Generation

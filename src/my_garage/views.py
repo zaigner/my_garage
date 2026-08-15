@@ -31,6 +31,7 @@ from .forms import (
     GenericServiceRecordForm,
     GenericUpgradeForm,
 )
+from .services.collection_provisioning import get_catalog, provision_collections
 from .services.collection_services import get_collection_services
 from .skills.theme_generator import CollectionThemeGenerator
 from .tasks import (
@@ -119,7 +120,49 @@ def collection_type_list(request: HttpRequest) -> HttpResponse:
 
         type_data.append({"type": ctype, "count": count, "total_value": total_value})
 
-    return render(request, "my_garage/collection_types.html", {"type_data": type_data})
+    return render(
+        request,
+        "my_garage/collection_types.html",
+        {
+            "type_data": type_data,
+            # Drives the "add from templates" prompt — hidden once everything
+            # in the catalogue has been adopted.
+            "has_unadopted_templates": any(
+                not entry["already_owned"] for entry in get_catalog(request.user)
+            ),
+        },
+    )
+
+
+@login_required
+def collection_templates(request: HttpRequest) -> HttpResponse:
+    """
+    Starter-collection catalogue. Adopting one creates it fully-formed —
+    schema, display fields, and theme included — with no setup screens.
+    """
+    if request.method == "POST":
+        created = provision_collections(
+            request.user, request.POST.getlist("blueprints")
+        )
+        if created:
+            names = ", ".join(ctype.name for ctype in created)
+            messages.success(
+                request,
+                f"Added {len(created)} collection{'s' if len(created) > 1 else ''}: {names}.",  # noqa: E501
+            )
+        else:
+            messages.info(request, "No new collections were added.")
+        return redirect("collections:collection_type_list")
+
+    catalog = get_catalog(request.user)
+    return render(
+        request,
+        "my_garage/collection_templates.html",
+        {
+            "catalog": catalog,
+            "all_adopted": all(entry["already_owned"] for entry in catalog),
+        },
+    )
 
 
 @login_required

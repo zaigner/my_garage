@@ -1,5 +1,7 @@
 """Django forms for my_garage."""
 
+import json
+
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
@@ -231,6 +233,10 @@ class DynamicCollectionItemForm(forms.ModelForm):
     def __init__(self, *args, collection_type=None, **kwargs):  # noqa: C901
         super().__init__(*args, **kwargs)
 
+        # Field names whose comma-separated input is stored as a JSON array.
+        # Populated below and consumed by save().
+        self._json_list_fields: set[str] = set()
+
         if not collection_type:
             return
 
@@ -244,15 +250,16 @@ class DynamicCollectionItemForm(forms.ModelForm):
                 continue
 
             field_name = field_def.get("name")
+            field_type = field_def.get("type")
 
             # Also skip if the stored value is a complex type (dict/list), regardless
             # of whether the schema flags are set correctly in the DB.
-            if self.instance and self.instance.pk:
+            # json_list is exempt: a list is its *expected* storage form.
+            if self.instance and self.instance.pk and field_type != "json_list":
                 existing = self.instance.custom_fields.get(field_name)
                 if isinstance(existing, (dict, list)):
                     continue
 
-            field_type = field_def.get("type")
             label = field_def.get("label", field_name.replace("_", " ").title())
             required = field_def.get("required", False)
             help_text = field_def.get("help_text", "")
@@ -293,6 +300,46 @@ class DynamicCollectionItemForm(forms.ModelForm):
                     help_text=help_text,
                     widget=forms.FileInput(attrs={"class": "form-control"}),
                 )
+            elif field_type == "select":
+                # Single-choice dropdown. Schema supplies [{"value", "label"}, ...].
+                choices = [
+                    (choice.get("value"), choice.get("label", choice.get("value")))
+                    for choice in field_def.get("choices", [])
+                ]
+                if not required:
+                    choices = [("", "———")] + choices
+                field = forms.ChoiceField(
+                    label=label,
+                    required=required,
+                    choices=choices,
+                    help_text=help_text,
+                    widget=forms.Select(attrs={"class": "form-control"}),
+                )
+            elif field_type == "boolean":
+                # Checkboxes are never "required" in the HTML sense — a required
+                # checkbox would force the user to tick it to submit the form.
+                field = forms.BooleanField(
+                    label=label,
+                    required=False,
+                    help_text=help_text,
+                    widget=forms.CheckboxInput(attrs={"class": "form-check-input"}),
+                )
+            elif field_type == "json_list":
+                # Comma-separated input, stored as a JSON array.
+                suggestions = field_def.get("suggestions", [])
+                attrs = {
+                    "class": "form-control",
+                    "placeholder": ", ".join(suggestions[:3]) if suggestions else "",
+                }
+                if suggestions:
+                    attrs["data-suggestions"] = json.dumps(suggestions)
+                field = forms.CharField(
+                    label=label,
+                    required=required,
+                    help_text=help_text,
+                    widget=forms.TextInput(attrs=attrs),
+                )
+                self._json_list_fields.add(field_name)
             elif field_type == "relationship":
                 # Relationship to other collection items
                 field = forms.ModelChoiceField(
@@ -314,6 +361,10 @@ class DynamicCollectionItemForm(forms.ModelForm):
             if self.instance and self.instance.pk:
                 initial_value = self.instance.custom_fields.get(field_name)
                 if initial_value is not None:
+                    if field_name in self._json_list_fields and isinstance(
+                        initial_value, list
+                    ):
+                        initial_value = ", ".join(str(v) for v in initial_value)
                     self.fields[f"custom_{field_name}"].initial = initial_value
 
     def save(self, commit=True):
@@ -340,6 +391,13 @@ class DynamicCollectionItemForm(forms.ModelForm):
                 ):
                     # Store relationship as ID
                     custom_data[actual_field_name] = value.id
+                elif actual_field_name in self._json_list_fields:
+                    # Split comma-separated input into a JSON array, dropping blanks.
+                    custom_data[actual_field_name] = [
+                        part.strip()
+                        for part in (value or "").split(",")
+                        if part.strip()
+                    ]
                 else:
                     custom_data[actual_field_name] = value
 

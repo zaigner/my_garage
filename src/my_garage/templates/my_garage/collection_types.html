@@ -36,6 +36,11 @@
                 <a href="{% url 'home' %}" class="px-6 py-2 border border-white/20 text-white/70 hover:text-white hover:border-white/50 rounded-sm uppercase text-xs tracking-widest transition-colors">
                     Back to Vault
                 </a>
+                {% if has_unadopted_templates %}
+                <a href="{% url 'collections:collection_templates' %}" class="px-6 py-2 border border-luxury-gold text-luxury-gold hover:bg-luxury-gold hover:text-black rounded-sm uppercase text-xs tracking-widest transition-colors">
+                    Add from Templates
+                </a>
+                {% endif %}
                 <a href="{% url 'collections:collection_type_create' %}" class="px-6 py-2 bg-luxury-gold text-black font-bold rounded-sm uppercase text-xs tracking-widest hover:bg-yellow-600 transition-colors">
                     + Create Collection Type
                 </a>
@@ -107,13 +112,19 @@
             </div>
         {% else %}
             <div class="col-span-full py-24 text-center border border-dashed border-white/10 rounded-lg bg-[#151b33]">
-                <i class="fa fa-box text-6xl text-gray-600 mb-4"></i>
+                <i class="fa-solid fa-box text-6xl text-gray-600 mb-4"></i>
                 <h3 class="text-xl salon-font text-gray-400 mb-2">The Collection Awaits</h3>
-                <p class="text-gray-600 text-sm mb-6">Create your first collection type to start tracking your assets.</p>
-                <a href="{% url 'collections:collection_type_create' %}"
-                   class="px-6 py-2 bg-luxury-gold text-black font-bold rounded-sm uppercase text-xs tracking-widest hover:bg-yellow-600 transition-colors inline-block">
-                    Create Your First Collection
-                </a>
+                <p class="text-gray-600 text-sm mb-6">Start from a ready-made template, or build your own from scratch.</p>
+                <div class="flex flex-wrap gap-3 justify-center">
+                    <a href="{% url 'collections:collection_templates' %}"
+                       class="px-6 py-2 bg-luxury-gold text-black font-bold rounded-sm uppercase text-xs tracking-widest hover:bg-yellow-600 transition-colors inline-block">
+                        Browse Templates
+                    </a>
+                    <a href="{% url 'collections:collection_type_create' %}"
+                       class="px-6 py-2 border border-white/20 text-white/70 hover:text-white hover:border-white/50 rounded-sm uppercase text-xs tracking-widest transition-colors inline-block">
+                        Build From Scratch
+                    </a>
+                </div>
             </div>
         {% endif %}
     </div>
