@@ -1,9 +1,19 @@
 # Least-privilege identity for the self-hosted GitHub Actions runner.
 #
 # The runner lives in its own `ci` namespace and is granted only what
-# `kubectl set image` + `kubectl rollout status` actually need, scoped to the
-# my-garage namespace. It deliberately has no cluster-wide rights: a compromised
-# workflow can restart my-garage with a different image, and nothing else.
+# `kubectl apply -k k8s` + `kubectl rollout status` actually need, scoped to the
+# my-garage namespace. It has no cluster-wide rights.
+#
+# Blast radius, stated honestly: the deploy pipeline applies whole Deployment
+# specs rather than only bumping an image tag, so `patch` here lets a compromised
+# workflow change anything inside a my-garage Deployment — image, command,
+# environment, mounts. That is inherent to deploying manifests from git and is
+# the trade for having the cluster actually match the repo.
+#
+# What it still cannot touch: Secrets, ConfigMaps, Services, Ingress, the
+# database StatefulSets, any other namespace, and any cluster-scoped object.
+# k8s/kustomization.yaml deliberately excludes those so this Role can stay
+# narrow — widen one only alongside the other.
 apiVersion: v1
 kind: Namespace
 metadata:
@@ -21,10 +31,12 @@ metadata:
   name: deployer
   namespace: my-garage
 rules:
-  # `kubectl set image` = get + patch on the Deployment
+  # `kubectl apply --server-side` = get + patch on existing Deployments.
+  # `create` covers two cases: adding a new Deployment to the kustomization,
+  # and the dry-run `kubectl diff` step that previews changes in the job log.
   - apiGroups: ["apps"]
     resources: ["deployments"]
-    verbs: ["get", "list", "watch", "patch"]
+    verbs: ["get", "list", "watch", "patch", "create"]
   # `kubectl rollout status` watches the ReplicaSets and Pods behind it
   - apiGroups: ["apps"]
     resources: ["replicasets"]
