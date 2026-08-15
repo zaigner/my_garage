@@ -80,6 +80,66 @@
             <p class="text-luxury-text text-sm uppercase tracking-widest">Three steps to get the most out of your vault.</p>
         </section>
 
+        <!-- Starter collections picker -->
+        {% if not all_adopted %}
+        <section class="space-y-5" x-data="{ picked: [] }">
+            <div class="text-center space-y-2">
+                <h2 class="font-serif text-2xl italic text-luxury-white">
+                    {% if has_collections %}Add more collections{% else %}Choose your collections{% endif %}
+                </h2>
+                <p class="text-luxury-text text-xs leading-relaxed">
+                    Pick what you collect. Each one arrives ready to use — no setup required.
+                </p>
+            </div>
+
+            <form method="post" action="{% url 'onboarding' %}" class="space-y-5">
+                {% csrf_token %}
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {% for entry in catalog %}
+                        {% if entry.already_owned %}
+                        <div class="p-4 rounded-xl bg-luxury-card/40 border border-luxury-gold/30 flex items-start gap-3 opacity-60">
+                            <i class="{{ entry.icon }} text-luxury-gold text-xl mt-0.5 w-6 text-center"></i>
+                            <div class="min-w-0">
+                                <p class="font-serif italic text-luxury-white text-sm">{{ entry.name }}</p>
+                                <p class="text-luxury-gold text-[0.65rem] uppercase tracking-widest mt-1">In your vault</p>
+                            </div>
+                        </div>
+                        {% else %}
+                        <label class="p-4 rounded-xl bg-luxury-card border cursor-pointer transition-colors flex items-start gap-3"
+                               :class="picked.includes('{{ entry.slug }}') ? 'border-luxury-gold' : 'border-white/10 hover:border-white/30'">
+                            <input type="checkbox" name="blueprints" value="{{ entry.slug }}"
+                                   x-model="picked" class="sr-only">
+                            <i class="{{ entry.icon }} text-xl mt-0.5 w-6 text-center"
+                               :class="picked.includes('{{ entry.slug }}') ? 'text-luxury-gold' : 'text-luxury-text'"></i>
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-center gap-2">
+                                    <p class="font-serif italic text-luxury-white text-sm">{{ entry.name }}</p>
+                                    <i class="fa-solid fa-check text-luxury-gold text-xs"
+                                       x-cloak x-show="picked.includes('{{ entry.slug }}')"></i>
+                                </div>
+                                <p class="text-luxury-text text-xs mt-1 leading-relaxed">{{ entry.preview }}</p>
+                                <p class="text-luxury-text/60 text-[0.65rem] uppercase tracking-widest mt-2">
+                                    {{ entry.field_count }} fields{% if entry.is_system %} &middot; AI valuation{% endif %}
+                                </p>
+                            </div>
+                        </label>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+
+                <div class="text-center">
+                    <button type="submit" x-bind:disabled="picked.length === 0"
+                            class="px-8 py-3 bg-luxury-gold text-black font-bold rounded-sm uppercase text-xs tracking-widest transition-opacity hover:bg-yellow-600 disabled:opacity-30 disabled:cursor-not-allowed">
+                        <span x-show="picked.length === 0">Select collections to add</span>
+                        <span x-cloak x-show="picked.length > 0">
+                            Add <span x-text="picked.length"></span> to my vault &rarr;
+                        </span>
+                    </button>
+                </div>
+            </form>
+        </section>
+        {% endif %}
+
         <section class="space-y-4">
 
             <!-- Step 1: Add first item -->

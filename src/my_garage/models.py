@@ -15,9 +15,13 @@ class CollectionType(models.Model):
     name = models.CharField(
         max_length=100, help_text="e.g., Wine Collection, Art Collection"
     )
-    slug = models.SlugField(max_length=100, unique=True, blank=True)
+    # Unique per owner, not globally — see Meta.unique_together.  Every user gets
+    # their own "automobiles" slug so per-user collections share stable URLs.
+    slug = models.SlugField(max_length=100, blank=True)
     icon = models.CharField(
-        max_length=50, default="fa-box", help_text="FontAwesome icon class"
+        max_length=50,
+        default="fa-solid fa-box",
+        help_text="FontAwesome icon class (FA6 needs a style prefix, e.g. 'fa-solid fa-car')",  # noqa: E501
     )
     description = models.TextField(blank=True)
 
