@@ -1,0 +1,128 @@
+# Self-hosted GitHub Actions runner, running inside the cluster it deploys to.
+#
+# Why in-cluster rather than a systemd service on aignerpi-2:
+#   * no inbound firewall rule -- the runner polls GitHub outbound
+#   * no SSH private key stored in GitHub secrets
+#   * scoped RBAC (see rbac.yaml) instead of a root-owned kubeconfig
+#   * restarts and reschedules itself
+#
+# Registration: the runner registers once using a short-lived token, then stores
+# its credentials in /home/runner (.runner + .credentials). Those live on a PVC,
+# so a pod restart re-uses the existing registration instead of needing a new
+# token -- which is what lets us avoid keeping a long-lived PAT in the cluster.
+#
+# Create the one-time registration secret before applying (token is valid 1h):
+#   kubectl -n ci create secret generic runner-registration \
+#     --from-literal=token="$(gh api -X POST \
+#       repos/zaigner/my_garage/actions/runners/registration-token --jq .token)"
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: runner-home
+  namespace: ci
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: local-path   # node-local; the runner is disposable state
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: github-runner
+  namespace: ci
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate            # RWO volume: never two pods holding it at once
+  selector:
+    matchLabels:
+      app: github-runner
+  template:
+    metadata:
+      labels:
+        app: github-runner
+    spec:
+      serviceAccountName: github-runner
+      securityContext:
+        fsGroup: 1001
+      initContainers:
+        # The PVC mounts over /home/runner, which would hide the runner binaries
+        # baked into the image. Seed the volume from the image on first start.
+        - name: seed-runner-home
+          image: ghcr.io/actions/actions-runner:latest
+          command: ["bash", "-c"]
+          args:
+            - |
+              set -euo pipefail
+              if [ ! -f /mnt/runner/config.sh ]; then
+                echo "seeding runner home from image"
+                cp -a /home/runner/. /mnt/runner/
+              else
+                echo "runner home already seeded"
+              fi
+          volumeMounts:
+            - name: runner-home
+              mountPath: /mnt/runner
+      containers:
+        - name: runner
+          image: ghcr.io/actions/actions-runner:latest
+          workingDir: /home/runner
+          command: ["bash", "-c"]
+          args:
+            - |
+              set -euo pipefail
+              export PATH="/home/runner/bin:$PATH"
+
+              # kubectl is not in the runner image; fetch once onto the PVC.
+              if [ ! -x /home/runner/bin/kubectl ]; then
+                mkdir -p /home/runner/bin
+                curl -fsSLo /home/runner/bin/kubectl \
+                  "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/arm64/kubectl"
+                chmod +x /home/runner/bin/kubectl
+              fi
+
+              # Register only if this volume has no registration yet.
+              if [ ! -f /home/runner/.runner ]; then
+                echo "registering runner with ${GH_URL}"
+                ./config.sh \
+                  --url "${GH_URL}" \
+                  --token "${RUNNER_TOKEN}" \
+                  --name "${RUNNER_NAME}" \
+                  --labels "${RUNNER_LABELS}" \
+                  --work /home/runner/_work \
+                  --unattended --replace
+              else
+                echo "existing registration found, skipping config"
+              fi
+
+              exec ./run.sh
+          env:
+            - name: GH_URL
+              value: https://github.com/zaigner/my_garage
+            - name: RUNNER_NAME
+              value: k3s-aignerpi
+            - name: RUNNER_LABELS
+              value: self-hosted,linux,arm64,k3s
+            - name: KUBECTL_VERSION
+              value: v1.34.5
+            - name: RUNNER_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: runner-registration
+                  key: token
+                  optional: true      # not needed once .runner exists
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 1Gi
+          volumeMounts:
+            - name: runner-home
+              mountPath: /home/runner
+      volumes:
+        - name: runner-home
+          persistentVolumeClaim:
+            claimName: runner-home

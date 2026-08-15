@@ -1,0 +1,52 @@
+# Least-privilege identity for the self-hosted GitHub Actions runner.
+#
+# The runner lives in its own `ci` namespace and is granted only what
+# `kubectl set image` + `kubectl rollout status` actually need, scoped to the
+# my-garage namespace. It deliberately has no cluster-wide rights: a compromised
+# workflow can restart my-garage with a different image, and nothing else.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ci
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: github-runner
+  namespace: ci
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: deployer
+  namespace: my-garage
+rules:
+  # `kubectl set image` = get + patch on the Deployment
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "watch", "patch"]
+  # `kubectl rollout status` watches the ReplicaSets and Pods behind it
+  - apiGroups: ["apps"]
+    resources: ["replicasets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+  # so a failed deploy can surface container logs in the Actions output
+  - apiGroups: [""]
+    resources: ["pods/log"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: github-runner-deployer
+  namespace: my-garage
+subjects:
+  - kind: ServiceAccount
+    name: github-runner
+    namespace: ci
+roleRef:
+  kind: Role
+  name: deployer
+  apiGroup: rbac.authorization.k8s.io

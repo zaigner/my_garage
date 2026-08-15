@@ -11,7 +11,18 @@ on:
 jobs:
   deploy:
     name: Deploy to K3s Homelab
-    runs-on: ubuntu-latest
+    # Runs on the self-hosted runner inside the cluster (see k8s/ci/).
+    #
+    # GitHub-hosted runners cannot do this job: aignerpi-2 is on 192.168.50.0/24,
+    # a private network with no inbound route from GitHub's cloud. The previous
+    # version of this workflow SSHed to that address from ubuntu-latest and could
+    # never have connected.
+    #
+    # The runner polls GitHub outbound, so no firewall rule, no port forwarding
+    # and no SSH key in GitHub secrets. It authenticates to the cluster with its
+    # ServiceAccount token, scoped by k8s/ci/rbac.yaml to patching my-garage
+    # Deployments and nothing else.
+    runs-on: [self-hosted, k3s]
     # Only deploy if the Build workflow succeeded
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
@@ -22,32 +33,26 @@ jobs:
           # Use the short SHA of the commit that triggered the Build workflow
           echo "sha=$(echo ${{ github.event.workflow_run.head_sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
 
-      # SSH to aignerpi-2 (K3s control plane at 192.168.50.124) and roll out
-      # the new image. kubectl is already available there via K3s installation.
-      # need to set up a Tailscale implementation to deploy from github
-      # GitHub Secrets required:
-      #   SSH_USER         → your Pi username (aigner77)
-      #   SSH_PRIVATE_KEY  → private key for SSH access to aignerpi-2
-      #                      Generate: ssh-keygen -t ed25519 -C "github-actions"
-      #                      Add public key to: ~/.ssh/authorized_keys on aignerpi-2
-      - name: Roll out new image via SSH
-        uses: appleboy/ssh-action@v1
-        with:
-          host: 192.168.50.124
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            set -e
-            IMAGE="ghcr.io/${{ github.repository_owner }}/my-garage:${{ steps.tag.outputs.sha }}"
-            echo "Deploying image: $IMAGE"
+      - name: Roll out new image
+        run: |
+          set -euo pipefail
+          IMAGE="ghcr.io/${{ github.repository_owner }}/my-garage:${{ steps.tag.outputs.sha }}"
+          echo "Deploying image: $IMAGE"
 
-            # Update each application Deployment with the new image
-            kubectl set image deployment/django    django=$IMAGE    -n my-garage
-            kubectl set image deployment/fastapi   fastapi=$IMAGE   -n my-garage
-            kubectl set image deployment/celery-worker worker=$IMAGE -n my-garage
-            kubectl set image deployment/celery-beat   beat=$IMAGE   -n my-garage
+          # Update each application Deployment with the new image
+          kubectl set image deployment/django        django=$IMAGE -n my-garage
+          kubectl set image deployment/fastapi       fastapi=$IMAGE -n my-garage
+          kubectl set image deployment/celery-worker worker=$IMAGE  -n my-garage
+          kubectl set image deployment/celery-beat   beat=$IMAGE    -n my-garage
 
-            # Wait for Django rollout to complete (primary service)
-            kubectl rollout status deployment/django -n my-garage --timeout=120s
+          # Wait for Django rollout to complete (primary service).
+          # Image pulls on a Pi are slow -- 120s was not enough in practice.
+          kubectl rollout status deployment/django -n my-garage --timeout=600s
 
-            echo "Deploy complete: $IMAGE"
+          echo "Deploy complete: $IMAGE"
+
+      - name: Show pod state on failure
+        if: failure()
+        run: |
+          kubectl get pods -n my-garage -o wide
+          kubectl logs -n my-garage -l app=django --tail=50 || true
