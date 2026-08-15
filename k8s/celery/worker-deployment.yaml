@@ -13,6 +13,12 @@ spec:
       labels:
         app: celery-worker
     spec:
+      # Celery does a warm shutdown on SIGTERM — it stops accepting work and
+      # finishes in-flight tasks. The default 30s was not enough: a rollout
+      # produced "FailedKillPod ... DeadlineExceeded" and the container was
+      # SIGKILLed mid-task. Valuation and OCR tasks call external APIs, so give
+      # them room to drain.
+      terminationGracePeriodSeconds: 120
       containers:
         - name: worker
           image: ghcr.io/zaigner/my-garage:latest  # Replace OWNER with your GitHub username
@@ -22,6 +28,21 @@ spec:
                 name: my-garage-secrets
             - configMapRef:
                 name: my-garage-config
+          # A worker that loses its broker connection or deadlocks keeps running
+          # as a process while silently consuming nothing — no port to probe, so
+          # ask Celery itself. Deliberately slack: each ping starts a Python
+          # process on a Pi, and 3 x 60s of sustained failure is needed before a
+          # restart, which then drains via terminationGracePeriodSeconds above.
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - celery -A config.celery_app inspect ping -d celery@$HOSTNAME
+            initialDelaySeconds: 90
+            periodSeconds: 60
+            timeoutSeconds: 20
+            failureThreshold: 3
           resources:
             requests:
               memory: "256Mi"

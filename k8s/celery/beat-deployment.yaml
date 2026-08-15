@@ -6,6 +6,14 @@ metadata:
   namespace: my-garage
 spec:
   replicas: 1
+  # replicas: 1 alone does not guarantee a single scheduler. The default
+  # RollingUpdate surges a second pod before retiring the first, so every
+  # deploy briefly ran two beats — double-firing scheduled tasks, which is
+  # exactly what the warning above forbids. Recreate terminates the old pod
+  # first. Beat schedules work rather than serving traffic, so the momentary
+  # gap costs nothing.
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: celery-beat
@@ -14,6 +22,8 @@ spec:
       labels:
         app: celery-beat
     spec:
+      # Beat only needs to flush its scheduler state; it runs no tasks itself.
+      terminationGracePeriodSeconds: 30
       containers:
         - name: beat
           image: ghcr.io/zaigner/my-garage:latest  # Replace OWNER with your GitHub username

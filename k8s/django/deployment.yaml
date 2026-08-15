@@ -7,6 +7,13 @@ metadata:
   namespace: my-garage
 spec:
   replicas: 1
+  # Bring the new pod up before retiring the old one so a deploy causes no
+  # downtime. Both pods run briefly; the nodes have headroom for it.
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   selector:
     matchLabels:
       app: django
@@ -26,16 +33,31 @@ spec:
                 name: my-garage-config
           ports:
             - containerPort: 8000
+          # Startup is slow on a Pi: pull, then migrations, then bind 8000.
+          # The startup probe absorbs that wait and holds off the readiness and
+          # liveness probes until the port is actually open. Without it, the
+          # liveness probe fired mid-migration and killed the container, costing
+          # every deploy an avoidable restart.
+          # Budget: 30 x 10s = 5 minutes before the pod is declared failed.
+          startupProbe:
+            tcpSocket:
+              port: 8000
+            periodSeconds: 10
+            failureThreshold: 30
+          # Both probes below only begin once startupProbe succeeds, so neither
+          # needs an initialDelaySeconds.
           readinessProbe:
             tcpSocket:
               port: 8000
-            initialDelaySeconds: 15
             periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
           livenessProbe:
             tcpSocket:
               port: 8000
-            initialDelaySeconds: 30
             periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
           resources:
             requests:
               memory: "256Mi"
