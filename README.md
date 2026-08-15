@@ -156,7 +156,7 @@ docker compose --profile app up --build
 
 Django will be available at `http://localhost:8000`.
 
-> **Note:** The production settings enforce `SECURE_SSL_REDIRECT=True`. Set `SECURE_SSL_REDIRECT=False` in your `.env` or the compose `environment` block when testing locally without HTTPS.
+> **Note:** The production settings enforce `SECURE_SSL_REDIRECT=True`. Set `SECURE_SSL_REDIRECT=False` in your `.env` or the compose `environment` block when testing locally without HTTPS. Note that `SESSION_COOKIE_SECURE` and `CSRF_COOKIE_SECURE` stay `True` regardless, so login will not work over plain HTTP — see [Deployment Architecture](#ingress-and-tls).
 
 ### Kubernetes
 
@@ -172,9 +172,85 @@ kubectl apply -f k8s/mongodb/
 kubectl apply -f k8s/django/
 kubectl apply -f k8s/fastapi/
 kubectl apply -f k8s/celery/
+kubectl apply -f k8s/ci/             # optional — self-hosted deploy runner
 ```
 
 The Django deployment uses `ghcr.io/zaigner/my-garage:latest`. The image is built with a multi-stage Dockerfile (pixi prod environment → lean Debian runtime) and includes tesseract-ocr for the OCR service.
+
+---
+
+## Deployment Architecture
+
+The reference deployment is a two-node **K3s** cluster on Raspberry Pi 5s, backed by a Synology NAS. Everything below is described by role — concrete addresses live in a separate private infrastructure repository, never in application config.
+
+```
+                 ┌──────────── GitHub ────────────┐
+   git push  ──▶ │  CI  ──▶  Build  ──▶  Deploy   │
+                 └────────────────┬───────────────┘
+                    ghcr.io image │ (job claimed by
+                                  │  runner, outbound)
+   ┌──────────────────────────────┼─────────────────────────────┐
+   │  K3s cluster                 ▼                             │
+   │   ┌────────────────┐   ┌──────────────┐                    │
+   │   │ control plane  │   │ worker node  │  self-hosted runner│
+   │   └────────────────┘   └──────────────┘  (ci namespace)    │
+   │                                                            │
+   │   Traefik Ingress ──▶ django :8000 · fastapi :8001         │
+   │        ▲ MetalLB LoadBalancer address                      │
+   │        │                                                   │
+   │   Storage:  nfs-client (NAS)  ·  local-path (node-local)   │
+   └────────────────────────────────────────────────────────────┘
+```
+
+### Ingress and TLS
+
+Traefik terminates TLS and routes by path — `/api/mcp` to FastAPI, everything else to Django. The Ingress must be bound to **both** the `web` and `websecure` entrypoints:
+
+```yaml
+traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+```
+
+**HTTPS is required, not optional.** `config/settings/production.py` sets `SESSION_COOKIE_SECURE` and `CSRF_COOKIE_SECURE`, so over plain HTTP the browser never returns the session or CSRF cookie — the login form accepts a password and silently bounces you back. With `web` alone, Traefik serves no HTTPS router while Django's `SECURE_SSL_REDIRECT` still redirects to `https://`, producing a 301 → 404 loop.
+
+`SECURE_PROXY_SSL_HEADER` trusts Traefik's `X-Forwarded-Proto`, so Django knows the original request was HTTPS even though the internal hop is plain HTTP. Without a real certificate, Traefik serves its built-in self-signed one — expect a one-time browser warning.
+
+Any host used to reach the app must appear in `ALLOWED_HOSTS` (`k8s/configmap.yaml`), or Django returns `400 DisallowedHost`.
+
+### Storage
+
+Two storage classes, chosen deliberately per workload:
+
+| Workload | Class | Why |
+|---|---|---|
+| PostgreSQL | `nfs-client` (NAS) | Survives node loss; NFS is fine for its access pattern |
+| MongoDB | `local-path` (node-local) | **Must not** run on NFS — see below |
+| Django media | `nfs-client` (NAS) | Shared across replicas |
+
+> **MongoDB on NFS corrupts.** WiredTiger requires POSIX locking and write-ordering guarantees that NFS does not provide. Running it on an NFS PersistentVolume produced `WiredTiger metadata corruption detected` and thousands of crash-restarts. A single-replica StatefulSet gains nothing from network storage, so it uses `local-path`. The trade-off is that its data is pinned to one node.
+
+NFS-backed PersistentVolumes have an important constraint: **`spec.nfs.server` is immutable.** If the NAS address changes, the PVs cannot be patched — they must be deleted and recreated with the same `spec.nfs.path`. Verify `persistentVolumeReclaimPolicy: Retain` on every PV before deleting anything, or the provisioner may remove the underlying directory.
+
+### CI/CD
+
+```
+push to main → CI (lint + tests) → Build (multi-arch amd64/arm64 → ghcr.io) → Deploy
+```
+
+Each stage triggers on the previous one's success via `workflow_run`, so a failing test never produces an image and a failed build never deploys.
+
+**Deploy runs on a self-hosted runner inside the cluster** (`k8s/ci/`), not on a GitHub-hosted runner. This is a requirement, not a preference: the cluster sits on a private network with no inbound route from GitHub's cloud, so a hosted runner cannot reach it at all — whether by SSH or any other means.
+
+The runner polls GitHub outbound, which means:
+
+- no inbound firewall rule or port forwarding
+- no SSH private key stored in GitHub secrets
+- authentication via ServiceAccount rather than a root-owned kubeconfig
+
+Its RBAC (`k8s/ci/rbac.yaml`) grants only `get`/`list`/`watch`/`patch` on Deployments in the app namespace — enough for `kubectl set image` and `kubectl rollout status`, and nothing else. It cannot read Secrets, touch other namespaces, or create Pods.
+
+Registration survives pod restarts: an initContainer seeds the runner home onto a PVC, so the runner's credentials persist and no long-lived personal access token has to be stored in the cluster.
+
+> Never enable this runner for pull requests from forks. A fork PR would execute untrusted code on a runner holding cluster credentials. The `workflow_run` on `main` trigger is safe.
 
 ---
 
@@ -232,7 +308,10 @@ tests/
   functional/               # Django test client — views, models, forms
   fastapi/                  # FastAPI TestClient — MCP tools, OCR routes
   eval/                     # MCP tool quality + RAG retrieval evals (hits real APIs)
-k8s/                        # Kubernetes manifests (namespace, deployments, services)
+k8s/                        # Kubernetes manifests
+  django/ fastapi/ celery/  # app Deployments, Services, Ingress
+  postgres/ mongodb/ redis/ # StatefulSets and their storage classes
+  ci/                       # self-hosted GitHub Actions runner + scoped RBAC
 docs/                       # Implementation plans and UX specs
 ```
 
@@ -253,6 +332,8 @@ docs/                       # Implementation plans and UX specs
 - [x] MCP server — Claude Code integration with 6 registered tools
 - [x] RAG knowledge layer — MongoDB-backed vector search over project docs
 - [x] Docker Compose + Kubernetes deployment
+- [x] **HTTPS ingress via Traefik** — TLS termination with secure session/CSRF cookies
+- [x] **Automated deploys** — self-hosted in-cluster runner with least-privilege RBAC
 - [x] **Portfolio Insights page** — category allocation bars, KPI cards, top items
 - [x] **AI Curator's Note** — Gemini-generated auction-style item descriptions
 - [x] **Valuation sparkline** — SVG trend chart in item detail Valuations tab
