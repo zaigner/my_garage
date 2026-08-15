@@ -2,8 +2,9 @@
 #   /api/mcp  →  fastapi:8001   (MCP + FastAPI endpoints)
 #   /         →  django:8000    (everything else)
 #
-# Internal DNS: add "192.168.1.202 my-garage.local" to your router or Pi-hole.
-# MetalLB will assign an IP from the 192.168.1.200-210 pool (.202+ is free).
+# Internal DNS: add "192.168.50.202 my-garage.local" to your router or Pi-hole.
+# MetalLB will assign an IP from the 192.168.50.200-210 pool (.202+ is free).
+# Addresses are owned by zaigner/infra/homelab.yml -- change them there.
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:

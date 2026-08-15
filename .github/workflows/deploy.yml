@@ -22,18 +22,18 @@ jobs:
           # Use the short SHA of the commit that triggered the Build workflow
           echo "sha=$(echo ${{ github.event.workflow_run.head_sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
 
-      # SSH to aignerpi-2 (K3s control plane at 192.168.1.124) and roll out
+      # SSH to aignerpi-2 (K3s control plane at 192.168.50.124) and roll out
       # the new image. kubectl is already available there via K3s installation.
-      # need to set up a Tailscale implementation to deploy from github 
+      # need to set up a Tailscale implementation to deploy from github
       # GitHub Secrets required:
-      #   SSH_USER         → your Pi username (e.g. zaigner77)
+      #   SSH_USER         → your Pi username (aigner77)
       #   SSH_PRIVATE_KEY  → private key for SSH access to aignerpi-2
       #                      Generate: ssh-keygen -t ed25519 -C "github-actions"
       #                      Add public key to: ~/.ssh/authorized_keys on aignerpi-2
       - name: Roll out new image via SSH
         uses: appleboy/ssh-action@v1
         with:
-          host: 192.168.1.124
+          host: 192.168.50.124
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |

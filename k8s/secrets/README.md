@@ -4,7 +4,7 @@ Secrets are created manually on the cluster and are never stored in git.
 
 ## Create the Secret
 
-SSH to `aignerpi-2` (192.168.1.124) and run:
+SSH to `aignerpi-2` (192.168.50.124) and run:
 
 ```bash
 kubectl create secret generic my-garage-secrets \
