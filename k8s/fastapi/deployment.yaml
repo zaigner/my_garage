@@ -25,11 +25,28 @@ spec:
                 name: my-garage-config
           ports:
             - containerPort: 8001
+          # This container overrides `command`, which replaces the image's
+          # ENTRYPOINT — so it skips entrypoint.sh and never runs migrations.
+          # It still needs a startup budget for the image pull and uvicorn boot.
+          # Budget: 24 x 5s = 2 minutes.
+          startupProbe:
+            tcpSocket:
+              port: 8001
+            periodSeconds: 5
+            failureThreshold: 24
           readinessProbe:
             tcpSocket:
               port: 8001
-            initialDelaySeconds: 10
             periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          # Previously absent: a wedged FastAPI process was never restarted.
+          livenessProbe:
+            tcpSocket:
+              port: 8001
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
           resources:
             requests:
               memory: "256Mi"
