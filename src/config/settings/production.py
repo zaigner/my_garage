@@ -17,6 +17,16 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SECURE_SSL_REDIRECT = os.environ.get("SECURE_SSL_REDIRECT", "True") == "True"
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
+
+# ALLOWED_HOSTS carries bare hostnames; Django's CSRF check compares against Origin,
+# which includes the scheme. For my-garage.local/the LB IP, Traefik's real websecure
+# entrypoint always reports https, so Django's default same-origin check passes
+# without this. For my-garage.zachelorpad.com the Cloudflare Tunnel hop to Traefik is
+# plain HTTP -- Access already terminated TLS at the edge -- so Traefik reports the
+# request as http regardless of what the browser actually used, and the same-origin
+# check fails against a genuine https Origin from the browser. Trusting the origin
+# explicitly, the same fix portfolio-research already needed, sidesteps that.
+CSRF_TRUSTED_ORIGINS = [f"https://{host}" for host in ALLOWED_HOSTS if host]
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = "DENY"
