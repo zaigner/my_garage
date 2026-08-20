@@ -10,7 +10,17 @@ data:
   DJANGO_SETTINGS_MODULE: config.settings.production
   # The Traefik LoadBalancer address is listed so the app is reachable without a
   # DNS entry. Django returns 400 DisallowedHost for any Host not in this list.
-  ALLOWED_HOSTS: my-garage.local,192.168.50.200
+  # my-garage.zachelorpad.com is the public hostname reached via the Cloudflare
+  # Tunnel (k8s/django/ingress.yaml).
+  ALLOWED_HOSTS: my-garage.local,192.168.50.200,my-garage.zachelorpad.com
+  # False because the Cloudflare Tunnel hop to Traefik for my-garage.zachelorpad.com
+  # is plain HTTP (Cloudflare Access already terminated TLS at the edge) -- with the
+  # default True, Django would see that internal http hop and try to force a
+  # redirect to https, which 404s the same way plain `web`-only routing does for
+  # my-garage.local (k8s/django/ingress.yaml's comment). SESSION_COOKIE_SECURE and
+  # CSRF_COOKIE_SECURE stay True regardless (production.py), so this only affects
+  # the redirect, not cookie security.
+  SECURE_SSL_REDIRECT: "False"
 
   # PostgreSQL
   DB_HOST: postgres

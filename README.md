@@ -216,6 +216,8 @@ traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
 
 Any host used to reach the app must appear in `ALLOWED_HOSTS` (`k8s/configmap.yaml`), or Django returns `400 DisallowedHost`.
 
+**`my-garage.zachelorpad.com` is the exception to all of the above.** It's reached through the Cloudflare Tunnel (`zaigner/infra`'s `dns.cloudflare.routes`), which dials this same Traefik LoadBalancer over plain HTTP — Cloudflare Access terminates TLS at the edge instead, so there's no in-cluster HTTPS hop for this host at all. `SECURE_SSL_REDIRECT` is set to `False` in `k8s/configmap.yaml` so Django doesn't try to force an already-secure-at-the-edge request into a redirect loop the way it would with `web` alone for `my-garage.local`. `SESSION_COOKIE_SECURE`/`CSRF_COOKIE_SECURE` stay `True` either way. An Access application in the Cloudflare Zero Trust dashboard (Access controls → Applications, Public DNS, host `my-garage.zachelorpad.com`) gates who can reach it before the request ever hits this Ingress.
+
 ### Storage
 
 Two storage classes, chosen deliberately per workload:

@@ -2,18 +2,28 @@
 #   /api/mcp  →  fastapi:8001   (MCP + FastAPI endpoints)
 #   /         →  django:8000    (everything else)
 #
-# Reachable two ways, so neither depends on the other:
-#   https://my-garage.local/     once DNS maps it to the Traefik LB address
-#   https://192.168.50.200/      always -- the hostless rule below matches any Host
+# Reachable three ways, so none depends on the others:
+#   https://my-garage.local/            once DNS maps it to the Traefik LB address
+#   https://192.168.50.200/             always -- the hostless rule below matches any Host
+#   https://my-garage.zachelorpad.com/  via the Cloudflare Tunnel (see below)
 #
 # The Traefik LoadBalancer currently holds 192.168.50.200. Addresses are owned by
 # zaigner/infra/homelab.yml -- change them there.
 #
-# HTTPS is required, not optional: config/settings/production.py sets
-# SESSION_COOKIE_SECURE and CSRF_COOKIE_SECURE, so over plain HTTP the browser
+# HTTPS is required for the first two, not optional: config/settings/production.py
+# sets SESSION_COOKIE_SECURE and CSRF_COOKIE_SECURE, so over plain HTTP the browser
 # never returns the session or CSRF cookie and login silently fails. Traefik
 # serves its built-in self-signed certificate (expect a one-time browser
 # warning) and forwards X-Forwarded-Proto, which SECURE_PROXY_SSL_HEADER trusts.
+#
+# my-garage.zachelorpad.com is the odd one out: zaigner/infra's Cloudflare Tunnel
+# dials this same Traefik LoadBalancer on plain HTTP (dns.cloudflare.routes,
+# http://192.168.50.200:80 -- the tunnel needs no in-cluster TLS to forward
+# something that's already HTTPS from the browser's perspective, terminated at
+# Cloudflare's edge by Access instead). It still matches this Ingress's `web`
+# entrypoint and gets proxied to django/fastapi same as the other two hosts;
+# SECURE_SSL_REDIRECT is False in k8s/configmap.yaml precisely so Django doesn't
+# try to force this already-secure-at-the-edge request into a redirect loop.
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -31,6 +41,23 @@ spec:
         - my-garage.local
   rules:
     - host: my-garage.local
+      http:
+        paths:
+          - path: /api/mcp
+            pathType: Prefix
+            backend:
+              service:
+                name: fastapi
+                port:
+                  number: 8001
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: django
+                port:
+                  number: 8000
+    - host: my-garage.zachelorpad.com
       http:
         paths:
           - path: /api/mcp
