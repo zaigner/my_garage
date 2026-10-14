@@ -96,8 +96,15 @@ COPY --from=builder /app/.pixi/envs/prod /app/.pixi/envs/prod
 COPY --from=builder --chown=appuser:appuser /app/src /app/src
 COPY --from=builder --chown=appuser:appuser /app/manage.py /app/manage.py
 COPY --from=builder --chown=appuser:appuser /app/templates /app/templates
-COPY --from=builder --chown=appuser:appuser /app/static /app/static
 COPY --from=builder --chown=appuser:appuser /app/staticfiles /app/staticfiles
+
+# The raw static/ sources are not copied: Django serves staticfiles/, which
+# collectstatic built from them, and shipping both put every static asset in
+# the image twice. The directory only has to exist because STATICFILES_DIRS
+# names it; an absent one makes every startup print a system-check warning.
+# Created here, not with logs/ above, because changing that earlier step would
+# invalidate the dependency layer below it and force every node to re-pull it.
+RUN mkdir /app/static
 
 # Entrypoint runs migrations then execs the CMD
 COPY --chown=appuser:appuser --chmod=755 entrypoint.sh /app/entrypoint.sh
