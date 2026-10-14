@@ -7,8 +7,19 @@ DEBUG = False
 # Set this in your environment variables
 ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "").split(",")
 
-# Static files — compressed + hashed filenames for long-term caching
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+# Static files — compressed + hashed filenames for long-term caching.
+# Must be set through STORAGES: the old STATICFILES_STORAGE setting was removed
+# in Django 5.1 and is silently ignored, which left production serving plain,
+# uncompressed, unhashed files.
+# With manifest storage, `{% static %}` raises ValueError for a file that
+# collectstatic did not find, so a typo in a template is a 500 in production;
+# tests/unit/test_static_references.py guards against that.
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 # Security settings
 # Trust X-Forwarded-Proto header from Traefik — prevents redirect loops when
