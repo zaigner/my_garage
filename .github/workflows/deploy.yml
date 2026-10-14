@@ -79,11 +79,15 @@ jobs:
 
           # Every workload, not just Django — a crash-looping worker used to
           # sail through as a green deploy.
-          # Image pulls on a Pi are slow; 120s was not enough in practice.
+          # Image pulls on a Pi are slow. A node that has never run this image
+          # has to fetch and unpack the dependency layer, which took 9 minutes
+          # on aignerpi-2 — past the old 600s limit, so the job went red while
+          # the pods were still starting. Code-only deploys finish far sooner;
+          # this budget is for that cold-node case.
           for deployment in django fastapi celery-worker celery-beat; do
             echo "── waiting for ${deployment}"
             kubectl rollout status "deployment/${deployment}" \
-              -n my-garage --timeout=600s
+              -n my-garage --timeout=1200s
           done
 
           echo "Deploy complete: ${{ steps.tag.outputs.sha }}"
@@ -92,7 +96,12 @@ jobs:
         if: failure()
         run: |
           kubectl get pods -n my-garage -o wide
-          kubectl describe pods -n my-garage -l app=django | tail -40 || true
+          # Why each container is not running yet (e.g. ContainerCreating),
+          # for every pod. The old `describe ... -l app=django | tail` only
+          # showed the last django pod, which during a stalled rollout is the
+          # healthy old one. Read from pod status because the runner's Role
+          # cannot list events.
+          kubectl get pods -n my-garage -o custom-columns='POD:.metadata.name,NODE:.spec.nodeName,WAITING:.status.containerStatuses[*].state.waiting.reason,LAST_EXIT:.status.containerStatuses[*].lastState.terminated.reason,RESTARTS:.status.containerStatuses[*].restartCount' || true
           for app in django fastapi celery-worker celery-beat; do
             echo "── logs: ${app}"
             kubectl logs -n my-garage -l "app=${app}" --tail=50 || true
