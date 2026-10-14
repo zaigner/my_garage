@@ -7,10 +7,11 @@
 .pixi/
 
 # Python cache
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
+# ** so nested caches are excluded too; a bare pattern only matches the root
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
 .Python
 *.egg-info/
 dist/

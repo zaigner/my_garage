@@ -21,6 +21,16 @@ COPY pixi.toml pixi.lock ./
 # prod = [] in pixi.toml → base [dependencies] + [pypi-dependencies] only
 RUN pixi install --environment prod --locked
 
+# Precompile dependency bytecode. PyPI packages ship without .pyc files, so
+# every container start used to compile thousands of modules before serving —
+# slow on a Pi, and repeated on each restart because the cache died with the
+# container. unchecked-hash makes Python trust these files without comparing
+# source mtimes, which do not survive image layering reliably.
+# Some packages bundle files that are not valid Python 3; ignore those.
+RUN .pixi/envs/prod/bin/python -m compileall -q -j 0 \
+        --invalidation-mode unchecked-hash \
+        .pixi/envs/prod/lib/python3.12/site-packages || true
+
 # Copy source after deps are installed
 COPY src/ ./src/
 COPY manage.py ./
@@ -39,6 +49,11 @@ RUN DJANGO_SECRET_KEY=build-placeholder \
     DJANGO_SETTINGS_MODULE=config.settings.production \
     DJANGO_ENVIRONMENT=production \
     .pixi/envs/prod/bin/python manage.py collectstatic --noinput
+
+# Same for the application code. -f replaces the mtime-based .pyc files that
+# collectstatic just wrote as a side effect of importing the project.
+RUN .pixi/envs/prod/bin/python -m compileall -q -f \
+        --invalidation-mode unchecked-hash src
 
 # ──────────────────────────────────────────────────
 # Stage 2: Runtime — lean image, no pixi tooling
@@ -61,24 +76,31 @@ RUN apt-get update \
 # Non-root user for container security
 RUN useradd -m -u 1000 -s /bin/bash appuser
 
+# Writable directories Django needs at runtime. Created before the big COPYs
+# and chowned non-recursively on purpose: a trailing `chown -R /app` rewrote
+# every file into a new layer, duplicating the whole conda environment (~240 MB
+# compressed) in a layer that changed on every build. Each deploy made the Pis
+# download and unpack that copy again, which is what pushed rollouts past the
+# deploy timeout.
+RUN mkdir -p /app/logs /app/media \
+    && chown appuser:appuser /app /app/logs /app/media
+
 # Copy the pixi production conda environment to the same path as the builder
 # so hardcoded shebangs (e.g. #!/app/.pixi/envs/prod/bin/python) still resolve.
+# Left root-owned: nothing writes to it at runtime. This layer only changes
+# when pixi.lock does, so nodes that already have it skip it on deploy.
 COPY --from=builder /app/.pixi/envs/prod /app/.pixi/envs/prod
 
-# Copy application source and manage.py
-COPY --from=builder /app/src /app/src
-COPY --from=builder /app/manage.py /app/manage.py
-COPY --from=builder /app/templates /app/templates
-COPY --from=builder /app/static /app/static
-COPY --from=builder /app/staticfiles /app/staticfiles
+# Copy application source and manage.py. These small layers are all a node
+# has to pull for a code-only change.
+COPY --from=builder --chown=appuser:appuser /app/src /app/src
+COPY --from=builder --chown=appuser:appuser /app/manage.py /app/manage.py
+COPY --from=builder --chown=appuser:appuser /app/templates /app/templates
+COPY --from=builder --chown=appuser:appuser /app/static /app/static
+COPY --from=builder --chown=appuser:appuser /app/staticfiles /app/staticfiles
 
 # Entrypoint runs migrations then execs the CMD
-COPY entrypoint.sh /app/entrypoint.sh
-RUN chmod +x /app/entrypoint.sh
-
-# Create writable directories Django needs at runtime
-RUN mkdir -p /app/logs /app/media \
-    && chown -R appuser:appuser /app
+COPY --chown=appuser:appuser --chmod=755 entrypoint.sh /app/entrypoint.sh
 
 USER appuser
 

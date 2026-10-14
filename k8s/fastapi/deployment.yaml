@@ -27,13 +27,15 @@ spec:
             - containerPort: 8001
           # This container overrides `command`, which replaces the image's
           # ENTRYPOINT — so it skips entrypoint.sh and never runs migrations.
-          # It still needs a startup budget for the image pull and uvicorn boot.
-          # Budget: 24 x 5s = 2 minutes.
+          # It still needs a startup budget for uvicorn boot. Two minutes was
+          # not enough on a node still busy unpacking a freshly pulled image:
+          # the container was killed and restarted twice before it could bind.
+          # Budget: 30 x 10s = 5 minutes, matching Django.
           startupProbe:
             tcpSocket:
               port: 8001
-            periodSeconds: 5
-            failureThreshold: 24
+            periodSeconds: 10
+            failureThreshold: 30
           readinessProbe:
             tcpSocket:
               port: 8001
