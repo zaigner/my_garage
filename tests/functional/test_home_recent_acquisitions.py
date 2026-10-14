@@ -13,6 +13,7 @@ from decimal import Decimal
 
 import pytest
 from django.contrib.auth import get_user_model
+from django.contrib.staticfiles import finders
 from django.test import Client
 
 from my_garage.models import CollectionType, DynamicCollectionItem
@@ -20,6 +21,12 @@ from my_garage.models import CollectionType, DynamicCollectionItem
 User = get_user_model()
 
 HOME_URL = "/"
+
+MARKETING_IMAGES = [
+    "images/home/timepiece-vacheron-constantin.jpg",
+    "images/home/auto-porsche-911.jpg",
+    "images/home/collections-curated.jpg",
+]
 
 pytestmark = pytest.mark.django_db
 
@@ -154,3 +161,26 @@ class TestUnauthenticated:
         content = response.content.decode()
 
         assert "Your vault awaits" not in content
+
+    @pytest.mark.parametrize("path", MARKETING_IMAGES)
+    def test_marketing_images_are_self_hosted(self, path):
+        """Hotlinked photos have vanished upstream before; serve them from static."""
+        response = Client().get(HOME_URL)
+        content = response.content.decode()
+
+        assert f"/static/{path}" in content
+        assert "images.unsplash.com" not in content
+        # Manifest storage 500s the page in production if the file is missing.
+        assert finders.find(path) is not None
+
+    def test_credits_cc_licensed_photos(self):
+        response = Client().get(HOME_URL)
+        content = response.content.decode()
+
+        assert 'data-testid="photo-credits"' in content
+        assert "creativecommons.org/licenses/by-sa/4.0/" in content
+
+    def test_photo_credits_hidden_when_authenticated(self, auth_client):
+        response = auth_client.get(HOME_URL)
+
+        assert 'data-testid="photo-credits"' not in response.content.decode()
