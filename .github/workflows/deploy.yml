@@ -31,7 +31,7 @@ jobs:
       # github.sha would be the tip of main, which may have moved on since the
       # Build workflow started — that would pair new manifests with an old image.
       - name: Check out the commit that was built
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
 
