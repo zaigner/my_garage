@@ -22,7 +22,11 @@ spec:
       containers:
         - name: worker
           image: ghcr.io/zaigner/my-garage:latest  # Replace OWNER with your GitHub username
-          command: ["celery", "-A", "config.celery_app", "worker", "-l", "info"]
+          # Celery defaults to one process per core. On a 4-core Pi that is
+          # four copies of the app in a 512Mi limit; the worker sat at ~350Mi
+          # idle, leaving little room before an OOM kill mid-task. The tasks
+          # mostly wait on external APIs, so two processes are plenty.
+          command: ["celery", "-A", "config.celery_app", "worker", "-l", "info", "--concurrency=2"]
           envFrom:
             - secretRef:
                 name: my-garage-secrets
