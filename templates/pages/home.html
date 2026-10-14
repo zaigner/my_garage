@@ -297,8 +297,8 @@
                     <!-- Marketing placeholder cards for unauthenticated visitors -->
                     <div class="min-w-[300px] md:min-w-[400px] snap-center group" aria-hidden="true">
                         <div class="aspect-[4/3] overflow-hidden rounded-sm bg-gray-800 relative">
-                            <img src="https://images.unsplash.com/photo-1614164185128-e4899ea56a72?q=80&w=2670&auto=format&fit=crop"
-                                 alt="Fine timepiece"
+                            <img src="{% static 'images/home/timepiece-vacheron-constantin.jpg' %}"
+                                 alt="Vacheron Constantin Patrimony wristwatch"
                                  class="w-full h-full object-cover opacity-80 group-hover:scale-105 group-hover:opacity-100 transition-all duration-700 ease-out">
                             <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
                             <div class="absolute bottom-4 left-4">
@@ -309,8 +309,8 @@
                     </div>
                     <div class="min-w-[300px] md:min-w-[400px] snap-center group" aria-hidden="true">
                         <div class="aspect-[4/3] overflow-hidden rounded-sm bg-gray-800 relative">
-                            <img src="https://images.unsplash.com/photo-1552519507-da3b142c6e3d?q=80&w=2670&auto=format&fit=crop"
-                                 alt="Luxury automobile"
+                            <img src="{% static 'images/home/auto-porsche-911.jpg' %}"
+                                 alt="Porsche 911 GT3 Touring"
                                  class="w-full h-full object-cover opacity-80 group-hover:scale-105 group-hover:opacity-100 transition-all duration-700 ease-out">
                             <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
                             <div class="absolute bottom-4 left-4">
@@ -321,7 +321,7 @@
                     </div>
                     <div class="min-w-[300px] md:min-w-[400px] snap-center group" aria-hidden="true">
                         <div class="aspect-[4/3] overflow-hidden rounded-sm bg-gray-800 relative">
-                            <img src="https://images.unsplash.com/photo-1541963463532-d68292c34b19?q=80&w=2576&auto=format&fit=crop"
+                            <img src="{% static 'images/home/collections-curated.jpg' %}"
                                  alt="Curated collections"
                                  class="w-full h-full object-cover opacity-80 group-hover:scale-105 group-hover:opacity-100 transition-all duration-700 ease-out">
                             <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
@@ -339,6 +339,14 @@
 
     <footer class="border-t border-white/5 py-12 text-center text-luxury-text text-xs tracking-widest uppercase">
         <p>&copy; 2025 The Collection. Private Vault.</p>
+        {% if not user.is_authenticated %}
+        <p class="mt-4 text-[10px] normal-case tracking-normal text-gray-600" data-testid="photo-credits">
+            Photos, cropped:
+            <a href="https://commons.wikimedia.org/wiki/File:Vacheron_Constantin_Patrimony_gold_watch.jpg" class="underline hover:text-luxury-text" rel="noopener">Vacheron Constantin Patrimony</a> by Charles J. Sharp and
+            <a href="https://commons.wikimedia.org/wiki/File:Porsche_911_GT3_Touring,_IAA_2017,_Frankfurt_(1Y7A2766).jpg" class="underline hover:text-luxury-text" rel="noopener">Porsche 911 GT3 Touring</a> by Matti Blume,
+            <a href="https://creativecommons.org/licenses/by-sa/4.0/" class="underline hover:text-luxury-text" rel="noopener license">CC BY-SA 4.0</a>.
+        </p>
+        {% endif %}
     </footer>
 
 </body>
