@@ -87,24 +87,16 @@
                         <div class="border-t border-white/10 my-1"></div>
 
                         <!-- Main Sections -->
-                        <a href="{% url 'collections:collection_list' collection_slug='automobiles' %}" class="block px-4 py-3 hover:bg-white/5 flex items-center text-luxury-white">
-                            <i class="fas fa-car w-6 text-luxury-gold"></i>
-                            <span class="font-serif italic">Garage</span>
-                        </a>
-                        <a href="{% url 'collections:collection_list' collection_slug='horology-salon' %}" class="block px-4 py-3 hover:bg-white/5 flex items-center text-luxury-white">
-                            <i class="fas fa-clock w-6 text-luxury-gold"></i>
-                            <span class="font-serif italic">Horology Salon</span>
-                        </a>
                         <a href="{% url 'collections:collection_type_list' %}" class="block px-4 py-3 hover:bg-white/5 flex items-center text-luxury-white">
                             <i class="fas fa-layer-group w-6 text-luxury-gold"></i>
                             <span class="font-serif italic">All Collections</span>
                         </a>
 
                         <!-- Dynamic Collections List -->
-                        {% if custom_collections %}
+                        {% if quick_add_collections %}
                             <div class="border-t border-white/10 my-1"></div>
                             <div class="px-4 py-2 text-[10px] uppercase tracking-widest text-gray-500">Your Collections</div>
-                            {% for collection in custom_collections %}
+                            {% for collection in quick_add_collections %}
                                 <a href="{% url 'collections:collection_list' collection.slug %}" class="block px-4 py-2 hover:bg-white/5 flex items-center text-gray-300 hover:text-white text-sm">
                                     <i class="{{ collection.icon }} w-6 text-gray-500"></i>
                                     <span>{{ collection.name }}</span>
