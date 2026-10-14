@@ -175,7 +175,7 @@ kubectl apply -f k8s/celery/
 kubectl apply -f k8s/ci/             # optional — self-hosted deploy runner
 ```
 
-The Django deployment uses `ghcr.io/zaigner/my-garage:latest`. The image is built with a multi-stage Dockerfile (pixi prod environment → lean Debian runtime) and includes tesseract-ocr for the OCR service.
+The Django deployment uses `ghcr.io/zaigner/my-garage:latest`. The image is built for `linux/arm64` only (the cluster is all Raspberry Pi 5) with a multi-stage Dockerfile (pixi prod environment → lean Debian runtime) and includes tesseract-ocr for the OCR service.
 
 ---
 
