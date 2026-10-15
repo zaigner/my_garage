@@ -1,0 +1,25 @@
+# Uploaded media (item photos, receipts, attachments) — MEDIA_ROOT, /app/media.
+#
+# Shared by django (writes uploads, serves them) and celery-worker (reads
+# receipts for OCR, writes fetched photos), which can run on different nodes,
+# so it is ReadWriteMany on the NFS class. Before this existed, uploads lived
+# in each container's own filesystem: invisible to the other pods and wiped on
+# every deploy.
+#
+# Stateful, so NOT in kustomization.yaml (the deploy runner may only patch
+# Deployments). Apply by hand, before the deployments that mount it roll out:
+#
+#   kubectl apply -f k8s/media/pvc.yaml
+#
+# Deleting this claim deletes the files (the class reclaims with Delete).
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: media
+  namespace: my-garage
+spec:
+  accessModes: [ReadWriteMany]
+  storageClassName: nfs-client   # Synology NAS at 192.168.50.100
+  resources:
+    requests:
+      storage: 10Gi

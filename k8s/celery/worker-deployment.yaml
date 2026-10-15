@@ -47,6 +47,10 @@ spec:
             periodSeconds: 60
             timeoutSeconds: 20
             failureThreshold: 3
+          # Shared uploads volume; see k8s/media/pvc.yaml.
+          volumeMounts:
+            - name: media
+              mountPath: /app/media
           resources:
             requests:
               memory: "256Mi"
@@ -54,3 +58,7 @@ spec:
             limits:
               memory: "512Mi"
               cpu: "500m"
+      volumes:
+        - name: media
+          persistentVolumeClaim:
+            claimName: media

@@ -1,12 +1,14 @@
 import logging
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Sum
-from django.http import HttpRequest, HttpResponse, JsonResponse
+from django.http import Http404, HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template import Context, Template
 from django.views.decorators.csrf import csrf_exempt
+from django.views.static import serve as static_serve
 
 from my_garage.models import (
     CollectionType,
@@ -22,6 +24,7 @@ from .api.selectors import (
     get_portfolio_nfp_by_collection,
     get_portfolio_nfp_summary,
     global_search,
+    media_file_owner_id,
     portfolio_get_yoy_change,
 )
 from .forms import (
@@ -40,6 +43,26 @@ from .tasks import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+# ── Uploaded media ────────────────────────────────────────────────────────────
+
+
+@login_required
+def serve_media(request: HttpRequest, path: str) -> HttpResponse:
+    """
+    Serve an uploaded file (item photo, receipt, attachment) to its owner.
+
+    Production has no web server in front of MEDIA_ROOT, and uploads are
+    private (receipts carry names, addresses, VINs), so Django serves them
+    after an ownership check. Anything not owned by the user is a 404, so a
+    guessed path reveals nothing. static_serve rejects path traversal.
+    """
+    if media_file_owner_id(path) != request.user.id:
+        raise Http404
+    response = static_serve(request, path, document_root=settings.MEDIA_ROOT)
+    response["Cache-Control"] = "private, max-age=86400"
+    return response
 
 
 # ── Legacy permalink redirects ────────────────────────────────────────────────
