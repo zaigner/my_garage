@@ -416,7 +416,7 @@
                     <h2 class="text-luxury-gold text-sm uppercase tracking-widest mb-4 border-b border-white/10 pb-2">Actions</h2>
                     <div class="space-y-3">
                         {% if show_valuation_button %}
-                        <p class="text-gray-500 text-xs uppercase tracking-widest mb-3">AI-powered comparable market analysis</p>
+                        <p class="text-gray-500 text-xs uppercase tracking-widest mb-3">Comparable market analysis</p>
                         <form x-data="{ loading: false }" @submit="loading = true"
                               method="post" action="{% url 'collections:collection_item_trigger_valuation' collection_type.slug item.id %}">
                             {% csrf_token %}
