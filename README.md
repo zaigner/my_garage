@@ -298,7 +298,7 @@ src/
     views.py                # Collection, item, service, upgrade, kanban views
     api/                    # DRF ViewSets, selectors (read queries), services (writes)
     services/               # ContextService — AI context assembly (RAG + structured data)
-    skills/                 # CollectionThemeGenerator — AI schema + UI generation
+    skills/                 # CollectionThemeGenerator — AI schema + item descriptions
     utils/                  # mongo.py, tracing.py, chunker.py, prompt_renderer.py
     prompts/                # Jinja2 prompt templates (vehicle_valuation, receipt_analysis, etc.)
     tasks.py                # Celery tasks (OCR, valuations, snapshots, enrichment)

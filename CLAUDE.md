@@ -54,7 +54,7 @@ my_garage/
 │   │   │   ├── context_service.py  # AI context assembly (RAG + structured data)
 │   │   │   └── context_models.py   # Pydantic models for context output
 │   │   ├── skills/
-│   │   │   └── theme_generator.py  # AI-powered collection schema/UI generation
+│   │   │   └── theme_generator.py  # AI-powered collection schema + item descriptions
 │   │   ├── utils/
 │   │   │   ├── mongo.py            # MongoDB connection helper
 │   │   │   ├── chunker.py          # Markdown chunker for RAG indexing
@@ -347,7 +347,7 @@ User-defined collection schema. One row per collection category (e.g., "Wine Cel
 | `icon`, `description` | CharField / TextField | UI metadata |
 | `field_schema` | JSONField | Custom field definitions (name, type, required, etc.) |
 | `list_display_fields` | JSONField | Which fields to show in list view |
-| `ui_theme_html` | TextField | AI-generated Tailwind + Alpine.js component |
+| `ui_theme_html` | TextField | Optional custom list-page HTML (rendered as a Django template). Set only by blueprints (e.g. Coin Collection) — the form's AI "Generate UI" was removed and the edit form never changes this field |
 | `is_active` | BooleanField | Soft delete |
 | `created_at`, `updated_at` | DateTimeField | Timestamps |
 
@@ -672,17 +672,15 @@ pixi run manage build_knowledge_index
 
 ### CollectionThemeGenerator (skills/theme_generator.py)
 
-Generates collection type schema and UI using Google Gemini 2.5 Flash.
+Generates collection type schemas and item descriptions using Google Gemini 2.5 Flash.
 
 ```python
 generator = CollectionThemeGenerator()
 schema = generator.generate_schema(name, description)
-ui_html = generator.generate_ui_component(name, description, feedback=None)
 description = generator.generate_item_description(item_context_dict)
 ```
 
 - `generate_schema()` → JSON field schema for `CollectionType.field_schema`
-- `generate_ui_component()` → Tailwind + Alpine.js HTML for `CollectionType.ui_theme_html`
 - `generate_item_description(item_context: dict) -> str` → auction-style curator's note via Gemini 2.5 Flash; returns `""` on failure
 - All methods have safe fallbacks if the API call fails
 
