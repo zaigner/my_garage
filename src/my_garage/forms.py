@@ -371,6 +371,14 @@ class DynamicCollectionItemForm(forms.ModelForm):
                         initial_value = ", ".join(str(v) for v in initial_value)
                     self.fields[f"custom_{field_name}"].initial = initial_value
 
+    def clean_photo(self):
+        photo = self.cleaned_data.get("photo")
+        # Only a fresh upload needs converting; on edit an untouched field
+        # holds the already-stored FieldFile.
+        if isinstance(photo, UploadedFile):
+            return convert_heif_to_jpeg(photo)
+        return photo
+
     def save(self, commit=True):
         instance = super().save(commit=False)
 

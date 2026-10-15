@@ -128,8 +128,33 @@
                         </div>
                     </div>
 
-                    <!-- Photo -->
-                    <div class="mb-6">
+                    <!-- Photo: dropping an image anywhere on this block switches to
+                         edit mode with it attached to the main form's photo input.
+                         The window guard stops a near-miss drop from opening the
+                         image in the browser and leaving the page. -->
+                    <div class="mb-6 rounded-md"
+                         x-data="{
+                             dragging: false,
+                             dropPhoto(files) {
+                                 const file = files && files[0];
+                                 if (!file) return;
+                                 // Browsers often report HEIC with an empty type.
+                                 const isHeic = /\.(heic|heif)$/i.test(file.name);
+                                 if (!file.type.startsWith('image/') && !isHeic) return;
+                                 editing = true;
+                                 const input = document.getElementById('photo-upload');
+                                 const dt = new DataTransfer();
+                                 dt.items.add(file);
+                                 input.files = dt.files;
+                                 input.dispatchEvent(new Event('change'));
+                             }
+                         }"
+                         @dragover.prevent="dragging = true"
+                         @dragleave.prevent="dragging = false"
+                         @drop.prevent="dragging = false; dropPhoto($event.dataTransfer.files)"
+                         @dragover.window.prevent=""
+                         @drop.window.prevent="dragging = false"
+                         :class="dragging ? 'ring-2 ring-luxury-gold ring-offset-4 ring-offset-transparent' : ''">
                         {% if item.photo %}
                             <img src="{{ item.photo.url }}" id="photo-preview" alt="{{ item.name }}"
                                  class="w-full max-h-96 object-contain rounded-md border border-white/10">
@@ -138,6 +163,7 @@
                                        class="cursor-pointer inline-flex items-center gap-2 px-4 py-2 border border-luxury-gold text-luxury-gold hover:bg-luxury-gold hover:text-black transition-colors uppercase text-xs tracking-widest font-bold rounded-sm">
                                     <i class="fas fa-camera"></i>Update Photo
                                 </label>
+                                <span class="text-xs text-gray-500">or drag &amp; drop</span>
                                 <span id="photo-filename" class="text-xs text-gray-500 italic"></span>
                             </div>
                         {% else %}
@@ -149,6 +175,7 @@
                                        class="cursor-pointer inline-flex items-center gap-2 px-4 py-2 border border-luxury-gold text-luxury-gold hover:bg-luxury-gold hover:text-black transition-colors uppercase text-xs tracking-widest font-bold rounded-sm">
                                     <i class="fas fa-camera"></i>Add Photo
                                 </label>
+                                <span class="text-xs text-gray-500">or drag &amp; drop a photo</span>
                                 <span id="photo-filename" class="text-xs text-gray-500 italic"></span>
                             </div>
                             <div x-show="!editing" class="w-full h-32 bg-gray-900/50 border border-white/5 rounded-md flex items-center justify-center">
@@ -196,7 +223,7 @@
                     <!-- Edit Mode: form (hidden until editing) -->
                     <form method="post" enctype="multipart/form-data" id="main-form" x-show="editing" x-cloak>
                         {% csrf_token %}
-                        <input type="file" name="photo" id="photo-upload" accept="image/*">
+                        <input type="file" name="photo" id="photo-upload" accept="image/*,.heic,.heif">
 
                         <!-- Standard Fields -->
                         <div class="mb-6">
@@ -780,12 +807,14 @@
         const filename = document.getElementById('photo-filename');
         const icon = document.getElementById('photo-placeholder-icon');
 
-        if (preview) {
+        // Only Safari can render HEIC; it is converted to JPEG on save.
+        const isHeic = /\.(heic|heif)$/i.test(file.name);
+        if (preview && !isHeic) {
             preview.src = URL.createObjectURL(file);
             preview.classList.remove('hidden');
+            if (icon) icon.classList.add('hidden');
         }
         if (filename) filename.textContent = file.name;
-        if (icon) icon.classList.add('hidden');
     });
 }());
 </script>
