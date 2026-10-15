@@ -22,6 +22,15 @@ class TestCollectionViewsAuthenticated:
         response = auth_client.get(f"/collections/{slug}/items/{collection_item.id}/")
         assert response.status_code == 200
 
+    def test_item_detail_note_is_titled_collection_curators_note(
+        self, auth_client, collection_item
+    ):
+        slug = collection_item.collection_type.slug
+        response = auth_client.get(f"/collections/{slug}/items/{collection_item.id}/")
+        html = response.content.decode()
+        assert ">Collection Curator's Note</h2>" in html
+        assert "AI Curator" not in html
+
     def test_collection_upgrades_kanban(self, auth_client, collection_type):
         response = auth_client.get(
             f"/collections/{collection_type.slug}/upgrades/kanban/"
