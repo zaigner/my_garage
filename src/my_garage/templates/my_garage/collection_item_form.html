@@ -120,11 +120,18 @@
                                  handleFiles(files) {
                                      if (!files.length) return;
                                      const file = files[0];
-                                     if (!file.type.startsWith('image/')) return;
+                                     // Browsers often report HEIC with an empty type, and only
+                                     // Safari can render it, so match by extension and skip the preview.
+                                     const isHeic = /\.(heic|heif)$/i.test(file.name);
+                                     if (!file.type.startsWith('image/') && !isHeic) return;
                                      this.fileName = file.name;
-                                     const reader = new FileReader();
-                                     reader.onload = e => this.previewUrl = e.target.result;
-                                     reader.readAsDataURL(file);
+                                     if (isHeic) {
+                                         this.previewUrl = null;
+                                     } else {
+                                         const reader = new FileReader();
+                                         reader.onload = e => this.previewUrl = e.target.result;
+                                         reader.readAsDataURL(file);
+                                     }
                                      const dt = new DataTransfer();
                                      dt.items.add(file);
                                      this.$refs.fileInput.files = dt.files;
@@ -132,11 +139,13 @@
                              }"
                              @dragover.prevent="dragging = true"
                              @dragleave.prevent="dragging = false"
-                             @drop.prevent="dragging = false; handleFiles($event.dataTransfer.files)">
+                             @drop.prevent="dragging = false; handleFiles($event.dataTransfer.files)"
+                             @dragover.window.prevent=""
+                             @drop.window.prevent="dragging = false">
                             <label class="block text-xs uppercase tracking-widest text-gray-400 mb-2">
                                 {{ field.label }}
                             </label>
-                            <input type="file" name="photo" accept="image/*" x-ref="fileInput"
+                            <input type="file" name="photo" accept="image/*,.heic,.heif" x-ref="fileInput"
                                    @change="handleFiles($event.target.files)"
                                    class="hidden">
                             <div @click="$refs.fileInput.click()"
@@ -146,7 +155,8 @@
                                     <div class="space-y-2">
                                         <i class="fas fa-cloud-upload-alt text-3xl text-gray-600"></i>
                                         <p class="text-gray-400 text-sm">Drag &amp; drop a photo here, or <span class="text-luxury-gold">click to browse</span></p>
-                                        <p class="text-gray-600 text-xs">JPEG, PNG, WEBP</p>
+                                        <p class="text-gray-600 text-xs">JPEG, PNG, WEBP, HEIC</p>
+                                        <p x-show="fileName" x-text="fileName + ' selected'" class="text-luxury-gold text-xs"></p>
                                     </div>
                                 </template>
                                 <template x-if="previewUrl">
