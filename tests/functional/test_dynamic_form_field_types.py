@@ -126,6 +126,84 @@ class TestBooleanField:
         assert item.custom_fields["has_box"] is expected
 
 
+NUMBER_FIELD = {"name": "year", "type": "number", "label": "Year"}
+DATE_FIELD = {"name": "acquired_on", "type": "date", "label": "Acquired On"}
+
+
+class TestJsonSafeValues:
+    """
+    DecimalField and DateField clean to Decimal / date, which json.dumps
+    rejects — custom_fields is a JSONField, so saving one was a 500 on
+    every add/edit that filled in a number or date field.
+    """
+
+    def _save(self, owner, fields, data):
+        ctype = make_type(owner, fields)
+        form = DynamicCollectionItemForm(
+            {"name": "Item", **data}, collection_type=ctype
+        )
+        assert form.is_valid(), form.errors
+        item = form.save(commit=False)
+        item.owner = owner
+        item.collection_type = ctype
+        item.save()
+        item.refresh_from_db()
+        return item
+
+    def test_whole_number_saves_as_int(self, owner):
+        item = self._save(owner, [NUMBER_FIELD], {"custom_year": "2019"})
+        assert item.custom_fields["year"] == 2019
+        assert isinstance(item.custom_fields["year"], int)
+
+    def test_fractional_number_saves_as_float(self, owner):
+        item = self._save(owner, [NUMBER_FIELD], {"custom_year": "12.5"})
+        assert item.custom_fields["year"] == 12.5
+
+    def test_date_saves_as_iso_string(self, owner):
+        item = self._save(owner, [DATE_FIELD], {"custom_acquired_on": "2024-03-15"})
+        assert item.custom_fields["acquired_on"] == "2024-03-15"
+
+    def test_blank_number_and_date_save_as_none(self, owner):
+        item = self._save(owner, [NUMBER_FIELD, DATE_FIELD], {})
+        assert item.custom_fields["year"] is None
+        assert item.custom_fields["acquired_on"] is None
+
+    def test_saved_values_reload_into_edit_form(self, owner):
+        item = self._save(
+            owner,
+            [NUMBER_FIELD, DATE_FIELD],
+            {"custom_year": "2019", "custom_acquired_on": "2024-03-15"},
+        )
+        form = DynamicCollectionItemForm(
+            {"name": "Item", "custom_year": "2020", "custom_acquired_on": "2024-03-16"},
+            instance=item,
+            collection_type=item.collection_type,
+        )
+        assert form.is_valid(), form.errors
+        form.save()
+        item.refresh_from_db()
+        assert item.custom_fields["year"] == 2020
+        assert item.custom_fields["acquired_on"] == "2024-03-16"
+
+    def test_add_automobile_with_year_via_view(self, owner, client):
+        from my_garage.services.collection_provisioning import provision_collections
+
+        provision_collections(owner, ["automobiles"])
+        client.force_login(owner)
+        response = client.post(
+            "/collections/automobiles/items/add/",
+            {
+                "name": "Test Car",
+                "custom_make": "Porsche",
+                "custom_model": "911",
+                "custom_year": "2019",
+            },
+        )
+        assert response.status_code == 302
+        item = DynamicCollectionItem.objects.get(name="Test Car")
+        assert item.custom_fields["year"] == 2019
+
+
 class TestJsonListField:
     def test_renders_as_text_input(self, owner):
         form = DynamicCollectionItemForm(

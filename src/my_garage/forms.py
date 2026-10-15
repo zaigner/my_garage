@@ -1,6 +1,8 @@
 """Django forms for my_garage."""
 
+import datetime
 import json
+from decimal import Decimal
 
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
@@ -398,6 +400,16 @@ class DynamicCollectionItemForm(forms.ModelForm):
                         for part in (value or "").split(",")
                         if part.strip()
                     ]
+                elif isinstance(value, Decimal):
+                    # custom_fields is a JSONField and json.dumps rejects Decimal.
+                    # Whole numbers (years, mileage) stay ints for downstream APIs.
+                    custom_data[actual_field_name] = (
+                        int(value)
+                        if value == value.to_integral_value()
+                        else float(value)
+                    )
+                elif isinstance(value, datetime.date):
+                    custom_data[actual_field_name] = value.isoformat()
                 else:
                     custom_data[actual_field_name] = value
 
