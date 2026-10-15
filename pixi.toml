@@ -63,6 +63,7 @@ google-genai = ">=1.0.0"
 python-dotenv = ">=1.0.0"
 whitenoise = ">=6.6,<7.0"
 nodejs = ">=24.12.0,<25.8"
+pillow-heif = ">=1.8.1,<2"
 
 [pypi-dependencies]
 mcp = ">=1.26.0"

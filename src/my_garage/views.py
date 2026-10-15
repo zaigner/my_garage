@@ -950,10 +950,10 @@ def collection_item_ocr_receipt(
     if not receipt_file:
         return JsonResponse({"success": False, "error": "No file uploaded"}, status=400)
 
-    try:
-        import requests as http_requests
-        from django.conf import settings
+    import requests as http_requests
+    from django.conf import settings
 
+    try:
         ocr_url = f"{settings.FASTAPI_BASE_URL}/ocr/process"
         response = http_requests.post(
             ocr_url,
@@ -969,6 +969,18 @@ def collection_item_ocr_receipt(
         response.raise_for_status()
         ocr_data = response.json()
         return JsonResponse({"success": True, **ocr_data})
+    except http_requests.HTTPError as exc:
+        # FastAPI explains the failure in the body's "detail"; str(exc) only has
+        # the status and the internal URL.
+        try:
+            detail = exc.response.json().get("detail") or exc.response.text
+        except ValueError:
+            detail = exc.response.text
+        status = exc.response.status_code
+        logger.error("Inline OCR failed (%s): %s", status, detail)
+        return JsonResponse(
+            {"success": False, "error": detail}, status=400 if status < 500 else 500
+        )
     except Exception as exc:
         logger.error("Inline OCR failed: %s", exc)
         return JsonResponse({"success": False, "error": str(exc)}, status=500)
