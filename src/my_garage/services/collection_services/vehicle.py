@@ -25,7 +25,7 @@ from django.conf import settings
 from django.core.files.base import ContentFile
 from django.db import transaction
 
-from .base import BaseCollectionServices
+from .base import BaseCollectionServices, ValuationError
 
 if TYPE_CHECKING:
     from my_garage.models import DynamicCollectionItem
@@ -139,6 +139,11 @@ class VehicleCollectionServices(BaseCollectionServices):
             response = requests.post(_MCP_EXECUTE_URL, json=payload, timeout=20)
             response.raise_for_status()
             data = response.json()
+
+            # The MCP relay answers 200 even when the tool failed, so an error
+            # payload must not be mistaken for "no listings found".
+            if "error" in data:
+                raise ValuationError(f"search_market_listings failed: {data['error']}")
 
             listings = data.get("results", [])
             if not listings:

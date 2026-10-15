@@ -22,7 +22,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from my_garage.services.collection_services.base import BaseCollectionServices
+from my_garage.services.collection_services.base import (
+    BaseCollectionServices,
+    ValuationError,
+)
 from my_garage.services.collection_services.default import DefaultCollectionServices
 from my_garage.services.collection_services.registry import (
     _REGISTRY,
@@ -397,6 +400,63 @@ class TestVehicleRunValuation:
 
         with pytest.raises(requests.exceptions.ConnectionError):
             self.provider.run_valuation(item)
+
+    @patch("my_garage.services.collection_services.vehicle.requests.post")
+    def test_raises_when_tool_reports_error(self, mock_post):
+        """
+        The MCP relay answers 200 with {"error": ...} when Marketcheck fails
+        (e.g. a rejected API key). That must not pass as "no listings found".
+        """
+        mock_post.return_value = MagicMock(
+            status_code=200,
+            json=lambda: {"error": "API request failed: 401 Client Error"},
+        )
+        mock_post.return_value.raise_for_status = MagicMock()
+
+        item = _make_item(make="Porsche", model="Cayman", year=2015)
+        item.current_market_value = Decimal("31000.00")
+        item.save = MagicMock()
+
+        with pytest.raises(ValuationError, match="401 Client Error"):
+            self.provider.run_valuation(item)
+        item.save.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# task_collection_item_refresh_valuation — error handling
+# ---------------------------------------------------------------------------
+
+
+class TestRefreshValuationTask:
+    def _run(self, run_valuation_side_effect):
+        from my_garage import tasks
+
+        provider = MagicMock()
+        provider.supports_valuation_refresh.return_value = True
+        provider.run_valuation.side_effect = run_valuation_side_effect
+        objects = MagicMock()
+        objects.select_related.return_value.get.return_value = MagicMock()
+
+        task = tasks.task_collection_item_refresh_valuation
+        with (
+            patch.object(tasks.DynamicCollectionItem, "objects", objects),
+            patch.object(tasks, "get_collection_services", return_value=provider),
+            patch.object(task, "retry", side_effect=RuntimeError("retried")) as retry,
+        ):
+            try:
+                task(1)
+            finally:
+                self.retry = retry
+
+    def test_valuation_error_fails_without_retry(self):
+        with pytest.raises(ValuationError):
+            self._run(ValuationError("401"))
+        self.retry.assert_not_called()
+
+    def test_transient_error_still_retries(self):
+        with pytest.raises(RuntimeError, match="retried"):
+            self._run(requests.exceptions.ConnectionError("refused"))
+        self.retry.assert_called_once()
 
 
 # ---------------------------------------------------------------------------

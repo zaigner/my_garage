@@ -5,6 +5,7 @@ import requests
 from pydantic import BaseModel, Field
 
 from ..config import settings
+from .redaction import redact
 
 # Configure logging for this module
 logger = logging.getLogger(__name__)
@@ -140,9 +141,11 @@ def search_market_listings(  # noqa: C901
         return {"results": results}
 
     except requests.exceptions.RequestException as e:
-        print(f"ERROR: Marketcheck API Request Failed: {e}")
+        # str(e) carries the request URL, and the URL carries the API key.
+        message = redact(str(e), api_key)
+        print(f"ERROR: Marketcheck API Request Failed: {message}")
         if hasattr(e, "response") and e.response is not None:
-            print(f"ERROR RESPONSE: {e.response.text}")
-        return {"error": f"API request failed: {e}"}
+            print(f"ERROR RESPONSE: {redact(e.response.text, api_key)}")
+        return {"error": f"API request failed: {message}"}
     except KeyError:
         return {"error": "Unexpected response format from API"}
