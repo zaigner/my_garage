@@ -3,7 +3,7 @@
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
-from django.urls import include, path
+from django.urls import include, path, re_path
 from django.views.generic import RedirectView
 
 from my_garage import views as garage_views
@@ -49,9 +49,19 @@ urlpatterns = [
     path("insights/", garage_views.portfolio_insights, name="portfolio_insights"),
 ]
 
-# Serve media files in development
+# Uploaded media, in every environment: production has no web server in
+# front of MEDIA_ROOT, and uploads are private, so each file is served only
+# to the user who owns it.
+urlpatterns += [
+    re_path(
+        rf"^{settings.MEDIA_URL.lstrip('/')}(?P<path>.+)$",
+        garage_views.serve_media,
+        name="serve_media",
+    ),
+]
+
+# Serve static files in development
 if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
     # Debug toolbar

@@ -7,9 +7,11 @@ from django.db.models import Exists, OuterRef, Q, Sum
 
 from my_garage.models import (
     BeneficiaryAssignment,
+    CollectionItemAttachment,
     DynamicCollectionItem,
     EstateChangeLog,
     EstateExecutor,
+    GenericServiceRecord,
     GenericUpgrade,
     PortfolioSnapshot,
 )
@@ -236,3 +238,31 @@ def get_estate_dashboard_context(user) -> Dict[str, Any]:
         "completeness_pct": completeness_pct,
         "recent_log": recent_log,
     }
+
+
+def media_file_owner_id(path: str) -> Optional[int]:
+    """
+    Return the id of the user who owns the uploaded file stored at `path`
+    (relative to MEDIA_ROOT), or None if no record references it.
+
+    Every upload belongs to a DynamicCollectionItem: its photo, a service
+    record's receipt, or an attachment.
+    """
+    owner_id = (
+        DynamicCollectionItem.objects.filter(photo=path)
+        .values_list("owner_id", flat=True)
+        .first()
+    )
+    if owner_id is None:
+        owner_id = (
+            GenericServiceRecord.objects.filter(receipt_image=path)
+            .values_list("item__owner_id", flat=True)
+            .first()
+        )
+    if owner_id is None:
+        owner_id = (
+            CollectionItemAttachment.objects.filter(file=path)
+            .values_list("item__owner_id", flat=True)
+            .first()
+        )
+    return owner_id
