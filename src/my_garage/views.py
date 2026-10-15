@@ -7,7 +7,6 @@ from django.db.models import Sum
 from django.http import Http404, HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template import Context, Template
-from django.views.decorators.csrf import csrf_exempt
 from django.views.static import serve as static_serve
 
 from my_garage.models import (
@@ -222,145 +221,6 @@ def generate_collection_schema(request: HttpRequest) -> JsonResponse:
 
 
 @login_required
-def generate_collection_ui(request: HttpRequest) -> JsonResponse:
-    """
-    AJAX endpoint to generate a UI component based on a topic string.
-    Uses the Gemini-powered CollectionThemeGenerator skill.
-    """
-    topic = request.GET.get("topic", "").strip()
-    description = request.GET.get("description", "").strip()
-    feedback = request.GET.get("feedback", "").strip()
-
-    logger.info(f"Generating UI for topic: '{topic}' with feedback: '{feedback}'")
-
-    if not topic:
-        return JsonResponse({"error": "No topic provided."}, status=400)
-
-    try:
-        generator = CollectionThemeGenerator()
-        ui_html = generator.generate_ui_component(topic, description, feedback)
-
-        return JsonResponse({"success": True, "topic": topic, "ui_html": ui_html})
-    except Exception as e:
-        logger.error(f"Error generating UI for topic '{topic}': {e}", exc_info=True)
-        return JsonResponse({"error": f"Failed to generate UI: {str(e)}"}, status=500)
-
-
-@csrf_exempt
-@login_required
-def preview_collection_ui(request: HttpRequest) -> HttpResponse:
-    """
-    Renders a preview of the generated UI theme with dummy data.
-    Accepts POST request with 'ui_html' content.
-    """
-    if request.method != "POST":
-        return HttpResponse("Method not allowed", status=405)
-
-    ui_html = request.POST.get("ui_html", "")
-
-    if not ui_html:
-        return HttpResponse("No UI HTML provided", status=400)
-
-    try:
-        # Create a template object from the HTML string
-        template = Template(ui_html)
-
-        # Mock photo object
-        class MockPhoto:
-            url = "https://via.placeholder.com/150"
-
-        # Create dummy data for preview
-        dummy_items = [
-            {
-                "name": "Sample Item 1",
-                "current_market_value": 1500,
-                "year": 1985,
-                "condition": "Mint",
-                "photo": MockPhoto(),
-                "id": 1,
-            },
-            {
-                "name": "Sample Item 2",
-                "current_market_value": 2300,
-                "year": 1992,
-                "condition": "Good",
-                "photo": MockPhoto(),
-                "id": 2,
-            },
-            {
-                "name": "Sample Item 3",
-                "current_market_value": 850,
-                "year": 2005,
-                "condition": "Fair",
-                "photo": MockPhoto(),
-                "id": 3,
-            },
-        ]
-
-        # Mock object to behave like a queryset/list
-        class MockItems(list):
-            def count(self):
-                return len(self)
-
-        items = MockItems(dummy_items)
-
-        # Dummy collection type object
-        class MockCollectionType:
-            name = "Preview Collection"
-            slug = "preview-collection"
-            id = 999
-            description = "This is a preview of your generated theme."
-            icon = "fa-solid fa-layer-group"
-            list_display_fields = ["year", "condition"]
-
-        collection_type = MockCollectionType()
-
-        context = Context(
-            {
-                "collection": {  # Some templates might use this
-                    "title": collection_type.name,
-                    "description": collection_type.description,
-                    "total_items": 3,
-                    "total_value": 4650,
-                    "average_price": 1550,
-                    "slug": collection_type.slug,
-                    "id": collection_type.id,
-                },
-                "collection_type": collection_type,  # Standard variable name
-                "items": items,
-                "recent_items": items,
-                "user": request.user,
-                "request": request,
-            }
-        )
-
-        # Render the generated UI fragment with the context
-        rendered_ui_fragment = template.render(context)
-
-        # Now render the full page using collection_list.html, passing the rendered fragment  # noqa: E501
-        return render(
-            request,
-            "my_garage/collection_list.html",
-            {
-                "collection_type": collection_type,
-                "items": items,
-                "rendered_ui": rendered_ui_fragment,
-                "preview_mode": True,  # Optional flag if template needs to know
-            },
-        )
-
-    except Exception as e:
-        import traceback
-
-        error_details = traceback.format_exc()
-        logger.error(f"Error rendering preview: {error_details}")
-        return HttpResponse(
-            f"Error rendering preview: {str(e)}<br><pre>{error_details}</pre>",
-            status=500,
-        )
-
-
-@login_required
 def collection_type_create(request: HttpRequest) -> HttpResponse:
     """
     Create a new collection type with schema builder.
@@ -373,12 +233,10 @@ def collection_type_create(request: HttpRequest) -> HttpResponse:
 
         schema_json = request.POST.get("field_schema_json", "{}")
         list_display_fields = request.POST.get("list_display_fields_json", "[]")
-        ui_theme_html = request.POST.get("ui_theme_html", "")
 
         if form.is_valid():
             collection_type = form.save(commit=False)
             collection_type.owner = request.user
-            collection_type.ui_theme_html = ui_theme_html
 
             # Parse and save the schema
             try:
@@ -416,11 +274,9 @@ def collection_type_edit(request: HttpRequest, slug: str) -> HttpResponse:
 
         schema_json = request.POST.get("field_schema_json", "{}")
         list_display_fields = request.POST.get("list_display_fields_json", "[]")
-        ui_theme_html = request.POST.get("ui_theme_html", "")
 
         if form.is_valid():
             collection_type = form.save(commit=False)
-            collection_type.ui_theme_html = ui_theme_html
 
             try:
                 # Handle potential empty strings or invalid JSON
