@@ -169,7 +169,8 @@ def process_generic_service_record_ocr(record) -> dict:
         response = requests.post(
             ocr_url,
             files={"file": (filename, image_bytes, "image/jpeg")},
-            timeout=30,
+            # Gemini (up to 20s) plus a tesseract fallback on a Pi.
+            timeout=60,
         )
         response.raise_for_status()
         ocr_data: dict = response.json()
