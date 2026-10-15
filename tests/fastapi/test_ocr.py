@@ -25,6 +25,15 @@ def client():
     return TestClient(app)
 
 
+@pytest.fixture(autouse=True)
+def no_gemini():
+    """These tests cover the tesseract path; never call the real Gemini API."""
+    with patch(
+        "fastapi_services.ocr.main.extract_receipt_with_gemini", return_value=None
+    ):
+        yield
+
+
 def _encode(fmt: str) -> bytes:
     buffer = io.BytesIO()
     image = Image.new("RGB", (64, 32), "white")

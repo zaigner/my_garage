@@ -964,7 +964,8 @@ def collection_item_ocr_receipt(
                     receipt_file.content_type or "image/jpeg",
                 )
             },
-            timeout=30,
+            # Gemini (up to 20s) plus a tesseract fallback on a Pi.
+            timeout=60,
         )
         response.raise_for_status()
         ocr_data = response.json()

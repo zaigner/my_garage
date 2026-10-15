@@ -6,8 +6,11 @@ from typing import Any, Dict, Optional
 
 import pytesseract
 from fastapi import APIRouter, File, HTTPException, UploadFile
-from PIL import Image, ImageEnhance, UnidentifiedImageError
+from PIL import Image, ImageEnhance, ImageOps, UnidentifiedImageError
 from pillow_heif import register_heif_opener
+from starlette.concurrency import run_in_threadpool
+
+from .gemini_extractor import extract_receipt_with_gemini
 
 # iPhone photos are HEIC by default and stay HEIC when emailed or downloaded;
 # without this Pillow cannot open them.
@@ -194,6 +197,27 @@ def parse_receipt_data(text: str) -> Dict[str, Any]:  # noqa: C901
     return data
 
 
+def extract_receipt(image: Image.Image) -> Dict[str, Any]:
+    """
+    Read a receipt photo: Gemini first, tesseract when Gemini is unavailable.
+    """
+    # Phone photos are usually stored sideways with an EXIF flag that viewers
+    # honour; without applying it, tesseract reads the text rotated 90°.
+    image = ImageOps.exif_transpose(image)
+
+    data = extract_receipt_with_gemini(image)
+    if data is not None:
+        data["source"] = "gemini"
+        data["raw_text"] = ""
+        return data
+
+    text = pytesseract.image_to_string(preprocess_image(image))
+    data = parse_receipt_data(text)
+    data["source"] = "tesseract"
+    data["raw_text"] = text
+    return data
+
+
 @router.post("/process")
 async def process_ocr(file: UploadFile = File(...)):  # noqa: B008
     """
@@ -210,18 +234,8 @@ async def process_ocr(file: UploadFile = File(...)):  # noqa: B008
         raise HTTPException(status_code=400, detail=UNSUPPORTED_IMAGE_DETAIL) from e
 
     try:
-        # Preprocess image
-        processed_image = preprocess_image(image)
-
-        # Use pytesseract to extract text
-        text = pytesseract.image_to_string(processed_image)
-
-        # Parse the text to extract structured data
-        data = parse_receipt_data(text)
-        data["raw_text"] = text
-
-        return data
-
+        # Gemini and tesseract both block for seconds; keep the event loop free.
+        return await run_in_threadpool(extract_receipt, image)
     except Exception as e:
         # The detail only reaches the HTTP response, so log it here as well.
         logger.exception("OCR processing failed for %r", file.filename)
