@@ -7,6 +7,7 @@ from decimal import Decimal
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
+from django.core.files.uploadedfile import UploadedFile
 
 from my_garage.models import (
     Beneficiary,
@@ -17,6 +18,7 @@ from my_garage.models import (
     GenericServiceRecord,
     GenericUpgrade,
 )
+from my_garage.utils.images import convert_heif_to_jpeg
 
 # AUTHENTICATION FORMS
 # ============================================================================
@@ -447,6 +449,14 @@ class GenericServiceRecordForm(forms.ModelForm):
         help_texts = {
             "receipt_image": "Upload receipt image for OCR processing",
         }
+
+    def clean_receipt_image(self):
+        receipt = self.cleaned_data.get("receipt_image")
+        # Only a fresh upload needs converting; on edit an untouched field
+        # holds the already-stored FieldFile.
+        if isinstance(receipt, UploadedFile):
+            return convert_heif_to_jpeg(receipt)
+        return receipt
 
 
 class GenericUpgradeForm(forms.ModelForm):

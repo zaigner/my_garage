@@ -174,11 +174,18 @@
                                  handleFiles(files) {
                                      if (!files.length) return;
                                      const file = files[0];
-                                     if (!file.type.startsWith('image/')) return;
+                                     // Browsers often report HEIC with an empty type, and only
+                                     // Safari can render it, so match by extension and skip the preview.
+                                     const isHeic = /\.(heic|heif)$/i.test(file.name);
+                                     if (!file.type.startsWith('image/') && !isHeic) return;
                                      this.fileName = file.name;
-                                     const reader = new FileReader();
-                                     reader.onload = e => this.previewUrl = e.target.result;
-                                     reader.readAsDataURL(file);
+                                     if (isHeic) {
+                                         this.previewUrl = null;
+                                     } else {
+                                         const reader = new FileReader();
+                                         reader.onload = e => this.previewUrl = e.target.result;
+                                         reader.readAsDataURL(file);
+                                     }
                                      const dt = new DataTransfer();
                                      dt.items.add(file);
                                      this.$refs.receiptInput.files = dt.files;
@@ -188,7 +195,7 @@
                              @dragleave.prevent="dragging = false"
                              @drop.prevent="dragging = false; handleFiles($event.dataTransfer.files)">
                             <label class="block text-xs uppercase tracking-widest text-gray-400 mb-2">Receipt Image</label>
-                            <input type="file" name="receipt_image" accept="image/*" x-ref="receiptInput"
+                            <input type="file" name="receipt_image" accept="image/*,.heic,.heif" x-ref="receiptInput"
                                    @change="handleFiles($event.target.files)"
                                    class="hidden">
                             <div @click="$refs.receiptInput.click()"
@@ -198,7 +205,8 @@
                                     <div class="space-y-2">
                                         <i class="fas fa-cloud-upload-alt text-2xl text-gray-600"></i>
                                         <p class="text-gray-400 text-sm">Drag &amp; drop a receipt, or <span class="text-luxury-gold">click to browse</span></p>
-                                        <p class="text-gray-600 text-xs">JPEG, PNG</p>
+                                        <p class="text-gray-600 text-xs">JPEG, PNG, HEIC</p>
+                                        <p x-show="fileName" x-text="fileName + ' selected'" class="text-luxury-gold text-xs"></p>
                                     </div>
                                 </template>
                                 <template x-if="previewUrl">
@@ -299,7 +307,7 @@
 
                     <!-- Idle: dropzone -->
                     <div x-show="ocrState === 'idle'">
-                        <input type="file" id="ocr_receipt_input" accept="image/*"
+                        <input type="file" id="ocr_receipt_input" accept="image/*,.heic,.heif"
                                @change="
                                    ocrState = 'loading';
                                    ocrError = '';
