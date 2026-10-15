@@ -77,6 +77,16 @@ class TestGenerateUiRemovedFromForm:
         assert _has_id(html, "add-field-btn")
         assert _has_id(html, "field-schema-json")
 
+    def test_curator_panel_is_titled_collection_curator(
+        self, auth_client, collection_type
+    ):
+        response = auth_client.get(
+            reverse("collections:collection_type_edit", args=[collection_type.slug])
+        )
+        html = response.content.decode()
+        assert "✨ Collection Curator</h3>" in html
+        assert "AI Curator" not in html
+
     def test_automobiles_edit_page_renders(self, auth_client, automobiles_type):
         response = auth_client.get(
             reverse("collections:collection_type_edit", args=["automobiles"])
