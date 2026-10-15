@@ -297,8 +297,40 @@
             <!-- Add mode: OCR Document Scan + Category Guide -->
             <div class="space-y-6">
 
+                <!-- The window-level drop guard stops a file dropped just outside a
+                     dropzone from opening in the browser and losing the form. -->
                 <div class="detail-card rounded-lg p-6"
-                     x-data="{ ocrState: 'idle', ocrSummary: {}, ocrError: '' }">
+                     x-data="{
+                         ocrState: 'idle',
+                         ocrSummary: {},
+                         ocrError: '',
+                         dragging: false,
+                         scan(file) {
+                             if (!file) return;
+                             this.ocrState = 'loading';
+                             this.ocrError = '';
+                             const fd = new FormData();
+                             fd.append('receipt', file);
+                             fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+                             fetch('{% url 'collections:collection_item_ocr_receipt' collection_type.slug item.id %}', {
+                                 method: 'POST', body: fd
+                             })
+                             .then(r => r.json())
+                             .then(data => {
+                                 if (data.success) {
+                                     if (data.vendor)      document.getElementById('{{ form.vendor.id_for_label }}').value = data.vendor;
+                                     if (data.date)        document.getElementById('{{ form.date.id_for_label }}').value = data.date;
+                                     if (data.total_cost)  document.getElementById('{{ form.total_cost.id_for_label }}').value = data.total_cost;
+                                     if (data.description) document.getElementById('{{ form.description.id_for_label }}').value = data.description;
+                                     this.ocrSummary = data;
+                                     this.ocrState = 'done';
+                                 } else { this.ocrError = data.error || ''; this.ocrState = 'error'; }
+                             })
+                             .catch(() => { this.ocrState = 'error'; });
+                         }
+                     }"
+                     @dragover.window.prevent=""
+                     @drop.window.prevent="dragging = false">
                     <h2 class="text-luxury-gold text-sm uppercase tracking-widest mb-4 border-b border-white/10 pb-3">Document Scan</h2>
 
                     <p class="text-gray-400 text-sm mb-6 leading-relaxed">
@@ -308,30 +340,13 @@
                     <!-- Idle: dropzone -->
                     <div x-show="ocrState === 'idle'">
                         <input type="file" id="ocr_receipt_input" accept="image/*,.heic,.heif"
-                               @change="
-                                   ocrState = 'loading';
-                                   ocrError = '';
-                                   const fd = new FormData();
-                                   fd.append('receipt', $event.target.files[0]);
-                                   fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-                                   fetch('{% url 'collections:collection_item_ocr_receipt' collection_type.slug item.id %}', {
-                                       method: 'POST', body: fd
-                                   })
-                                   .then(r => r.json())
-                                   .then(data => {
-                                       if (data.success) {
-                                           if (data.vendor)      document.getElementById('{{ form.vendor.id_for_label }}').value = data.vendor;
-                                           if (data.date)        document.getElementById('{{ form.date.id_for_label }}').value = data.date;
-                                           if (data.total_cost)  document.getElementById('{{ form.total_cost.id_for_label }}').value = data.total_cost;
-                                           if (data.description) document.getElementById('{{ form.description.id_for_label }}').value = data.description;
-                                           ocrSummary = data;
-                                           ocrState = 'done';
-                                       } else { ocrError = data.error || ''; ocrState = 'error'; }
-                                   })
-                                   .catch(() => { ocrState = 'error'; });
-                               ">
+                               @change="scan($event.target.files[0]); $event.target.value = ''">
                         <label for="ocr_receipt_input"
-                               class="border border-dashed border-white/20 rounded-sm p-10 flex flex-col items-center
+                               @dragover.prevent="dragging = true"
+                               @dragleave.prevent="dragging = false"
+                               @drop.prevent="dragging = false; scan($event.dataTransfer.files[0])"
+                               :class="dragging ? 'border-luxury-gold bg-white/5' : 'border-white/20'"
+                               class="border border-dashed rounded-sm p-10 flex flex-col items-center
                                       hover:border-luxury-gold-dim hover:bg-white/5 transition-all cursor-pointer group">
                             <svg class="w-14 h-14 text-gray-600 group-hover:text-luxury-gold mb-4 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
@@ -339,6 +354,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
                             </svg>
                             <span class="text-luxury-gold font-bold uppercase tracking-widest text-xs group-hover:text-yellow-400 transition-colors">Upload Receipt</span>
+                            <span class="text-gray-400 text-xs mt-2">Drag &amp; drop or click to browse</span>
                             <span class="text-xs text-gray-600 mt-2 uppercase tracking-wide">JPG, PNG, HEIC supported</span>
                         </label>
                     </div>
