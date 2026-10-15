@@ -4,6 +4,7 @@ import requests
 from pydantic import BaseModel, Field
 
 from ..config import settings
+from .redaction import redact
 
 
 class SalesStatsInput(BaseModel):
@@ -68,9 +69,10 @@ def get_sales_stats(
         return data
 
     except requests.exceptions.RequestException as e:
-        return {"error": f"Marketcheck API request failed: {str(e)}"}
+        # str(e) carries the request URL, and the URL carries the API key.
+        return {"error": f"Marketcheck API request failed: {redact(str(e), api_key)}"}
     except Exception as e:
-        return {"error": f"Sales stats lookup failed: {str(e)}"}
+        return {"error": f"Sales stats lookup failed: {redact(str(e), api_key)}"}
 
 
 def get_sales_history_by_vin(vin: str) -> Dict[str, Any]:
@@ -98,6 +100,7 @@ def get_sales_history_by_vin(vin: str) -> Dict[str, Any]:
         return response.json()
 
     except requests.exceptions.RequestException as e:
-        return {"error": f"Marketcheck API request failed: {str(e)}"}
+        # str(e) carries the request URL, and the URL carries the API key.
+        return {"error": f"Marketcheck API request failed: {redact(str(e), api_key)}"}
     except Exception as e:
-        return {"error": f"Sales history lookup failed: {str(e)}"}
+        return {"error": f"Sales history lookup failed: {redact(str(e), api_key)}"}

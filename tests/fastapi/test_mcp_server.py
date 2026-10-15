@@ -9,6 +9,9 @@ These tests verify:
 
 from unittest.mock import MagicMock, patch
 
+import pytest
+import requests
+
 from fastapi_services.mcp.server import mcp_server
 
 # ---------------------------------------------------------------------------
@@ -158,6 +161,82 @@ class TestSearchMarketListings:
 
         result = search_market_listings(make="Porsche", model="911", year=2019)
         assert "error" in result
+
+
+# ---------------------------------------------------------------------------
+# Marketcheck errors must not leak the API key
+# Marketcheck takes the key as a query parameter, so requests' HTTPError
+# message ("401 Client Error: ... for url: ...?api_key=...") contains it.
+# ---------------------------------------------------------------------------
+
+SECRET_KEY = "sekrit-marketcheck-key"
+
+
+def _unauthorized_response() -> requests.Response:
+    """A real 401 Response whose raise_for_status() embeds the key in its URL."""
+    response = requests.Response()
+    response.status_code = 401
+    response.reason = "Unauthorized"
+    response.url = (
+        f"https://api.marketcheck.com/v2/search/car/active?api_key={SECRET_KEY}"
+    )
+    response._content = b'{"message": "Invalid authentication credentials"}'
+    return response
+
+
+class TestMarketcheckKeyRedaction:
+    @patch("fastapi_services.mcp.tools.market_valuation.requests.get")
+    @patch("fastapi_services.mcp.tools.market_valuation.settings")
+    def test_search_market_listings_error_redacts_key(
+        self, mock_settings, mock_get, capsys
+    ):
+        mock_settings.marketcheck_api_key = SECRET_KEY
+        mock_get.return_value = _unauthorized_response()
+
+        from fastapi_services.mcp.tools.market_valuation import search_market_listings
+
+        result = search_market_listings(make="Porsche", model="Cayman", year=2015)
+
+        assert "401" in result["error"]
+        assert SECRET_KEY not in result["error"]
+        printed = capsys.readouterr().out
+        assert "Marketcheck API Request Failed" in printed
+        assert SECRET_KEY not in printed
+
+    @pytest.mark.parametrize(
+        ("func_name", "kwargs"),
+        [
+            ("get_sales_stats", {"year": 2015, "make": "Porsche", "model": "Cayman"}),
+            ("get_sales_history_by_vin", {"vin": "WP0AB2A81FK180000"}),
+        ],
+    )
+    @patch("fastapi_services.mcp.tools.sales_stats.requests.get")
+    @patch("fastapi_services.mcp.tools.sales_stats.settings")
+    def test_sales_stats_errors_redact_key(
+        self, mock_settings, mock_get, func_name, kwargs
+    ):
+        mock_settings.marketcheck_api_key = SECRET_KEY
+        mock_get.return_value = _unauthorized_response()
+
+        from fastapi_services.mcp.tools import sales_stats
+
+        result = getattr(sales_stats, func_name)(**kwargs)
+
+        assert "401" in result["error"]
+        assert SECRET_KEY not in result["error"]
+
+
+class TestRedact:
+    def test_replaces_every_occurrence(self):
+        from fastapi_services.mcp.tools.redaction import REDACTED, redact
+
+        assert redact("a=k&b=k", "k") == f"a={REDACTED}&b={REDACTED}"
+
+    @pytest.mark.parametrize("secret", [None, ""])
+    def test_no_secret_leaves_text_alone(self, secret):
+        from fastapi_services.mcp.tools.redaction import redact
+
+        assert redact("nothing to hide", secret) == "nothing to hide"
 
 
 # ---------------------------------------------------------------------------

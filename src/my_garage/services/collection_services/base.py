@@ -16,6 +16,13 @@ if TYPE_CHECKING:
     from my_garage.models import DynamicCollectionItem
 
 
+class ValuationError(Exception):
+    """
+    The valuation source answered but reported a failure (bad API key, quota,
+    malformed response). Retrying will not help, so tasks fail without retry.
+    """
+
+
 class BaseCollectionServices:
     """
     Abstract-style base class for collection service providers.

@@ -6,6 +6,7 @@ from config.celery_app import app as celery_app
 from my_garage.models import DynamicCollectionItem, PortfolioSnapshot
 
 from .services.collection_services import get_collection_services
+from .services.collection_services.base import ValuationError
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +39,10 @@ def task_collection_item_refresh_valuation(self, item_id: int):
         return None
     except DynamicCollectionItem.DoesNotExist:
         logger.error("DynamicCollectionItem %s not found.", item_id)
+    except ValuationError as exc:
+        # Not transient (e.g. a rejected API key) — fail now instead of retrying.
+        logger.error("Valuation failed for item %s: %s", item_id, exc)
+        raise
     except Exception as exc:
         logger.error("Valuation failed for item %s: %s", item_id, exc)
         raise self.retry(exc=exc) from exc
