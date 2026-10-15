@@ -1,13 +1,25 @@
 import io
+import logging
 import re
 from datetime import datetime
 from typing import Any, Dict, Optional
 
 import pytesseract
 from fastapi import APIRouter, File, HTTPException, UploadFile
-from PIL import Image, ImageEnhance
+from PIL import Image, ImageEnhance, UnidentifiedImageError
+from pillow_heif import register_heif_opener
+
+# iPhone photos are HEIC by default and stay HEIC when emailed or downloaded;
+# without this Pillow cannot open them.
+register_heif_opener()
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+UNSUPPORTED_IMAGE_DETAIL = (
+    "Unsupported image format. Upload a JPEG, PNG or HEIC (iPhone) photo."
+)
 
 
 def preprocess_image(image: Image.Image) -> Image.Image:
@@ -187,11 +199,17 @@ async def process_ocr(file: UploadFile = File(...)):  # noqa: B008
     """
     Processes an uploaded image file with OCR and returns the extracted text.
     """
+    image_data = await file.read()
     try:
-        # Read the image file
-        image_data = await file.read()
         image = Image.open(io.BytesIO(image_data))
+    except UnidentifiedImageError as e:
+        # A file Pillow can't read (e.g. a PDF) is the caller's problem, not a 500.
+        logger.warning(
+            "OCR rejected unreadable upload %r (%s)", file.filename, file.content_type
+        )
+        raise HTTPException(status_code=400, detail=UNSUPPORTED_IMAGE_DETAIL) from e
 
+    try:
         # Preprocess image
         processed_image = preprocess_image(image)
 
@@ -205,6 +223,8 @@ async def process_ocr(file: UploadFile = File(...)):  # noqa: B008
         return data
 
     except Exception as e:
+        # The detail only reaches the HTTP response, so log it here as well.
+        logger.exception("OCR processing failed for %r", file.filename)
         raise HTTPException(
             status_code=500, detail=f"OCR processing failed: {e}"
         ) from e
