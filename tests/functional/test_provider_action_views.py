@@ -135,6 +135,8 @@ class TestProviderContextInDetailView:
         assert response.status_code == 200
         assert b"Refresh Valuation" in response.content
         assert b"Decode VIN" in response.content
+        assert b">Comparable market analysis</p>" in response.content
+        assert b"AI-powered comparable" not in response.content
 
     def test_vehicle_detail_hides_buttons_when_provider_returns_false(
         self, auth_client, vehicle_item
