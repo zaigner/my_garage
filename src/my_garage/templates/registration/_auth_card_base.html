@@ -1,0 +1,81 @@
+{% extends "my_garage/base.html" %}
+
+{% comment %}
+Shared salon card layout for account pages (password change and its done
+page). Child templates fill `card_title`, `card_subtitle`, and `card_body`.
+These templates live in a DIRS path so they take precedence over the
+django.contrib.admin versions of registration/password_change_*.html.
+{% endcomment %}
+
+{% block extra_head %}
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+<style>
+    .salon-font {
+        font-family: 'Cinzel', serif;
+    }
+    .salon-bg {
+        background-color: #0B1026;
+        background-image: radial-gradient(circle at 50% 0%, #1a2342 0%, #0B1026 70%);
+    }
+    .login-card {
+        background: rgba(21, 27, 51, 0.6);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+    }
+    .salon-form input[type="password"] {
+        display: block;
+        width: 100%;
+        padding: 0.75rem;
+        border-radius: 0.25rem;
+        background-color: #151b33;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #e5e5e5;
+        transition: all 0.3s ease;
+    }
+    .salon-form input[type="password"]:focus {
+        border-color: #D4AF37;
+        box-shadow: 0 0 0 1px #D4AF37;
+        outline: none;
+    }
+    .salon-btn {
+        background: linear-gradient(to bottom, #D4AF37, #AA8C2C);
+        color: #1a0f0a;
+        font-weight: bold;
+        border: 1px solid #AA8C2C;
+        transition: all 0.3s ease;
+    }
+    .salon-btn:hover {
+        background: linear-gradient(to bottom, #E5C158, #C5A035);
+        box-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
+    }
+    .salon-help ul {
+        list-style: disc;
+        padding-left: 1.25rem;
+        margin-top: 0.25rem;
+    }
+    .errorlist {
+        color: #ef4444;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+        list-style-type: none;
+        padding: 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="salon-bg min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full space-y-8 login-card p-10 rounded-xl">
+        <div>
+            <h2 class="mt-6 text-center text-3xl font-extrabold text-luxury-gold salon-font tracking-wider">
+                {% block card_title %}{% endblock %}
+            </h2>
+            <p class="mt-2 text-center text-sm text-gray-400 uppercase tracking-widest">
+                {% block card_subtitle %}{% endblock %}
+            </p>
+        </div>
+        {% block card_body %}{% endblock %}
+    </div>
+</div>
+{% endblock %}
