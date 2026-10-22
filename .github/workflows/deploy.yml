@@ -83,7 +83,10 @@ jobs:
           # has to fetch and unpack the dependency layer, which took 9 minutes
           # on aignerpi-2 — past the old 600s limit, so the job went red while
           # the pods were still starting. Code-only deploys finish far sooner;
-          # this budget is for that cold-node case.
+          # this budget is for that cold-node case. Each Deployment's
+          # progressDeadlineSeconds must be at least this, or Kubernetes marks
+          # the rollout failed at its 600s default first (2026-10-22: ~16 min
+          # pull on aignerpi-2 after a pixi.lock change).
           for deployment in django fastapi celery-worker celery-beat; do
             echo "── waiting for ${deployment}"
             kubectl rollout status "deployment/${deployment}" \
