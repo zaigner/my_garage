@@ -57,12 +57,9 @@ aiohttp = ">=3.13.4"
 pygments = ">=2.20.0"
 # CVE-2026-34073: bump to >=46.0.6 once conda-forge publishes it (currently max 46.0.5)
 cryptography = ">=46.0.5"
-# Relaxed MongoDB version constraint for cross-platform compatibility (especially osx-arm64)
-mongodb = ">=4.4"
 google-genai = ">=1.0.0"
 python-dotenv = ">=1.0.0"
 whitenoise = ">=6.6,<7.0"
-nodejs = ">=24.12.0,<25.8"
 pillow-heif = ">=1.8.1,<2"
 
 [pypi-dependencies]
@@ -81,6 +78,12 @@ ruff = ">=0.1.0"
 pre-commit = ">=3.5.0"
 pip-audit = ">=2.7"
 django-debug-toolbar = ">=4.2,<5.0"
+# Dev-only tools, kept out of the prod env (and so the Docker image). Production
+# runs MongoDB in its own pod; mongod/mongos alone were ~190 MB of the image.
+# Relaxed MongoDB version constraint for cross-platform compatibility (especially osx-arm64)
+mongodb = ">=4.4"
+# Came in with the BMAD agent tooling (8885dce); nothing in prod runs node.
+nodejs = ">=24.12.0,<25.8"
 
 [environments]
 default = ["dev"]
