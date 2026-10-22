@@ -6,6 +6,9 @@ metadata:
   namespace: my-garage
 spec:
   replicas: 1
+  # Matches the 1200s rollout wait in deploy.yml; the 600s default fails
+  # cold-node image pulls on aignerpi-2 (~16 min) while pods still start.
+  progressDeadlineSeconds: 1200
   # replicas: 1 alone does not guarantee a single scheduler. The default
   # RollingUpdate surges a second pod before retiring the first, so every
   # deploy briefly ran two beats — double-firing scheduled tasks, which is
