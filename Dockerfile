@@ -10,7 +10,12 @@
 # ──────────────────────────────────────────────────
 # Stage 1: Builder — install pixi + production deps
 # ──────────────────────────────────────────────────
-FROM ghcr.io/prefix-dev/pixi:latest AS builder
+# Base images are pinned by digest. A floating tag (`latest`, `bookworm-slim`)
+# silently changes whenever upstream republishes, which rebuilds every layer and
+# turns a ~6 MB code-only deploy into a full ~330 MB pull on each Pi
+# (2026-10-22). Bump these deliberately: `docker buildx imagetools inspect <tag>`
+# prints the index digest. Expect a full re-pull on the deploy that bumps them.
+FROM ghcr.io/prefix-dev/pixi:0.82.1@sha256:f83a5fc6d1bb9a2ced27faf2b26c04c5eb618eed22fe13eb60f9225db4817ce0 AS builder
 
 WORKDIR /app
 
@@ -58,7 +63,7 @@ RUN .pixi/envs/prod/bin/python -m compileall -q -f \
 # ──────────────────────────────────────────────────
 # Stage 2: Runtime — lean image, no pixi tooling
 # ──────────────────────────────────────────────────
-FROM debian:bookworm-slim AS runtime
+FROM debian:bookworm-slim@sha256:7ff6ba31527b9e336162fa061746c366c4b2032f4d2cff2078bea43f78efe3f8 AS runtime
 
 WORKDIR /app
 
