@@ -428,10 +428,12 @@ So that account management is in one place and my beneficiary data is fully prot
 
 ## Epic 2: Estate Access — Executor Token, Portal & Valuation Snapshot
 
-The owner activates their estate plan to generate a one-time executor access code and lock a valuation snapshot. The executor uses that code to enter a read-only portal (no Django account needed) where they can browse the full portfolio and item detail pages.
+The owner activates their estate plan to generate a one-time executor access code and lock a valuation snapshot. The executor uses that code to enter a read-only portal (no Django account needed) where they can browse the full portfolio and item detail pages. The owner can see when the code is used and revoke it at any time.
 
 **FRs covered:** FR4, FR15, FR16, FR17, FR18, FR22, FR23, FR24, FR25, FR26, FR27, FR36, FR37, FR38, FR39
 **NFRs covered:** NFR2, NFR3, NFR5, NFR6, NFR7, NFR11, NFR12, NFR13, NFR14, NFR17
+
+**Readiness fixes (2026-10-25):** Story 2.2 now also owns revocation (FR17), the `EstateAccessLog` model (FR18 / NFR11), and code and session expiry (NFR7). Stories 2.3 and 2.4 log portal views. The executor "Download PDF" button moved from Story 2.3 to Story 4.2. Story 2.1 shipped without setting `expires_at`; Story 2.2 sets it and backfills it for existing tokens.
 
 ---
 
@@ -477,50 +479,102 @@ So that my executor will have a stable record of asset values at the moment I ga
 
 ---
 
-### Story 2.2: Executor Code Entry & Session Establishment
+### Story 2.2: Executor Code Entry, Session, Revocation & Access Log
 
 As a designated executor,
 I want to enter my access code on a public portal page to establish a secure session,
 So that I can access the estate portfolio without needing a Django account of my own.
 
-**Acceptance Criteria:**
+As an estate planner,
+I want to see when my code is used and revoke it at any time,
+So that access ends the moment I no longer want it.
+
+**Acceptance Criteria — code entry (executor):**
 
 **Given** an unauthenticated visitor accesses `/estate/portal/`
 **When** the page renders
 **Then** a code entry form is shown with a single text input and "Access Estate" button
 **And** the page renders without requiring login
 
-**Given** executor submits a valid token
+**Given** executor submits a valid code
 **When** the code is verified
-**Then** the raw code is hashed and compared to `EstateAccessToken.token_hash`
-**And** a Django session key `estate_executor_owner_id` is set to the owning user's PK
-**And** `EstateAccessToken.last_used_at` is updated and `use_count` incremented
+**Then** the raw code is hashed and compared to `EstateAccessToken.token_hash` with `secrets.compare_digest`
+**And** session keys `estate_executor_owner_id` (owner PK) and `estate_executor_token_id` (token PK) are set
+**And** `last_used_at` is updated, `use_count` incremented, and `expires_at` cleared (the 72-hour window only applies to unused codes)
+**And** an `EstateAccessLog` entry is written with `event=CODE_ACCEPTED`
 **And** the executor is redirected to `/estate/portal/dashboard/`
 
-**Given** executor submits an invalid or expired token
+**Given** executor submits a code that matches no token, or matches a token that is revoked (`is_active=False`) or expired
 **When** verification fails
 **Then** a generic error message is shown: "Invalid access code. Please contact the estate owner."
 **And** no session data is set
-**And** comparison uses `secrets.compare_digest` (constant-time, timing-safe)
+**And** if the code matched a known token, a `CODE_REJECTED` entry is logged against that token's owner (codes that match nothing have no owner and are not logged)
 
-**Given** `is_active=False` on the token
-**When** executor attempts to use it
+**Given** a code that has never been used (`use_count=0`) and whose `expires_at` has passed
+**When** executor submits it
 **Then** it is treated as invalid (same generic error)
 
-**Given** executor navigates to `/estate/portal/dashboard/` without a valid session
+**Acceptance Criteria — session guard (executor):**
+
+**Given** executor navigates to any portal page without executor session keys
 **When** the request arrives
 **Then** they are redirected to `/estate/portal/`
+
+**Given** executor has a session but its token has since been revoked, replaced, or deleted
+**When** they request any portal page
+**Then** both `estate_executor_*` keys are removed from the session and they are redirected to `/estate/portal/` with the generic error
+**And** revocation therefore takes effect on the executor's next request, not at session expiry
+
+**Given** executor has not loaded a portal page for 30 days
+**When** they return
+**Then** their session has expired and they must enter the code again (NFR7)
+
+**Given** any portal view other than code entry
+**When** it receives a POST, PUT, PATCH, or DELETE
+**Then** it returns 405 (FR27 — the portal is read-only)
+
+**Acceptance Criteria — access status & revocation (owner):**
+
+**Given** owner activates or reissues estate access (Story 2.1 flow)
+**When** the new token is created
+**Then** `expires_at` is set to 72 hours from issue
+**And** a `TOKEN_ISSUED` entry is logged; a replaced token gets a `TOKEN_REVOKED` entry
+
+**Given** owner has an active token and visits `/estate/activate/`
+**When** the page renders
+**Then** an access status panel shows: issued date, "Not yet used — expires <date>" or "In use — last used <date>", use count
+**And** a "Revoke access" button is visible
+**And** the last 10 `EstateAccessLog` entries for this owner are listed (event, timestamp, item name if any)
+
+**Given** owner's only token was never used and has expired
+**When** `/estate/activate/` renders
+**Then** the status reads "Expired — not used" and the activation button reads "Issue new code"
+
+**Given** owner clicks "Revoke access" and confirms
+**When** the POST to `/estate/activate/revoke/` is processed
+**Then** the active token is set `is_active=False` (never deleted)
+**And** a `TOKEN_REVOKED` entry is logged and a success toast is shown
+
+**Given** owner removes their executor at `/estate/executor/remove/`
+**When** removal completes
+**Then** any active token is revoked as above, in the same request
+**And** updating the executor's details (name or contact) does not revoke the token
 
 **Given** new code is submitted
 **When** the quality gate runs
 **Then** `pixi run pytest tests/unit/ tests/functional/ -x -q` passes
 
 **Technical notes:**
-- `executor_required` decorator in `src/my_garage/estate_views.py`: checks `request.session.get("estate_executor_owner_id")`, redirects to `/estate/portal/` if missing
-- `ExecutorCodeForm` — single `CharField` with `widget=PasswordInput`, max_length=64
-- Comparison: `secrets.compare_digest(hashlib.sha256(submitted.encode()).hexdigest(), stored_hash)` — constant-time
-- Portal views NOT protected by `@login_required` — use `executor_required` decorator instead
-- Session key `estate_executor_owner_id` is the sole auth mechanism in all portal views
+- New model `EstateAccessLog` in `models.py`: `owner FK(User CASCADE)`, `token FK(EstateAccessToken SET_NULL null=True blank=True)`, `event CharField(choices: TOKEN_ISSUED / TOKEN_REVOKED / CODE_ACCEPTED / CODE_REJECTED / PORTAL_VIEW / ITEM_VIEW)`, `item FK(DynamicCollectionItem SET_NULL null=True blank=True)`, `item_name CharField(200, blank=True)` (so entries still name a deleted item), `timestamp auto_now_add`; `Meta.ordering = ["-timestamp"]`, index on `(owner, -timestamp)`. Epics 3–4 add their own event choices (beneficiary link issued/viewed, PDF export).
+- `EstateAccessLog` is append-only: no edit or delete views, no `.update()` / `.delete()` calls. It cascades with the owner (FR41) and is excluded from any cleanup (NFR18). No IP address or user agent is stored (NFR12).
+- Services in `api/services.py`: `log_estate_access(owner, event, token=None, item=None)`, `verify_executor_code(raw_code) -> EstateAccessToken | None` (hash, look up by hash, `compare_digest`, check usable, log rejection), `revoke_executor_access(user)` (deactivate + log; no-op without an active token). `activate_estate_plan` gains `expires_at` and the two log entries. `executor_remove` calls `revoke_executor_access` before deleting the executor.
+- `EstateAccessToken.is_usable(now)`: `is_active and (expires_at is None or expires_at > now)`.
+- `executor_required` decorator in `src/my_garage/estate_views.py`: reads both session keys, loads the token by PK with a matching `owner_id`, checks `is_usable`; on failure pops the `estate_executor_*` keys and redirects. On success sets `request.estate_owner` / `request.estate_token` and calls `request.session.set_expiry(timedelta(days=30))`, which gives a 30-day inactivity timeout. If the owner is logged in on the same browser this also extends their session; accepted.
+- Session namespace (NFR9): only the two `estate_executor_*` keys are written; Django auth keys are never touched. Owner logout flushes the session and ends any executor session in that browser; accepted.
+- Data migration: for tokens with `is_active=True`, `use_count=0`, and `expires_at` null, set `expires_at = issued_at + 72h`. Reverse is a no-op. A code issued more than 72 hours ago and never used expires on deploy; the owner reissues it.
+- `ExecutorCodeForm` — single `CharField` with `widget=PasswordInput`, `max_length=64` (`token_urlsafe(32)` produces 43 characters)
+- Portal views are NOT protected by `@login_required`; they use `executor_required`. Code entry template: `estate/portal/code_entry.html`, standalone.
+- Deployment prerequisite (outside the codebase): the live site is behind Cloudflare Access, so `/estate/portal/*` needs a bypass policy before an executor without an account can reach it. The owner configures this; it is not part of this story's code.
 
 ---
 
@@ -538,7 +592,7 @@ So that I can understand the full scope of assets I need to administer.
 **And** every `DynamicCollectionItem` owned by the estate owner is listed: name, collection type, snapshot valuation, current market value
 **And** a portfolio summary shows: total items, total snapshot value, total current value, delta
 **And** executor sees the assigned beneficiary name per item (or "Unassigned")
-**And** a "Download PDF" button links to the PDF export (Epic 4)
+**And** a `PORTAL_VIEW` entry is written to `EstateAccessLog`
 
 **Given** the snapshot contains null values for some items
 **When** the dashboard renders
@@ -556,6 +610,7 @@ So that I can understand the full scope of assets I need to administer.
 - Selector `get_executor_portfolio_context(owner_user)` in `api/selectors.py`: fetches all items + latest `ValuationSnapshot` per item + `BeneficiaryAssignment` in 3 ORM queries (no N+1)
 - Template: `estate/portal/dashboard.html` — standalone (no `{% extends %}`), minimal nav, luxury aesthetic
 - Session read wrapped in try/except; redirect to `/estate/portal/` on `User.DoesNotExist`
+- No "Download PDF" button here; Story 4.2 adds it together with the export it links to
 
 ---
 
@@ -572,6 +627,7 @@ So that I can verify provenance, condition, and estate assignment before acting 
 **Then** the page renders with full item detail: name, collection type, custom field values, photo (if present), purchase price, purchase date, notes
 **And** the snapshot valuation row is shown: snapshot date, market value, cost basis, equity
 **And** the assigned beneficiary name and conditional note are shown
+**And** an `ITEM_VIEW` entry naming the item is written to `EstateAccessLog`
 
 **Given** the item belongs to a different owner than the executor's session
 **When** the request arrives
@@ -809,6 +865,7 @@ So that I have a printable record suitable for solicitors and probate proceeding
 **Technical notes:**
 - Owner view: `@login_required @require_POST`, calls `render_estate_pdf(owner, context_list)`
 - Executor view: `@executor_required`, reads owner from session, same PDF call
+- This story adds the "Download PDF" button to `estate/portal/dashboard.html` (deferred from Story 2.3) and logs each export to `EstateAccessLog` (FR33)
 - Selector `get_estate_pdf_context(owner)` in `api/selectors.py`: 3 ORM queries, no N+1
 - URL (owner): `path("export/pdf/", ..., name="estate_pdf_export")`
 - URL (executor): `path("portal/export/pdf/", ..., name="executor_pdf_export")`
@@ -901,7 +958,8 @@ So that I can demonstrate to solicitors that assignments were intentional and wh
 4. `EstateChangeLog` — Story 1.3
 5. `EstateAccessToken` — Story 2.1
 6. `ValuationSnapshot` — Story 2.1
-7. `BeneficiaryAccessLink` — Story 3.1
+7. `EstateAccessLog` — Story 2.2
+8. `BeneficiaryAccessLink` — Story 3.1
 
 ### Implementation Order
 
