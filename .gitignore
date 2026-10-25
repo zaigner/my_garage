@@ -214,3 +214,6 @@ logs/
 
 # MongoDB Data
 .mongo_data/
+
+# BMAD skills copy for non-Claude agent tools (duplicate of .claude/skills)
+.agents/
