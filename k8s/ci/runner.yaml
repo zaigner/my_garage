@@ -76,6 +76,10 @@ spec:
               export PATH="/home/runner/bin:$PATH"
 
               # kubectl is not in the runner image; fetch once onto the PVC.
+              # Convenience only: /home/runner/bin is the runner's versioned
+              # install, so a runner self-update drops this copy. The Deploy
+              # workflow installs its own kubectl ("Ensure kubectl" step in
+              # .github/workflows/deploy.yml) and does not rely on this one.
               if [ ! -x /home/runner/bin/kubectl ]; then
                 mkdir -p /home/runner/bin
                 curl -fsSLo /home/runner/bin/kubectl \
