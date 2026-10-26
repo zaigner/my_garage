@@ -1,0 +1,11 @@
+{% extends "my_garage/estate/portal/_base.html" %}
+
+{% block title %}Estate Portal{% endblock %}
+
+{% block content %}
+<div class="space-y-4">
+  <p class="text-luxury-gold text-xs uppercase tracking-widest">Estate &amp; Legacy</p>
+  <h1 class="text-2xl font-serif text-luxury-white">{{ owner.get_full_name|default:owner.username }}</h1>
+  <p class="text-gray-300 text-sm">Portfolio view coming soon</p>
+</div>
+{% endblock %}

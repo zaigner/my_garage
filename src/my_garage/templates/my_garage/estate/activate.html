@@ -11,7 +11,7 @@
     <h1 class="text-2xl font-semibold text-luxury-white">Activate Estate Access</h1>
     <p class="text-gray-400 text-sm mt-2">
       Generating an access code locks a valuation snapshot of your entire portfolio and
-      produces a one-time code for your executor. The code cannot be recovered after this page closes.
+      produces an access code for your executor. The code cannot be recovered after this page closes.
     </p>
   </div>
 
@@ -28,13 +28,50 @@
     {% endif %}
   </div>
 
+  <!-- Executor access status -->
+  <div class="bg-luxury-card border border-white/5 rounded-xl p-6 space-y-3" aria-labelledby="access-status-heading">
+    <h2 id="access-status-heading" class="text-xs uppercase tracking-widest text-gray-400">Executor Access</h2>
+    {% if access.state == "none" %}
+      <p class="text-gray-300 text-sm">No access code has been issued.</p>
+    {% else %}
+      <p class="text-luxury-white text-sm font-semibold">
+        {% if access.state == "revoked" %}Revoked
+        {% elif access.state == "expired" %}Expired &mdash; not used
+        {% elif access.state == "unused" %}Not yet used {% if access.token.expires_at %}&mdash; expires {{ access.token.expires_at|date:"M j, Y g:i A" }}{% endif %}
+        {% else %}In use &mdash; last used {{ access.token.last_used_at|date:"M j, Y g:i A" }}{% endif %}
+      </p>
+      <p class="text-gray-400 text-xs">
+        Issued {{ access.token.issued_at|date:"M j, Y" }} &middot; Used {{ access.token.use_count }} time{{ access.token.use_count|pluralize }}
+      </p>
+      {% if access.token.is_active %}
+        <form method="post" action="{% url 'estate:revoke_access' %}"
+              onsubmit="return confirm('Revoke executor access? Your executor will lose access immediately.');">
+          {% csrf_token %}
+          <button type="submit" class="border border-red-400 text-red-300 font-bold uppercase text-xs tracking-widest rounded-sm px-4 py-2 hover:bg-red-900/30 transition-colors">Revoke access</button>
+        </form>
+      {% endif %}
+    {% endif %}
+    {% if access.recent_events %}
+      <h3 class="text-xs uppercase tracking-widest text-gray-400 pt-2">Recent activity</h3>
+      <ul class="space-y-1 text-xs text-gray-400">
+        {% for e in access.recent_events %}
+          <li>{{ e.get_event_display }} &middot; {{ e.timestamp|date:"M j, Y g:i A" }}{% if e.ip_address %} &middot; {{ e.ip_address }}{% endif %}{% if e.item_name %} &middot; {{ e.item_name }}{% endif %}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  </div>
+
   <!-- Activation form -->
-  <form method="post" novalidate>
+  <form method="post" novalidate
+        {% if access.token.is_active %}onsubmit="return confirm('Issuing a new code revokes the current one immediately. Continue?');"{% endif %}>
     {% csrf_token %}
     <div class="bg-luxury-card border border-white/5 rounded-xl p-6 space-y-6">
 
       <div class="space-y-2">
         <h2 class="text-luxury-white font-semibold text-sm uppercase tracking-widest">Confirmation Required</h2>
+        {% if access.token.is_active %}
+          <p class="text-yellow-400 text-sm">Issuing a new code revokes the current one immediately.</p>
+        {% endif %}
         <label class="flex items-start gap-3 cursor-pointer">
           {{ form.confirmed }}
           <span class="text-gray-300 text-sm leading-relaxed">{{ form.confirmed.label }}</span>
@@ -49,7 +86,7 @@
                 {% if not can_activate %}disabled{% endif %}
                 class="bg-luxury-gold text-black font-bold uppercase text-xs tracking-widest rounded-sm px-6 py-3 transition-colors
                        {% if not can_activate %}opacity-50 cursor-not-allowed{% else %}hover:bg-yellow-600{% endif %}">
-          Activate Estate Access
+          {% if access.state == "expired" or access.state == "revoked" %}Issue new code{% else %}Activate Estate Access{% endif %}
         </button>
 
         {% if not can_activate %}

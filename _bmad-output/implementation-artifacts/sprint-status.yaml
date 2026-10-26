@@ -1,0 +1,64 @@
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created, ready for development
+#   - in-progress: Developer actively working on implementation
+#   - review: Implementation complete, ready for review
+#   - done: Story completed
+
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+
+# Action Item Status:
+#   - open: Committed during a retrospective, not yet addressed
+#   - in-progress: Actively being worked on
+#   - done: Completed
+
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when its first story starts (via build's sprint sync)
+# - Stories can be worked in parallel if team capacity allows
+# - Developer typically creates the next story after the previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+# - Retrospective appends its action items to action_items; the status view surfaces open ones
+generated: 10-25-2026 16:58
+last_updated: 10-25-2026 21:04
+project: my_garage
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts
+development_status:
+  epic-1: done
+  1-1-beneficiary-profile-data-model-crud: done
+  1-2-executor-designation: done
+  1-3-per-item-beneficiary-assignment-change-history: done
+  1-4-estate-plan-dashboard-completeness-view: done
+  1-5-profile-page-estate-status-card-account-deletion-safeguard: done
+  epic-1-retrospective: optional
+
+  epic-2: in-progress
+  2-1-estate-plan-activation-executor-token-generation-valuation-s: done
+  2-2-executor-code-entry-session-revocation-access-log: review
+  2-3-executor-portfolio-view: backlog
+  2-4-executor-item-detail-view: backlog
+  epic-2-retrospective: optional
+
+  epic-3: backlog
+  3-1-beneficiary-scoped-link-generation: backlog
+  3-2-beneficiary-scoped-access-portal: backlog
+  3-3-beneficiary-item-detail-view: backlog
+  3-4-beneficiary-personal-export: backlog
+  epic-3-retrospective: optional
+
+  epic-4: backlog
+  4-1-pdf-rendering-service: backlog
+  4-2-full-estate-inventory-pdf-owner-executor: backlog
+  4-3-audit-log-pdf-export: backlog
+  epic-4-retrospective: optional
