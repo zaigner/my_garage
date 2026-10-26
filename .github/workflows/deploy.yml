@@ -35,6 +35,37 @@ jobs:
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
 
+      # kubectl is not in the runner image. k8s/ci/runner.yaml downloads it into
+      # /home/runner/bin at container start, but that folder is the runner's own
+      # versioned install: a runner self-update (2.337.0 -> 2.338.0 on 2026-10-23)
+      # repointed it at a fresh copy without kubectl, and every deploy after that
+      # failed with "kubectl: command not found". The tool cache sits on the
+      # runner's persistent volume and survives self-updates and pod restarts, so
+      # this downloads once per version. Keep the version in step with
+      # KUBECTL_VERSION in k8s/ci/runner.yaml.
+      - name: Ensure kubectl
+        env:
+          KUBECTL_VERSION: v1.34.5
+        run: |
+          set -euo pipefail
+          case "$(uname -m)" in
+            aarch64|arm64) ARCH=arm64 ;;
+            x86_64) ARCH=amd64 ;;
+            *) echo "::error::unsupported runner architecture $(uname -m)"; exit 1 ;;
+          esac
+          DIR="${RUNNER_TOOL_CACHE}/kubectl/${KUBECTL_VERSION}/${ARCH}"
+          if [ ! -x "${DIR}/kubectl" ]; then
+            mkdir -p "${DIR}"
+            BASE="https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/${ARCH}"
+            curl -fsSLo "${DIR}/kubectl.tmp" "${BASE}/kubectl"
+            echo "$(curl -fsSL "${BASE}/kubectl.sha256")  ${DIR}/kubectl.tmp" \
+              | sha256sum --check --quiet
+            chmod +x "${DIR}/kubectl.tmp"
+            mv "${DIR}/kubectl.tmp" "${DIR}/kubectl"
+          fi
+          echo "${DIR}" >> "$GITHUB_PATH"
+          "${DIR}/kubectl" version --client
+
       - name: Resolve image tag
         id: tag
         run: |
