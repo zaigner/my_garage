@@ -40,7 +40,13 @@ The owner activates estate access, which issues a one-time-display executor code
 - Portal templates live under `estate/portal/` and are standalone (no `{% extends %}` of the owner chrome), with minimal nav and a luxury aesthetic.
 - Owner estate views live in `src/my_garage/estate_views.py` / `estate_urls.py` (namespace `estate`). Reads go through `api/selectors.py` and writes through `api/services.py`.
 - No new DRF endpoints. All estate operations are synchronous Django views.
-- Deployment: the live site sits behind Cloudflare Access, so `/estate/portal/*` needs a bypass policy, which the owner configures outside the codebase.
+- Deployment: the live site sits behind Cloudflare Access. The owner chose not to add a bypass for `/estate/portal/*` (2026-10-26), so the portal is reached through Access like the rest of the site.
+- Shipped in 2.2 and reused here:
+  - `executor_required` sets `request.estate_owner` / `request.estate_token`, re-checks the token, and applies `never_cache`.
+  - Portal views use `@require_safe` outermost.
+  - `log_estate_access(owner, event, token=, item=, request=)` records the IP.
+  - Portal templates extend the standalone `estate/portal/_base.html` (CDN assets only, no `/static/` or `/media/`).
+  - `PUBLIC_BASE_URL` builds links for people outside the LAN.
 
 ## Cross-Story Dependencies
 

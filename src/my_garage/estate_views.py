@@ -17,11 +17,13 @@ from django.views.decorators.http import require_safe
 from my_garage.api.selectors import (
     get_estate_dashboard_context,
     get_executor_access_status,
+    get_executor_portfolio_context,
     get_item_estate_assignment,
 )
 from my_garage.api.services import (
     activate_estate_plan,
     assign_beneficiary,
+    log_estate_access,
     remove_beneficiary_assignment,
     revoke_executor_access,
     verify_executor_code,
@@ -98,12 +100,17 @@ def portal_code_entry(request: HttpRequest) -> HttpResponse:
 @require_safe
 @executor_required
 def portal_dashboard(request: HttpRequest) -> HttpResponse:
-    """Stub until Story 2.3 builds the portfolio view."""
-    return render(
-        request,
-        "my_garage/estate/portal/dashboard.html",
-        {"owner": request.estate_owner},
-    )
+    """Read-only portfolio overview for the executor."""
+    owner = request.estate_owner
+    token = request.estate_token
+    context = get_executor_portfolio_context(owner, token)
+    context["owner"] = owner
+    context["activated_at"] = token.issued_at
+    response = render(request, "my_garage/estate/portal/dashboard.html", context)
+    # Log only a page the executor actually received; HEAD carries no page
+    if request.method == "GET":
+        log_estate_access(owner, "PORTAL_VIEW", token=token, request=request)
+    return response
 
 
 @login_required

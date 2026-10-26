@@ -1,0 +1,8 @@
+{% if row.is_charitable %}
+  <span class="text-luxury-gold">{{ row.charitable_org|default:"Charitable bequest" }}</span>
+  <span class="text-xs text-gray-300">(charitable)</span>
+{% elif row.is_unassigned %}
+  <span class="inline-block px-2 py-0.5 rounded border border-yellow-400/60 bg-yellow-900/40 text-yellow-300 text-xs uppercase tracking-widest">Unassigned</span>
+{% else %}
+  <span class="text-luxury-white">{{ row.beneficiary_name }}</span>
+{% endif %}
