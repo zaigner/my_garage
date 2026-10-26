@@ -154,6 +154,10 @@ CELERY_BEAT_SCHEDULE = {
 # FastAPI Service URL (separate service)
 FASTAPI_BASE_URL = os.environ.get("FASTAPI_BASE_URL", "http://localhost:8001")
 
+# Public URL the app is reached at from outside the LAN, used for links handed to
+# people without an account (e.g. the estate executor portal). Empty = request host.
+PUBLIC_BASE_URL = os.environ.get("PUBLIC_BASE_URL", "")
+
 # Google API key — used for Gemini image generation and text embeddings (RAG)
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "")
 

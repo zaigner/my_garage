@@ -13,6 +13,9 @@ data:
   # my-garage.zachelorpad.com is the public hostname reached via the Cloudflare
   # Tunnel (k8s/django/ingress.yaml).
   ALLOWED_HOSTS: my-garage.local,192.168.50.200,my-garage.zachelorpad.com
+  # Links shown to people outside the LAN (the estate executor portal URL) use this
+  # host, even when the owner is browsing via my-garage.local.
+  PUBLIC_BASE_URL: https://my-garage.zachelorpad.com
   # False because the Cloudflare Tunnel hop to Traefik for my-garage.zachelorpad.com
   # is plain HTTP (Cloudflare Access already terminated TLS at the edge) -- with the
   # default True, Django would see that internal http hop and try to force a

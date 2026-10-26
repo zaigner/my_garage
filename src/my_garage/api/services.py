@@ -6,13 +6,18 @@ the collection services pattern.
 """
 
 import hashlib
+import ipaddress
 import logging
 import os
 import secrets
-from datetime import date
+from datetime import date, timedelta
+from typing import Optional
 
 import requests
 from django.conf import settings
+from django.db import transaction
+from django.db.models import F
+from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
@@ -80,13 +85,114 @@ def assign_beneficiary(
     )
 
 
-def activate_estate_plan(user) -> str:
+def client_ip(request) -> Optional[str]:
+    """
+    Best-effort client IP for the access log. Informational only — never use
+    it for an access decision (headers are spoofable on the LAN path).
+    """
+    if request is None:
+        return None
+    meta = request.META
+    candidates = [meta.get("HTTP_CF_CONNECTING_IP", "")]
+    xff = meta.get("HTTP_X_FORWARDED_FOR", "")
+    if xff:
+        candidates.append(xff.split(",")[0])
+    candidates.append(meta.get("REMOTE_ADDR", ""))
+    for value in candidates:
+        value = (value or "").strip()
+        if not value:
+            continue
+        try:
+            return str(ipaddress.ip_address(value))
+        except ValueError:
+            continue
+    return None
+
+
+def log_estate_access(owner, event, token=None, item=None, request=None):
+    """Append an EstateAccessLog row."""
+    from my_garage.models import EstateAccessLog
+
+    return EstateAccessLog.objects.create(
+        owner=owner,
+        token=token,
+        event=event,
+        item=item,
+        item_name=item.name if item is not None else "",
+        ip_address=client_ip(request),
+    )
+
+
+def _hash_code(raw_code: str) -> str:
+    return hashlib.sha256(raw_code.encode()).hexdigest()
+
+
+def verify_executor_code(raw_code: str, request=None):
+    """
+    Validate a raw executor code. Returns the (updated) token on success, or
+    None. A match against a revoked/expired token logs CODE_REJECTED; an
+    unknown code logs nothing.
+    """
+    from my_garage.models import EstateAccessToken
+
+    code_hash = _hash_code((raw_code or "").strip())
+    with transaction.atomic():
+        candidate = EstateAccessToken.objects.filter(token_hash=code_hash).first()
+        if candidate is None:
+            return None
+        # Lock all of the owner's tokens, then re-read the candidate.
+        list(
+            EstateAccessToken.objects.select_for_update().filter(
+                owner_id=candidate.owner_id
+            )
+        )
+        token = EstateAccessToken.objects.filter(pk=candidate.pk).first()
+        if token is None:
+            return None
+        now = timezone.now()
+        if not secrets.compare_digest(token.token_hash, code_hash):
+            return None
+        if not token.is_usable(now):
+            log_estate_access(
+                token.owner, "CODE_REJECTED", token=token, request=request
+            )
+            return None
+        EstateAccessToken.objects.filter(pk=token.pk).update(
+            use_count=F("use_count") + 1, last_used_at=now, expires_at=None
+        )
+        token.refresh_from_db()
+        log_estate_access(token.owner, "CODE_ACCEPTED", token=token, request=request)
+        return token
+
+
+def _deactivate_active_tokens(user, request=None) -> int:
+    """Deactivate the owner's active tokens, logging each. Call inside atomic."""
+    from my_garage.models import EstateAccessToken
+
+    active = list(
+        EstateAccessToken.objects.select_for_update().filter(owner=user, is_active=True)
+    )
+    ids = [t.pk for t in active]
+    if ids:
+        EstateAccessToken.objects.filter(pk__in=ids).update(is_active=False)
+        for t in active:
+            log_estate_access(user, "TOKEN_REVOKED", token=t, request=request)
+    return len(ids)
+
+
+def revoke_executor_access(user, request=None) -> bool:
+    """Revoke the owner's active executor code. True if one was active."""
+    with transaction.atomic():
+        return _deactivate_active_tokens(user, request=request) > 0
+
+
+def activate_estate_plan(user, request=None) -> str:
     """
     Generate an executor access token and lock a valuation snapshot for all
     portfolio items. Returns the raw token once — it is never persisted.
 
     On reactivation, the existing active token is deactivated (not deleted)
-    to preserve the audit trail.
+    to preserve the audit trail. The new token expires after 72 hours if unused.
     """
     from my_garage.models import (
         DynamicCollectionItem,
@@ -94,16 +200,10 @@ def activate_estate_plan(user) -> str:
         ValuationSnapshot,
     )
 
-    # Deactivate any existing active token (OneToOne — at most one row)
-    EstateAccessToken.objects.filter(owner=user, is_active=True).update(is_active=False)
-
-    # Generate and hash new token
     raw_token = secrets.token_urlsafe(32)
-    token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
+    token_hash = _hash_code(raw_token)
 
-    EstateAccessToken.objects.create(owner=user, token_hash=token_hash, is_active=True)
-
-    # Bulk-create valuation snapshots for all items — single query
+    # Build valuation snapshots for all items; saved with the token below
     today = date.today()
     items = DynamicCollectionItem.objects.filter(owner=user)
     snapshots = []
@@ -122,7 +222,18 @@ def activate_estate_plan(user) -> str:
                 snapshot_trigger="ESTATE_ACTIVATION",
             )
         )
-    ValuationSnapshot.objects.bulk_create(snapshots)
+
+    # Token swap and snapshots succeed or fail together
+    with transaction.atomic():
+        _deactivate_active_tokens(user, request=request)
+        new_token = EstateAccessToken.objects.create(
+            owner=user,
+            token_hash=token_hash,
+            is_active=True,
+            expires_at=timezone.now() + timedelta(hours=72),
+        )
+        log_estate_access(user, "TOKEN_ISSUED", token=new_token, request=request)
+        ValuationSnapshot.objects.bulk_create(snapshots)
 
     return raw_token
 

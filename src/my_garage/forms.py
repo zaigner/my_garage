@@ -162,6 +162,21 @@ class EstateActivateForm(forms.Form):
     )
 
 
+class ExecutorCodeForm(forms.Form):
+    code = forms.CharField(
+        max_length=64,
+        label="Access code",
+        widget=forms.PasswordInput(
+            attrs={
+                "autocomplete": "off",
+                "autocapitalize": "off",
+                "spellcheck": "false",
+            }
+        ),
+        error_messages={"required": "Please enter your access code."},
+    )
+
+
 # DYNAMIC COLLECTION SYSTEM FORMS
 # ============================================================================
 

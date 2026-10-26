@@ -4,11 +4,14 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Exists, OuterRef, Q, Sum
+from django.utils import timezone
 
 from my_garage.models import (
     BeneficiaryAssignment,
     CollectionItemAttachment,
     DynamicCollectionItem,
+    EstateAccessLog,
+    EstateAccessToken,
     EstateChangeLog,
     EstateExecutor,
     GenericServiceRecord,
@@ -238,6 +241,33 @@ def get_estate_dashboard_context(user) -> Dict[str, Any]:
         "completeness_pct": completeness_pct,
         "recent_log": recent_log,
     }
+
+
+def get_executor_access_status(user) -> Dict[str, Any]:
+    """
+    Executor access status for the owner's activate page.
+
+    Returns token (active one, else latest, else None), state
+    (none/revoked/expired/unused/in_use) and recent_events (last 10 log rows).
+    """
+    tokens = EstateAccessToken.objects.filter(owner=user)
+    token = (
+        tokens.filter(is_active=True).order_by("-issued_at", "-pk").first()
+        or tokens.order_by("-issued_at", "-pk").first()
+    )
+    now = timezone.now()
+    if token is None:
+        state = "none"
+    elif not token.is_active:
+        state = "revoked"
+    elif token.expires_at is not None and token.expires_at <= now:
+        state = "expired"
+    elif token.use_count == 0:
+        state = "unused"
+    else:
+        state = "in_use"
+    recent_events = list(EstateAccessLog.objects.filter(owner=user)[:10])
+    return {"token": token, "state": state, "recent_events": recent_events}
 
 
 def media_file_owner_id(path: str) -> Optional[int]:

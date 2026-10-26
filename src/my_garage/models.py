@@ -553,7 +553,7 @@ class EstateAccessToken(models.Model):
         on_delete=models.CASCADE,
         related_name="estate_access_tokens",
     )
-    token_hash = models.CharField(max_length=64)
+    token_hash = models.CharField(max_length=64, db_index=True)
     issued_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
@@ -562,6 +562,57 @@ class EstateAccessToken(models.Model):
 
     def __str__(self):
         return f"EstateAccessToken for {self.owner.username} (active={self.is_active})"
+
+    def is_usable(self, now) -> bool:
+        """True when the token is active and has not passed its expiry."""
+        return self.is_active and (self.expires_at is None or self.expires_at > now)
+
+
+class EstateAccessLog(models.Model):
+    """Append-only: application code never edits or deletes rows.
+
+    FK SET_NULL/CASCADE are the only changes.
+    """
+
+    EVENT_CHOICES = [
+        ("TOKEN_ISSUED", "Token issued"),
+        ("TOKEN_REVOKED", "Token revoked"),
+        ("CODE_ACCEPTED", "Code accepted"),
+        ("CODE_REJECTED", "Code rejected"),
+        ("PORTAL_VIEW", "Portal viewed"),
+        ("ITEM_VIEW", "Item viewed"),
+    ]
+
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="estate_access_logs",
+    )
+    token = models.ForeignKey(
+        EstateAccessToken,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="access_logs",
+    )
+    event = models.CharField(max_length=20, choices=EVENT_CHOICES)
+    item = models.ForeignKey(
+        "DynamicCollectionItem",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="estate_access_logs",
+    )
+    item_name = models.CharField(max_length=200, blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-timestamp", "-pk"]
+        indexes = [models.Index(fields=["owner", "-timestamp"])]
+
+    def __str__(self):
+        return f"{self.timestamp:%Y-%m-%d %H:%M} {self.event}"
 
 
 class ValuationSnapshot(models.Model):

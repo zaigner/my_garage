@@ -27,6 +27,9 @@ urlpatterns = [
         estate_views.estate_activate_success,
         name="activate_success",
     ),
+    path("activate/revoke/", estate_views.estate_revoke_access, name="revoke_access"),
+    path("portal/", estate_views.portal_code_entry, name="portal_code_entry"),
+    path("portal/dashboard/", estate_views.portal_dashboard, name="portal_dashboard"),
     path("assign/", estate_views.assign_overview, name="assign_overview"),
     path(
         "assign/<slug:collection_slug>/items/<int:item_id>/",

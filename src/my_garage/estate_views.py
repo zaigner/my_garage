@@ -1,30 +1,109 @@
 """Estate & Legacy views."""
 
+from datetime import timedelta
+from functools import wraps
+
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import Http404, HttpRequest, HttpResponse
+from django.middleware.csrf import rotate_token
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+from django.utils import timezone
+from django.views.decorators.cache import never_cache
+from django.views.decorators.http import require_safe
 
 from my_garage.api.selectors import (
     get_estate_dashboard_context,
+    get_executor_access_status,
     get_item_estate_assignment,
 )
 from my_garage.api.services import (
     activate_estate_plan,
     assign_beneficiary,
     remove_beneficiary_assignment,
+    revoke_executor_access,
+    verify_executor_code,
 )
 from my_garage.forms import (
     BeneficiaryAssignmentForm,
     BeneficiaryForm,
     EstateActivateForm,
     EstateExecutorForm,
+    ExecutorCodeForm,
 )
 from my_garage.models import (
     Beneficiary,
     DynamicCollectionItem,
+    EstateAccessToken,
     EstateExecutor,
 )
+
+EXECUTOR_OWNER_KEY = "estate_executor_owner_id"
+EXECUTOR_TOKEN_KEY = "estate_executor_token_id"
+EXECUTOR_SESSION_DAYS = 30
+GENERIC_CODE_ERROR = "Invalid access code. Please contact the estate owner."
+
+
+def executor_required(view):
+    """Require a valid executor session; the token is re-checked every request."""
+
+    @wraps(view)
+    def wrapper(request: HttpRequest, *args, **kwargs):
+        owner_id = request.session.get(EXECUTOR_OWNER_KEY)
+        token_id = request.session.get(EXECUTOR_TOKEN_KEY)
+        token = None
+        if owner_id is not None and token_id is not None:
+            token = (
+                EstateAccessToken.objects.filter(pk=token_id, owner_id=owner_id)
+                .select_related("owner")
+                .first()
+            )
+        if token is None or not token.is_usable(timezone.now()):
+            request.session.pop(EXECUTOR_OWNER_KEY, None)
+            request.session.pop(EXECUTOR_TOKEN_KEY, None)
+            request.session.set_expiry(None)
+            if owner_id is not None or token_id is not None:
+                messages.error(request, GENERIC_CODE_ERROR)
+            return redirect("estate:portal_code_entry")
+        request.estate_owner = token.owner
+        request.estate_token = token
+        request.session.set_expiry(timedelta(days=EXECUTOR_SESSION_DAYS))
+        return never_cache(view)(request, *args, **kwargs)
+
+    return wrapper
+
+
+@never_cache
+def portal_code_entry(request: HttpRequest) -> HttpResponse:
+    """Public executor code-entry page."""
+    if request.method == "POST":
+        form = ExecutorCodeForm(request.POST)
+        if form.is_valid():
+            token = verify_executor_code(form.cleaned_data["code"], request=request)
+            if token is not None:
+                request.session.cycle_key()
+                rotate_token(request)
+                request.session[EXECUTOR_OWNER_KEY] = token.owner_id
+                request.session[EXECUTOR_TOKEN_KEY] = token.pk
+                request.session.set_expiry(timedelta(days=EXECUTOR_SESSION_DAYS))
+                return redirect("estate:portal_dashboard")
+            form.add_error("code", GENERIC_CODE_ERROR)
+    else:
+        form = ExecutorCodeForm()
+    return render(request, "my_garage/estate/portal/code_entry.html", {"form": form})
+
+
+@require_safe
+@executor_required
+def portal_dashboard(request: HttpRequest) -> HttpResponse:
+    """Stub until Story 2.3 builds the portfolio view."""
+    return render(
+        request,
+        "my_garage/estate/portal/dashboard.html",
+        {"owner": request.estate_owner},
+    )
 
 
 @login_required
@@ -106,10 +185,16 @@ def executor_view(request: HttpRequest) -> HttpResponse:
 def executor_remove(request: HttpRequest) -> HttpResponse:
     if request.method != "POST":
         return redirect("estate:executor")
+    revoked = revoke_executor_access(request.user, request=request)
     executor = EstateExecutor.objects.filter(owner=request.user).first()
     if executor:
         executor.delete()
-        messages.success(request, "Executor removed.")
+        messages.success(
+            request,
+            "Executor removed. Their access code has been revoked."
+            if revoked
+            else "Executor removed.",
+        )
     return redirect("estate:executor")
 
 
@@ -197,7 +282,7 @@ def estate_activate(request: HttpRequest) -> HttpResponse:
     if request.method == "POST" and can_activate:
         form = EstateActivateForm(request.POST)
         if form.is_valid():
-            raw_token = activate_estate_plan(request.user)
+            raw_token = activate_estate_plan(request.user, request=request)
             request.session["estate_activation_token"] = raw_token
             return redirect("estate:activate_success")
     else:
@@ -206,8 +291,24 @@ def estate_activate(request: HttpRequest) -> HttpResponse:
     return render(
         request,
         "my_garage/estate/activate.html",
-        {"form": form, "executor": executor, "can_activate": can_activate},
+        {
+            "form": form,
+            "executor": executor,
+            "can_activate": can_activate,
+            "access": get_executor_access_status(request.user),
+        },
     )
+
+
+@login_required
+def estate_revoke_access(request: HttpRequest) -> HttpResponse:
+    if request.method != "POST":
+        return redirect("estate:activate")
+    if revoke_executor_access(request.user, request=request):
+        messages.success(request, "Executor access revoked.")
+    else:
+        messages.info(request, "No active access code.")
+    return redirect("estate:activate")
 
 
 @login_required
@@ -215,10 +316,21 @@ def estate_activate_success(request: HttpRequest) -> HttpResponse:
     raw_token = request.session.pop("estate_activation_token", None)
     if raw_token is None:
         return redirect("estate:activate")
+    token = get_executor_access_status(request.user)["token"]
+    # The executor is outside the LAN, so prefer the public URL over the request host
+    portal_path = reverse("estate:portal_code_entry")
+    if settings.PUBLIC_BASE_URL:
+        portal_url = settings.PUBLIC_BASE_URL.rstrip("/") + portal_path
+    else:
+        portal_url = request.build_absolute_uri(portal_path)
     return render(
         request,
         "my_garage/estate/activate_success.html",
-        {"raw_token": raw_token},
+        {
+            "raw_token": raw_token,
+            "expires_at": token.expires_at if token else None,
+            "portal_url": portal_url,
+        },
     )
 
 
