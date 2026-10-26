@@ -63,7 +63,7 @@ class TestCodeEntry:
         assert t.use_count == 1 and t.last_used_at and t.expires_at is None
         assert EstateAccessLog.objects.filter(event="CODE_ACCEPTED").count() == 1
         page = client.get(DASH)
-        assert page.status_code == 200 and b"Portfolio view coming soon" in page.content
+        assert page.status_code == 200 and b"Estate of" in page.content
         assert b"portal_owner" in page.content
 
     def test_session_key_cycled(self, client, raw):

@@ -1,11 +1,123 @@
 {% extends "my_garage/estate/portal/_base.html" %}
+{% load my_garage_extras %}
 
-{% block title %}Estate Portal{% endblock %}
+{% block title %}Estate Portfolio{% endblock %}
+{% block main_width %}max-w-5xl{% endblock %}
 
 {% block content %}
-<div class="space-y-4">
-  <p class="text-luxury-gold text-xs uppercase tracking-widest">Estate &amp; Legacy</p>
-  <h1 class="text-2xl font-serif text-luxury-white">{{ owner.get_full_name|default:owner.username }}</h1>
-  <p class="text-gray-300 text-sm">Portfolio view coming soon</p>
+<div class="space-y-8">
+
+  <!-- Header -->
+  <header>
+    <p class="text-luxury-gold text-xs uppercase tracking-widest mb-1">Estate of</p>
+    <h1 class="text-3xl font-serif text-luxury-white">{{ owner.get_full_name|default:owner.username }}</h1>
+    <p class="text-gray-300 text-sm mt-2">
+      Estate access activated {{ activated_at|date:"F j, Y" }} &middot; Read-only view
+    </p>
+  </header>
+
+  <!-- Summary -->
+  <section aria-labelledby="summary-heading">
+    <h2 id="summary-heading" class="sr-only">Portfolio summary</h2>
+    <dl class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="bg-luxury-card border border-white/10 rounded-xl p-4">
+        <dt class="text-xs uppercase tracking-widest text-gray-300">Items</dt>
+        <dd class="text-2xl text-luxury-white mt-1">{{ items_total }}</dd>
+      </div>
+      <div class="bg-luxury-card border border-white/10 rounded-xl p-4">
+        <dt class="text-xs uppercase tracking-widest text-gray-300">Value at activation</dt>
+        <dd class="text-2xl text-luxury-white mt-1">{% include "my_garage/estate/portal/_money.html" with value=snapshot_total %}</dd>
+        {% if snapshot_count < items_total %}
+          <dd class="text-xs text-gray-300 mt-1">{{ snapshot_count }} of {{ items_total }} items valued</dd>
+        {% endif %}
+      </div>
+      <div class="bg-luxury-card border border-white/10 rounded-xl p-4">
+        <dt class="text-xs uppercase tracking-widest text-gray-300">Current value</dt>
+        <dd class="text-2xl text-luxury-white mt-1">{% include "my_garage/estate/portal/_money.html" with value=current_total %}</dd>
+        {% if current_count < items_total %}
+          <dd class="text-xs text-gray-300 mt-1">{{ current_count }} of {{ items_total }} items valued</dd>
+        {% endif %}
+      </div>
+      <div class="bg-luxury-card border border-white/10 rounded-xl p-4">
+        <dt class="text-xs uppercase tracking-widest text-gray-300">Change since activation</dt>
+        <dd class="text-2xl text-luxury-white mt-1">
+          {% if delta is None %}&mdash;{% elif delta == 0 %}$0{% else %}{{ delta|nfp_display }}{% endif %}
+        </dd>
+        {% if delta is not None and compared_count < items_total %}
+          <dd class="text-xs text-gray-300 mt-1">Across {{ compared_count }} of {{ items_total }} items valued at both dates</dd>
+        {% endif %}
+      </div>
+    </dl>
+  </section>
+
+  {% if unassigned_count %}
+    <div role="status" class="border border-yellow-400/60 bg-yellow-900/30 text-yellow-100 text-sm rounded-md px-4 py-3">
+      <strong class="font-semibold">{{ unassigned_count }} asset{{ unassigned_count|pluralize }} {{ unassigned_count|pluralize:"has,have" }} no beneficiary designation.</strong>
+      {{ unassigned_count|pluralize:"It,They" }} will need to be handled through the probate process.
+    </div>
+  {% endif %}
+
+  <!-- Assets -->
+  <section aria-labelledby="assets-heading" class="space-y-4">
+    <h2 id="assets-heading" class="text-xs uppercase tracking-widest text-gray-300">Assets</h2>
+
+    {% if rows %}
+      <!-- Wide screens: table -->
+      <div class="hidden md:block bg-luxury-card border border-white/10 rounded-xl overflow-hidden">
+        <table class="w-full text-sm">
+          <caption class="sr-only">Estate assets with valuations and beneficiaries</caption>
+          <thead class="text-left text-xs uppercase tracking-widest text-gray-300 border-b border-white/10">
+            <tr>
+              <th scope="col" class="px-4 py-3 font-medium">Item</th>
+              <th scope="col" class="px-4 py-3 font-medium">Collection</th>
+              <th scope="col" class="px-4 py-3 font-medium text-right">Value at activation</th>
+              <th scope="col" class="px-4 py-3 font-medium text-right">Current value</th>
+              <th scope="col" class="px-4 py-3 font-medium">Beneficiary</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-white/5">
+            {% for row in rows %}
+              <tr>
+                <th scope="row" class="px-4 py-3 text-left font-normal text-luxury-white">{{ row.item.name }}</th>
+                <td class="px-4 py-3 text-gray-300">{{ row.item.collection_type.name }}</td>
+                <td class="px-4 py-3 text-right text-gray-100">{% include "my_garage/estate/portal/_snapshot_value.html" %}</td>
+                <td class="px-4 py-3 text-right text-gray-100">{% include "my_garage/estate/portal/_money.html" with value=row.current_value %}</td>
+                <td class="px-4 py-3">{% include "my_garage/estate/portal/_designation.html" %}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Narrow screens: cards -->
+      <ul class="md:hidden space-y-3">
+        {% for row in rows %}
+          <li class="bg-luxury-card border border-white/10 rounded-xl p-4 space-y-3">
+            <div>
+              <p class="text-luxury-white">{{ row.item.name }}</p>
+              <p class="text-xs text-gray-300">{{ row.item.collection_type.name }}</p>
+            </div>
+            <dl class="grid grid-cols-2 gap-2 text-sm">
+              <div>
+                <dt class="text-xs text-gray-300">Value at activation</dt>
+                <dd class="text-gray-100">{% include "my_garage/estate/portal/_snapshot_value.html" %}</dd>
+              </div>
+              <div>
+                <dt class="text-xs text-gray-300">Current value</dt>
+                <dd class="text-gray-100">{% include "my_garage/estate/portal/_money.html" with value=row.current_value %}</dd>
+              </div>
+            </dl>
+            <div>
+              <p class="text-xs text-gray-300 mb-1">Beneficiary</p>
+              {% include "my_garage/estate/portal/_designation.html" %}
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="text-gray-300 text-sm">No assets are recorded in this estate.</p>
+    {% endif %}
+  </section>
+
 </div>
 {% endblock %}

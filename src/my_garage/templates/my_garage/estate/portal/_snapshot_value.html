@@ -1,0 +1,1 @@
+{% if row.in_snapshot %}{% include "my_garage/estate/portal/_money.html" with value=row.snapshot_value %}{% else %}<span class="text-xs text-gray-300">Added after activation</span>{% endif %}

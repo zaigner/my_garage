@@ -17,6 +17,7 @@ from my_garage.models import (
     GenericServiceRecord,
     GenericUpgrade,
     PortfolioSnapshot,
+    ValuationSnapshot,
 )
 
 
@@ -268,6 +269,95 @@ def get_executor_access_status(user) -> Dict[str, Any]:
         state = "in_use"
     recent_events = list(EstateAccessLog.objects.filter(owner=user)[:10])
     return {"token": token, "state": state, "recent_events": recent_events}
+
+
+def _sum_or_none(values) -> Optional[Decimal]:
+    present = [v for v in values if v is not None]
+    return sum(present, Decimal("0")) if present else None
+
+
+def get_executor_portfolio_context(owner, token) -> Dict[str, Any]:
+    """
+    Read-only portfolio for the executor portal, in 2 ORM queries.
+
+    `token` is the executor's EstateAccessToken; "value at activation" comes
+    only from the ESTATE_ACTIVATION snapshots taken when it was issued
+    (activate_estate_plan creates them right after the token, in one
+    transaction).
+
+    Returns:
+        rows             — one dict per item: item, in_snapshot (item existed
+                           at activation), snapshot_value, current_value,
+                           beneficiary_name, charitable_org, is_charitable,
+                           is_unassigned
+        items_total      — int
+        unassigned_count — int
+        snapshot_total   — Decimal or None (sum of known snapshot values)
+        snapshot_count   — int, items with a known snapshot value
+        current_total    — Decimal or None (sum of known current values)
+        current_count    — int, items with a known current value
+        delta            — Decimal or None (current − snapshot, summed over
+                           items valued at both)
+        compared_count   — int, items included in delta
+    """
+    items = list(
+        DynamicCollectionItem.objects.filter(owner=owner)
+        .select_related("collection_type", "estate_assignment__beneficiary")
+        .order_by("collection_type__name", "name")
+    )  # Q1
+
+    activation_values = dict(
+        ValuationSnapshot.objects.filter(
+            owner=owner,
+            snapshot_trigger="ESTATE_ACTIVATION",
+            created_at__gte=token.issued_at,
+        ).values_list("item_id", "market_value")
+    )  # Q2
+
+    rows = []
+    for item in items:
+        try:
+            assignment = item.estate_assignment
+        except BeneficiaryAssignment.DoesNotExist:
+            assignment = None
+        is_charitable = bool(assignment and assignment.is_charitable)
+        beneficiary = assignment.beneficiary if assignment else None
+        rows.append(
+            {
+                "item": item,
+                "in_snapshot": item.pk in activation_values,
+                "snapshot_value": activation_values.get(item.pk),
+                "current_value": item.current_market_value,
+                "beneficiary_name": beneficiary.name if beneficiary else "",
+                "charitable_org": assignment.charitable_org if is_charitable else "",
+                "is_charitable": is_charitable,
+                # A deleted beneficiary leaves the assignment with a null FK
+                "is_unassigned": not is_charitable and beneficiary is None,
+            }
+        )
+
+    compared = [
+        r
+        for r in rows
+        if r["snapshot_value"] is not None and r["current_value"] is not None
+    ]
+    delta = (
+        sum((r["current_value"] - r["snapshot_value"] for r in compared), Decimal("0"))
+        if compared
+        else None
+    )
+
+    return {
+        "rows": rows,
+        "items_total": len(rows),
+        "unassigned_count": sum(1 for r in rows if r["is_unassigned"]),
+        "snapshot_total": _sum_or_none(r["snapshot_value"] for r in rows),
+        "snapshot_count": sum(1 for r in rows if r["snapshot_value"] is not None),
+        "current_total": _sum_or_none(r["current_value"] for r in rows),
+        "current_count": sum(1 for r in rows if r["current_value"] is not None),
+        "delta": delta,
+        "compared_count": len(compared),
+    }
 
 
 def media_file_owner_id(path: str) -> Optional[int]:
