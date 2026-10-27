@@ -78,11 +78,13 @@ jobs:
           TAG="${{ steps.tag.outputs.sha }}"
 
           # The committed placeholder is `latest`; point it at this build.
-          sed -i "s|^\( *\)newTag: .*|\1newTag: ${TAG}|" k8s/kustomization.yaml
+          # Quoted because a short SHA can be all digits (6053893, 2026-10-27),
+          # which YAML reads as a number and kustomize rejects for newTag.
+          sed -i "s|^\( *\)newTag: .*|\1newTag: \"${TAG}\"|" k8s/kustomization.yaml
 
           # Fail loudly rather than deploying `latest` if the sed ever misses,
           # which would silently ship whatever `latest` happened to point at.
-          grep -q "newTag: ${TAG}" k8s/kustomization.yaml \
+          grep -q "newTag: \"${TAG}\"" k8s/kustomization.yaml \
             || { echo "::error::failed to pin image tag ${TAG}"; exit 1; }
 
           echo "Deploying manifests at tag ${TAG}:"
