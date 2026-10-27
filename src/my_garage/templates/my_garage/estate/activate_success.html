@@ -33,7 +33,7 @@
       <span class="text-gray-400 break-all">{{ portal_url }}</span> to access your estate portfolio.
     </p>
     {% if expires_at %}
-      <p class="text-gray-400 text-xs">Expires {{ expires_at|date:"M j, Y g:i A" }} if unused.</p>
+      <p class="text-gray-400 text-xs">Expires {{ expires_at|date:"M j, Y g:i A T" }} if unused.</p>
     {% endif %}
   </div>
 

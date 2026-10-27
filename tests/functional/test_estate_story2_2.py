@@ -149,6 +149,16 @@ class TestSessionGuard:
         assert client.session.get_expiry_age() > 29 * 86400
 
 
+def _section(body, marker, end):
+    start = body.index(marker)
+    return body[start : body.index(end, start)]
+
+
+def _status_line(owner_client):
+    body = owner_client.get("/estate/activate/").content.decode()
+    return _section(body, 'id="access-status-heading"', "</p>")
+
+
 class TestOwnerPanel:
     def test_unused_panel(self, owner_client, executor, raw):
         body = owner_client.get("/estate/activate/").content.decode()
@@ -159,6 +169,42 @@ class TestOwnerPanel:
         _enter(client, raw)
         body = owner_client.get("/estate/activate/").content.decode()
         assert "In use" in body and "Code accepted" in body
+
+    def test_unused_panel_expiry_has_zone_label(self, owner_client, executor, raw):
+        body = owner_client.get("/estate/activate/").content.decode()
+        assert "Not yet used" in body
+        start = body.index("Not yet used")
+        assert " UTC" in body[start : body.index("</p>", start)]
+
+    def test_in_use_status_shows_code_entry_and_last_visit(
+        self, owner_client, client, executor, raw
+    ):
+        _enter(client, raw)
+        status = _status_line(owner_client)
+        assert "code entered" in status and "last portal visit" not in status
+        client.get(DASH)
+        status = _status_line(owner_client)
+        assert "code entered" in status and "last portal visit" in status
+        assert status.count(" UTC") == 2
+
+    def test_views_do_not_hide_security_events(self, owner_client, executor, raw):
+        token = EstateAccessToken.objects.get()
+        for _ in range(12):
+            EstateAccessLog.objects.create(
+                owner=token.owner, token=token, event="PORTAL_VIEW"
+            )
+        EstateAccessLog.objects.create(
+            owner=token.owner, token=token, event="CODE_REJECTED"
+        )
+        body = owner_client.get("/estate/activate/").content.decode()
+        events = _section(body, 'data-testid="security-events"', "</ul>")
+        assert "Code rejected" in events and "Portal viewed" not in events
+        summary = _section(body, 'data-testid="portal-view-summary"', "</p>")
+        assert "Portal views with this code: 12" in summary and " UTC" in summary
+
+    def test_no_views_no_summary_line(self, owner_client, executor, raw):
+        body = owner_client.get("/estate/activate/").content.decode()
+        assert 'data-testid="portal-view-summary"' not in body
 
     def test_expired_panel(self, owner_client, executor, raw):
         EstateAccessToken.objects.update(expires_at=timezone.now() - timedelta(hours=1))

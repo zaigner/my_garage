@@ -8,6 +8,16 @@ on:
     types: [completed]
     branches: [main]
 
+# One deploy at a time. Two Builds can finish close together; without this the
+# two deploys would apply and roll out over each other. The running deploy is
+# never cancelled mid-rollout. Limitation: GitHub keeps only one pending run per
+# group, so a newer queued run cancels an older pending one. With three
+# overlapping Builds the newest commit's deploy can be the one dropped; the next
+# merge to main deploys the tip again.
+concurrency:
+  group: deploy-k3s
+  cancel-in-progress: false
+
 jobs:
   deploy:
     name: Deploy to K3s Homelab
@@ -34,6 +44,8 @@ jobs:
         uses: actions/checkout@v6
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
+          # Full history, so the superseded-commit guard can compare commits
+          fetch-depth: 0
 
       # kubectl is not in the runner image. k8s/ci/runner.yaml downloads it into
       # /home/runner/bin at container start, but that folder is the runner's own
@@ -66,13 +78,51 @@ jobs:
           echo "${DIR}" >> "$GITHUB_PATH"
           "${DIR}/kubectl" version --client
 
+      # Builds can finish out of order, and concurrency only serialises the
+      # deploys, it doesn't order them. If the cluster already runs a commit
+      # that comes after this one, applying would roll production back to an
+      # older image, so end green without touching the cluster. Anything that
+      # can't be resolved (no deployment yet, `latest`, a tag not in history)
+      # falls through to a normal deploy.
+      # Rolling back therefore means reverting on main: re-running an older
+      # Deploy run now ends green without applying anything.
+      - name: Skip if a newer commit is already deployed
+        id: guard
+        env:
+          BUILT_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          IMAGE="$(kubectl get deploy django -n my-garage \
+            -o jsonpath='{.spec.template.spec.containers[?(@.name=="django")].image}' \
+            2>/dev/null || true)"
+          TAG=""
+          case "${IMAGE}" in *:*) TAG="${IMAGE##*:}" ;; esac
+          echo "Deployed django image: ${IMAGE:-<none>}"
+
+          DEPLOYED_SHA=""
+          if echo "${TAG}" | grep -Eq '^[0-9a-f]{7,40}$'; then
+            DEPLOYED_SHA="$(git rev-parse --verify --quiet "${TAG}^{commit}" || true)"
+          fi
+
+          SKIP=false
+          if [ -n "${DEPLOYED_SHA}" ] && [ "${DEPLOYED_SHA}" != "${BUILT_SHA}" ] \
+            && git merge-base --is-ancestor "${BUILT_SHA}" "${DEPLOYED_SHA}"; then
+            SKIP=true
+            echo "::notice::Skipping deploy of ${BUILT_SHA:0:7}: the cluster already runs ${TAG}, which is newer."
+          elif [ -z "${DEPLOYED_SHA}" ]; then
+            echo "Deployed tag '${TAG}' does not resolve to a commit; deploying."
+          fi
+          echo "skip=${SKIP}" >> "$GITHUB_OUTPUT"
+
       - name: Resolve image tag
         id: tag
+        if: steps.guard.outputs.skip != 'true'
         run: |
           # Use the short SHA of the commit that triggered the Build workflow
           echo "sha=$(echo ${{ github.event.workflow_run.head_sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
 
       - name: Pin image tag in kustomization
+        if: steps.guard.outputs.skip != 'true'
         run: |
           set -euo pipefail
           TAG="${{ steps.tag.outputs.sha }}"
@@ -91,12 +141,14 @@ jobs:
           kubectl kustomize k8s | grep -E "^\s+image:|^  name:"
 
       - name: Show what will change
+        if: steps.guard.outputs.skip != 'true'
         # Informational only. `kubectl diff` needs dry-run create rights the
         # runner's Role does not grant, so a failure here must not fail the job.
         continue-on-error: true
         run: kubectl diff -k k8s || true
 
       - name: Apply manifests
+        if: steps.guard.outputs.skip != 'true'
         run: |
           set -euo pipefail
 
@@ -107,6 +159,7 @@ jobs:
           kubectl apply -k k8s --server-side --force-conflicts
 
       - name: Wait for rollouts
+        if: steps.guard.outputs.skip != 'true'
         run: |
           set -euo pipefail
 

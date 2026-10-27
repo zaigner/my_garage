@@ -123,7 +123,8 @@ def log_estate_access(owner, event, token=None, item=None, request=None):
     )
 
 
-def _hash_code(raw_code: str) -> str:
+def hash_executor_code(raw_code: str) -> str:
+    """SHA-256 hex digest of a raw executor code, as stored in token_hash."""
     return hashlib.sha256(raw_code.encode()).hexdigest()
 
 
@@ -135,7 +136,7 @@ def verify_executor_code(raw_code: str, request=None):
     """
     from my_garage.models import EstateAccessToken
 
-    code_hash = _hash_code((raw_code or "").strip())
+    code_hash = hash_executor_code((raw_code or "").strip())
     with transaction.atomic():
         candidate = EstateAccessToken.objects.filter(token_hash=code_hash).first()
         if candidate is None:
@@ -189,7 +190,9 @@ def revoke_executor_access(user, request=None) -> bool:
 def activate_estate_plan(user, request=None) -> str:
     """
     Generate an executor access token and lock a valuation snapshot for all
-    portfolio items. Returns the raw token once — it is never persisted.
+    portfolio items. Returns the raw token once; only its SHA-256 hash is
+    stored (EstateAccessToken.token_hash). The caller must not store it
+    server-side (session, database, cache or logs).
 
     On reactivation, the existing active token is deactivated (not deleted)
     to preserve the audit trail. The new token expires after 72 hours if unused.
@@ -201,7 +204,7 @@ def activate_estate_plan(user, request=None) -> str:
     )
 
     raw_token = secrets.token_urlsafe(32)
-    token_hash = _hash_code(raw_token)
+    token_hash = hash_executor_code(raw_token)
 
     # Build valuation snapshots for all items; saved with the token below
     today = date.today()

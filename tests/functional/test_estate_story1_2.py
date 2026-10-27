@@ -21,6 +21,7 @@ Covers:
 from __future__ import annotations
 
 import pytest
+from bs4 import BeautifulSoup
 from django.contrib.auth import get_user_model
 from django.test import Client
 
@@ -172,7 +173,24 @@ class TestExecutorUpdate:
 # ── POST remove ───────────────────────────────────────────────────────────────
 
 
+def _owning_form_action(soup, button):
+    """The action of the form a browser submits when this button is clicked."""
+    form_id = button.get("form")
+    form = soup.find("form", id=form_id) if form_id else button.find_parent("form")
+    return form.get("action") if form else None
+
+
 class TestExecutorRemove:
+    def test_buttons_belong_to_their_own_forms(self, auth_client, executor):
+        # Parse as a browser does: html5lib drops nested <form> start tags
+        html = auth_client.get(EXECUTOR_URL).content.decode()
+        soup = BeautifulSoup(html, "html5lib")
+        buttons = {b.get_text(strip=True): b for b in soup.find_all("button")}
+        assert _owning_form_action(soup, buttons["Remove"]) == REMOVE_URL
+        remove_form = soup.find("form", id=buttons["Remove"].get("form"))
+        assert remove_form.select_one("input[name=csrfmiddlewaretoken]")
+        assert _owning_form_action(soup, buttons["Update"]) == EXECUTOR_URL
+
     def test_post_deletes_record(self, auth_client, user, executor):
         auth_client.post(REMOVE_URL)
         assert not EstateExecutor.objects.filter(owner=user).exists()

@@ -116,7 +116,7 @@
       <ul class="space-y-2 text-sm">
         {% for v in valuation_history %}
           <li class="flex justify-between bg-luxury-card border border-white/10 rounded-xl px-4 py-3">
-            <span class="text-gray-100">{{ v.date|date:"F j, Y g:i A" }}</span>
+            <span class="text-gray-100">{{ v.date|date:"F j, Y g:i A T" }}</span>
             <span class="text-luxury-white">{% include "my_garage/estate/portal/_money.html" with value=v.value %}</span>
           </li>
         {% endfor %}

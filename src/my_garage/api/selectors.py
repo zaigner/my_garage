@@ -3,7 +3,7 @@ from decimal import Decimal
 from typing import Any, Dict, List, Optional, Tuple
 
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import Exists, OuterRef, Q, Sum
+from django.db.models import Count, Exists, Max, OuterRef, Q, Sum
 from django.utils import timezone
 
 from my_garage.models import (
@@ -245,12 +245,26 @@ def get_estate_dashboard_context(user) -> Dict[str, Any]:
     }
 
 
+ESTATE_SECURITY_EVENTS = (
+    "TOKEN_ISSUED",
+    "TOKEN_REVOKED",
+    "CODE_ACCEPTED",
+    "CODE_REJECTED",
+)
+ESTATE_VIEW_EVENTS = ("PORTAL_VIEW", "ITEM_VIEW")
+
+
 def get_executor_access_status(user) -> Dict[str, Any]:
     """
     Executor access status for the owner's activate page.
 
-    Returns token (active one, else latest, else None), state
-    (none/revoked/expired/unused/in_use) and recent_events (last 10 log rows).
+    Returns:
+      token           active token, else latest, else None
+      state           none/revoked/expired/unused/in_use
+      security_events last 10 TOKEN_*/CODE_* log rows, newest first; page
+                      views are left out so they can't crowd these off
+      view_count      PORTAL_VIEW + ITEM_VIEW rows for the returned token
+      last_view_at    newest of those rows' timestamps, or None
     """
     tokens = EstateAccessToken.objects.filter(owner=user)
     token = (
@@ -268,8 +282,20 @@ def get_executor_access_status(user) -> Dict[str, Any]:
         state = "unused"
     else:
         state = "in_use"
-    recent_events = list(EstateAccessLog.objects.filter(owner=user)[:10])
-    return {"token": token, "state": state, "recent_events": recent_events}
+    logs = EstateAccessLog.objects.filter(owner=user)
+    security_events = list(logs.filter(event__in=ESTATE_SECURITY_EVENTS)[:10])
+    views = {"n": 0, "last": None}
+    if token is not None:
+        views = logs.filter(token=token, event__in=ESTATE_VIEW_EVENTS).aggregate(
+            n=Count("pk"), last=Max("timestamp")
+        )
+    return {
+        "token": token,
+        "state": state,
+        "security_events": security_events,
+        "view_count": views["n"],
+        "last_view_at": views["last"],
+    }
 
 
 def _sum_or_none(values) -> Optional[Decimal]:

@@ -66,15 +66,15 @@
                   class="bg-luxury-gold text-black font-bold uppercase text-xs tracking-widest hover:bg-yellow-600 rounded-sm px-6 py-3 transition-colors">
             Update
           </button>
-          <form method="post" action="{% url 'estate:executor_remove' %}"
-                onsubmit="return confirm('Remove executor? Their access code will also be revoked. This cannot be undone.');">
-            {% csrf_token %}
-            <button type="submit"
-                    class="text-xs text-red-400 hover:text-red-300 uppercase tracking-widest transition-colors">
-              Remove
-            </button>
-          </form>
+          <button type="submit" form="executor-remove-form"
+                  class="text-xs text-red-400 hover:text-red-300 uppercase tracking-widest transition-colors">
+            Remove
+          </button>
         </div>
+      </form>
+      <form id="executor-remove-form" method="post" action="{% url 'estate:executor_remove' %}"
+            onsubmit="return confirm('Remove executor? Their access code will also be revoked. This cannot be undone.');">
+        {% csrf_token %}
       </form>
     </div>
 

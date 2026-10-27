@@ -12,7 +12,11 @@ from django.contrib.auth import get_user_model
 from django.test import RequestFactory
 from django.utils import timezone
 
-from my_garage.api.selectors import get_executor_access_status
+from my_garage.api.selectors import (
+    ESTATE_SECURITY_EVENTS,
+    ESTATE_VIEW_EVENTS,
+    get_executor_access_status,
+)
 from my_garage.api.services import (
     activate_estate_plan,
     client_ip,
@@ -147,7 +151,9 @@ class TestActivateAndRevoke:
 class TestStatusSelector:
     def test_none(self, owner):
         s = get_executor_access_status(owner)
-        assert s["state"] == "none" and s["token"] is None and s["recent_events"] == []
+        assert s["state"] == "none" and s["token"] is None
+        assert s["security_events"] == []
+        assert s["view_count"] == 0 and s["last_view_at"] is None
 
     def test_each_state(self, owner):
         now = timezone.now()
@@ -168,10 +174,51 @@ class TestStatusSelector:
         old = _token(owner, "o", is_active=False)
         new = _token(owner, "n")
         for _ in range(12):
-            log_estate_access(owner, "PORTAL_VIEW", token=new)
+            log_estate_access(owner, "CODE_REJECTED", token=new)
         s = get_executor_access_status(owner)
         assert s["token"].pk == new.pk != old.pk
-        assert isinstance(s["recent_events"], list) and len(s["recent_events"]) == 10
+        events = s["security_events"]
+        assert isinstance(events, list) and len(events) == 10
+
+    def test_views_do_not_crowd_out_security_events(self, owner):
+        t = _token(owner)
+        log_estate_access(owner, "CODE_REJECTED", token=t)
+        for _ in range(12):
+            log_estate_access(owner, "PORTAL_VIEW", token=t)
+        events = get_executor_access_status(owner)["security_events"]
+        assert [e.event for e in events] == ["CODE_REJECTED"]
+
+
+class TestStatusViewSummary:
+    def test_event_groups_cover_every_event_type(self):
+        # A new event type must be sorted into one group or the other
+        security, views = set(ESTATE_SECURITY_EVENTS), set(ESTATE_VIEW_EVENTS)
+        assert not security & views
+        assert security | views == {key for key, _ in EstateAccessLog.EVENT_CHOICES}
+
+    def test_counts_views_for_current_token(self, owner):
+        old = _token(owner, "o", is_active=False)
+        cur = _token(owner, "n")
+        log_estate_access(owner, "PORTAL_VIEW", token=old)
+        log_estate_access(owner, "CODE_ACCEPTED", token=cur)
+        log_estate_access(owner, "PORTAL_VIEW", token=cur)
+        last = log_estate_access(owner, "ITEM_VIEW", token=cur)
+        s = get_executor_access_status(owner)
+        assert s["view_count"] == 2
+        assert s["last_view_at"] == last.timestamp
+
+    def test_no_views(self, owner):
+        t = _token(owner)
+        log_estate_access(owner, "CODE_ACCEPTED", token=t)
+        s = get_executor_access_status(owner)
+        assert s["view_count"] == 0 and s["last_view_at"] is None
+
+    def test_one_aggregate_query(self, owner, django_assert_num_queries):
+        t = _token(owner)
+        log_estate_access(owner, "PORTAL_VIEW", token=t)
+        # active token, security events, view aggregate
+        with django_assert_num_queries(3):
+            get_executor_access_status(owner)
 
 
 class TestStatusOrderingAndAtomicity:
@@ -179,9 +226,9 @@ class TestStatusOrderingAndAtomicity:
         t = _token(owner)
         log_estate_access(owner, "TOKEN_ISSUED", token=t)
         for _ in range(9):
-            log_estate_access(owner, "PORTAL_VIEW", token=t)
+            log_estate_access(owner, "CODE_REJECTED", token=t)
         log_estate_access(owner, "CODE_ACCEPTED", token=t)
-        events = get_executor_access_status(owner)["recent_events"]
+        events = get_executor_access_status(owner)["security_events"]
         assert len(events) == 10
         assert events[0].event == "CODE_ACCEPTED"
         assert all(e.event != "TOKEN_ISSUED" for e in events)
