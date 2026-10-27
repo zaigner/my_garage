@@ -29,7 +29,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 10-25-2026 16:58
-last_updated: 10-27-2026 20:14
+last_updated: 10-27-2026 15:10
 project: my_garage
 project_key: NOKEY
 tracking_system: file-system
@@ -43,11 +43,11 @@ development_status:
   1-5-profile-page-estate-status-card-account-deletion-safeguard: done
   epic-1-retrospective: optional
 
-  epic-2: in-progress
+  epic-2: done
   2-1-estate-plan-activation-executor-token-generation-valuation-s: done
   2-2-executor-code-entry-session-revocation-access-log: done
   2-3-executor-portfolio-view: done
-  2-4-executor-item-detail-view: review
+  2-4-executor-item-detail-view: done
   epic-2-retrospective: optional
 
   epic-3: backlog
