@@ -16,6 +16,7 @@ from my_garage.models import (
     EstateExecutor,
     GenericServiceRecord,
     GenericUpgrade,
+    GenericValuationHistory,
     PortfolioSnapshot,
     ValuationSnapshot,
 )
@@ -276,6 +277,70 @@ def _sum_or_none(values) -> Optional[Decimal]:
     return sum(present, Decimal("0")) if present else None
 
 
+# Keys injected by enrichment/migration scripts: rendered in their own panels
+# or internal flags, so never listed as plain custom fields.
+_ENRICHMENT_KEYS = {"specs", "features", "migrated"}
+
+
+def get_system_field_names(collection_type) -> set:
+    """Form field names (`custom_<name>`) of system-managed schema fields."""
+    schema = collection_type.field_schema or {}
+    return {
+        f"custom_{field['name']}"
+        for field in schema.get("fields", [])
+        if field.get("system") or field.get("type") == "system_json"
+    }
+
+
+def get_item_display_custom_fields(
+    item: DynamicCollectionItem, collection_type=None
+) -> List[Tuple[str, Any]]:
+    """
+    Custom fields formatted for read-only display as (label, value) pairs.
+
+    Skips system-managed schema fields, enrichment keys and empty values.
+    Shared by the owner item page and the executor portal. Pass an
+    already-loaded `collection_type` to avoid an extra query.
+    """
+    system_field_names = get_system_field_names(collection_type or item.collection_type)
+    return [
+        (key.replace("_", " ").title(), value)
+        for key, value in (item.custom_fields or {}).items()
+        if f"custom_{key}" not in system_field_names
+        and key not in _ENRICHMENT_KEYS
+        and value not in (None, "", [], {})
+    ]
+
+
+def get_executor_item(owner, item_id) -> Optional[DynamicCollectionItem]:
+    """The owner's item, or None (the executor portal answers 404)."""
+    return (
+        DynamicCollectionItem.objects.filter(pk=item_id, owner=owner)
+        .select_related("collection_type", "estate_assignment__beneficiary")
+        .first()
+    )
+
+
+def _designation_fields(item: DynamicCollectionItem) -> Dict[str, Any]:
+    """Beneficiary designation of an item, shared by the portal's list and detail."""
+    try:
+        assignment = item.estate_assignment
+    except BeneficiaryAssignment.DoesNotExist:
+        assignment = None
+    is_charitable = bool(assignment and assignment.is_charitable)
+    beneficiary = assignment.beneficiary if assignment else None
+    return {
+        "beneficiary_name": beneficiary.name if beneficiary else "",
+        "charitable_org": assignment.charitable_org if is_charitable else "",
+        "is_charitable": is_charitable,
+        # A deleted beneficiary leaves the assignment with a null FK
+        "is_unassigned": not is_charitable and beneficiary is None,
+        "conditional_note": (assignment.conditional_note or "").strip()
+        if assignment
+        else "",
+    }
+
+
 def get_executor_portfolio_context(owner, token) -> Dict[str, Any]:
     """
     Read-only portfolio for the executor portal, in 2 ORM queries.
@@ -316,23 +381,14 @@ def get_executor_portfolio_context(owner, token) -> Dict[str, Any]:
 
     rows = []
     for item in items:
-        try:
-            assignment = item.estate_assignment
-        except BeneficiaryAssignment.DoesNotExist:
-            assignment = None
-        is_charitable = bool(assignment and assignment.is_charitable)
-        beneficiary = assignment.beneficiary if assignment else None
+        designation = _designation_fields(item)
         rows.append(
             {
                 "item": item,
                 "in_snapshot": item.pk in activation_values,
                 "snapshot_value": activation_values.get(item.pk),
                 "current_value": item.current_market_value,
-                "beneficiary_name": beneficiary.name if beneficiary else "",
-                "charitable_org": assignment.charitable_org if is_charitable else "",
-                "is_charitable": is_charitable,
-                # A deleted beneficiary leaves the assignment with a null FK
-                "is_unassigned": not is_charitable and beneficiary is None,
+                **{k: v for k, v in designation.items() if k != "conditional_note"},
             }
         )
 
@@ -357,6 +413,56 @@ def get_executor_portfolio_context(owner, token) -> Dict[str, Any]:
         "current_count": sum(1 for r in rows if r["current_value"] is not None),
         "delta": delta,
         "compared_count": len(compared),
+    }
+
+
+def get_executor_item_detail_context(owner, token, item_id) -> Optional[Dict[str, Any]]:
+    """
+    Read-only detail of one item for the executor portal, in 4 ORM queries.
+
+    Returns None when the item does not belong to `owner` (callers answer 404).
+
+    Returns:
+        item, row            — row carries the designation fields shared with
+                               the portfolio rows (plus conditional_note)
+        snapshot             — this activation's ValuationSnapshot, or None
+                               when the item was added after activation
+        conditional_note     — str, blank when none
+        custom_fields        — list of (label, value)
+        service_records      — list, newest first
+        valuation_history    — list, newest first
+    """
+    item = get_executor_item(owner, item_id)  # Q1
+    if item is None:
+        return None
+
+    snapshot = ValuationSnapshot.objects.filter(
+        item=item,
+        owner=owner,
+        snapshot_trigger="ESTATE_ACTIVATION",
+        created_at__gte=token.issued_at,
+    ).first()  # Q2
+
+    designation = _designation_fields(item)
+    row = {
+        "item": item,
+        "in_snapshot": snapshot is not None,
+        "snapshot_value": snapshot.market_value if snapshot else None,
+        "current_value": item.current_market_value,
+        **designation,
+    }
+    return {
+        "item": item,
+        "row": row,
+        "snapshot": snapshot,
+        "conditional_note": designation["conditional_note"],
+        "custom_fields": get_item_display_custom_fields(item),
+        "service_records": list(
+            GenericServiceRecord.objects.filter(item=item).order_by("-date", "-pk")
+        ),  # Q3
+        "valuation_history": list(
+            GenericValuationHistory.objects.filter(item=item).order_by("-date", "-pk")
+        ),  # Q4
     }
 
 

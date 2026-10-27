@@ -13,10 +13,13 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_safe
+from django.views.static import serve as static_serve
 
 from my_garage.api.selectors import (
     get_estate_dashboard_context,
     get_executor_access_status,
+    get_executor_item,
+    get_executor_item_detail_context,
     get_executor_portfolio_context,
     get_item_estate_assignment,
 )
@@ -110,6 +113,35 @@ def portal_dashboard(request: HttpRequest) -> HttpResponse:
     # Log only a page the executor actually received; HEAD carries no page
     if request.method == "GET":
         log_estate_access(owner, "PORTAL_VIEW", token=token, request=request)
+    return response
+
+
+@require_safe
+@executor_required
+def portal_item_detail(request: HttpRequest, item_id: int) -> HttpResponse:
+    """Read-only detail of one item in the executor's estate."""
+    owner = request.estate_owner
+    token = request.estate_token
+    context = get_executor_item_detail_context(owner, token, item_id)
+    if context is None:
+        raise Http404
+    response = render(request, "my_garage/estate/portal/item_detail.html", context)
+    if request.method == "GET":
+        log_estate_access(
+            owner, "ITEM_VIEW", token=token, item=context["item"], request=request
+        )
+    return response
+
+
+@require_safe
+@executor_required
+def portal_item_photo(request: HttpRequest, item_id: int) -> HttpResponse:
+    """Serve an owned item's photo to the executor (serve_media is owner-only)."""
+    item = get_executor_item(request.estate_owner, item_id)
+    if item is None or not item.photo:
+        raise Http404
+    response = static_serve(request, item.photo.name, document_root=settings.MEDIA_ROOT)
+    response["Cache-Control"] = "private, no-store"
     return response
 
 

@@ -30,6 +30,16 @@ urlpatterns = [
     path("activate/revoke/", estate_views.estate_revoke_access, name="revoke_access"),
     path("portal/", estate_views.portal_code_entry, name="portal_code_entry"),
     path("portal/dashboard/", estate_views.portal_dashboard, name="portal_dashboard"),
+    path(
+        "portal/items/<int:item_id>/",
+        estate_views.portal_item_detail,
+        name="executor_item_detail",
+    ),
+    path(
+        "portal/items/<int:item_id>/photo/",
+        estate_views.portal_item_photo,
+        name="executor_item_photo",
+    ),
     path("assign/", estate_views.assign_overview, name="assign_overview"),
     path(
         "assign/<slug:collection_slug>/items/<int:item_id>/",

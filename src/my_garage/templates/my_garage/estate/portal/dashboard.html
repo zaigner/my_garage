@@ -78,7 +78,7 @@
           <tbody class="divide-y divide-white/5">
             {% for row in rows %}
               <tr>
-                <th scope="row" class="px-4 py-3 text-left font-normal text-luxury-white">{{ row.item.name }}</th>
+                <th scope="row" class="px-4 py-3 text-left font-normal text-luxury-white"><a href="{% url 'estate:executor_item_detail' row.item.pk %}" class="text-luxury-gold underline underline-offset-2 hover:text-luxury-white focus:outline focus:outline-2 focus:outline-luxury-gold">{{ row.item.name }}</a></th>
                 <td class="px-4 py-3 text-gray-300">{{ row.item.collection_type.name }}</td>
                 <td class="px-4 py-3 text-right text-gray-100">{% include "my_garage/estate/portal/_snapshot_value.html" %}</td>
                 <td class="px-4 py-3 text-right text-gray-100">{% include "my_garage/estate/portal/_money.html" with value=row.current_value %}</td>
@@ -94,7 +94,7 @@
         {% for row in rows %}
           <li class="bg-luxury-card border border-white/10 rounded-xl p-4 space-y-3">
             <div>
-              <p class="text-luxury-white">{{ row.item.name }}</p>
+              <p><a href="{% url 'estate:executor_item_detail' row.item.pk %}" class="text-luxury-gold underline underline-offset-2 hover:text-luxury-white focus:outline focus:outline-2 focus:outline-luxury-gold">{{ row.item.name }}</a></p>
               <p class="text-xs text-gray-300">{{ row.item.collection_type.name }}</p>
             </div>
             <dl class="grid grid-cols-2 gap-2 text-sm">
