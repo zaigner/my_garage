@@ -29,7 +29,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 10-25-2026 16:58
-last_updated: 10-27-2026 16:11
+last_updated: 10-27-2026 16:24
 project: my_garage
 project_key: NOKEY
 tracking_system: file-system
@@ -51,16 +51,18 @@ development_status:
   epic-2-retrospective: done
 
   epic-3: backlog
-  3-1-beneficiary-scoped-link-generation: backlog
-  3-2-beneficiary-scoped-access-portal: backlog
-  3-3-beneficiary-item-detail-view: backlog
-  3-4-beneficiary-personal-export: backlog
+  3-1-activation-snapshot-integrity: backlog
+  3-2-estate-scope-executor-replacement: backlog
+  3-3-beneficiary-link-generation-executor: backlog
+  3-4-beneficiary-portal-session: backlog
+  3-5-beneficiary-item-detail-view: backlog
   epic-3-retrospective: optional
 
   epic-4: backlog
   4-1-pdf-rendering-service: backlog
   4-2-full-estate-inventory-pdf-owner-executor: backlog
   4-3-audit-log-pdf-export: backlog
+  4-4-beneficiary-personal-export: backlog
   epic-4-retrospective: optional
 action_items:
   - id: "epic-2-retro-item-1-in-bmad-correct-course-decide-snapshot-t"
@@ -70,7 +72,7 @@ action_items:
       replacement (R6), soft-deleted collections in the estate (R7), cost-basis labels
       (R8)"
     owner: "Zaigner77"
-    status: open
+    status: done
     ref: "_bmad-output/implementation-artifacts/epic-2-retro-2026-10-27.md"
   - id: "epic-2-retro-item-2-in-bmad-correct-course-reconcile-the-epi"
     epic: 2
@@ -78,7 +80,7 @@ action_items:
       with the as-built code (OneToOne vs FK, 43-char code, selector signatures and
       query counts, standalone templates, conflicting NFR lists)"
     owner: "Zaigner77"
-    status: open
+    status: done
     ref: "_bmad-output/implementation-artifacts/epic-2-retro-2026-10-27.md"
   - id: "epic-2-retro-item-3-add-a-cloudflare-access-bypass-for-estat"
     epic: 2
