@@ -1,0 +1,130 @@
+{% extends "my_garage/estate/portal/_base.html" %}
+{% load my_garage_extras %}
+
+{% block title %}{{ item.name }} &middot; Estate Portal{% endblock %}
+{% block main_width %}max-w-3xl{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+
+  <nav aria-label="Back">
+    <a href="{% url 'estate:portal_dashboard' %}" class="text-luxury-gold underline underline-offset-2 text-sm hover:text-luxury-white focus:outline focus:outline-2 focus:outline-luxury-gold">&larr; Back to portfolio</a>
+  </nav>
+
+  <!-- Identity -->
+  <header class="space-y-4">
+    <div>
+      <p class="text-luxury-gold text-xs uppercase tracking-widest mb-1">{{ item.collection_type.name }}</p>
+      <h1 class="text-3xl font-serif text-luxury-white">{{ item.name }}</h1>
+    </div>
+    {% if item.photo %}
+      <img src="{% url 'estate:executor_item_photo' item.pk %}" alt="{{ item.name }}" class="w-full max-h-96 object-cover rounded-xl border border-white/10">
+    {% else %}
+      <div class="w-full h-48 flex items-center justify-center rounded-xl border border-white/10 bg-luxury-card text-gray-300 text-sm" data-testid="photo-placeholder">No photo</div>
+    {% endif %}
+  </header>
+
+  <!-- Activation snapshot -->
+  <section aria-labelledby="snapshot-heading" class="space-y-3">
+    <h2 id="snapshot-heading" class="text-xs uppercase tracking-widest text-gray-300">Value at activation</h2>
+    {% if snapshot %}
+      <dl class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-luxury-card border border-white/10 rounded-xl p-4">
+          <dt class="text-xs uppercase tracking-widest text-gray-300">Snapshot date</dt>
+          <dd class="text-luxury-white mt-1">{{ snapshot.snapshot_date|date:"F j, Y" }}</dd>
+        </div>
+        <div class="bg-luxury-card border border-white/10 rounded-xl p-4">
+          <dt class="text-xs uppercase tracking-widest text-gray-300">Market value</dt>
+          <dd class="text-luxury-white mt-1">{% include "my_garage/estate/portal/_money.html" with value=snapshot.market_value %}</dd>
+        </div>
+        <div class="bg-luxury-card border border-white/10 rounded-xl p-4">
+          <dt class="text-xs uppercase tracking-widest text-gray-300">Cost basis</dt>
+          <dd class="text-luxury-white mt-1">{% include "my_garage/estate/portal/_money.html" with value=snapshot.cost_basis %}</dd>
+        </div>
+        <div class="bg-luxury-card border border-white/10 rounded-xl p-4">
+          <dt class="text-xs uppercase tracking-widest text-gray-300">Equity</dt>
+          <dd class="text-luxury-white mt-1">{% if snapshot.equity is None %}—{% elif snapshot.equity == 0 %}$0{% else %}{{ snapshot.equity|nfp_display }}{% endif %}</dd>
+        </div>
+      </dl>
+    {% else %}
+      <p class="text-gray-300 text-sm">Added after activation</p>
+    {% endif %}
+    <p class="text-sm text-gray-300">Current value: <span class="text-luxury-white">{% include "my_garage/estate/portal/_money.html" with value=item.current_market_value %}</span></p>
+  </section>
+
+  <!-- Beneficiary -->
+  <section aria-labelledby="beneficiary-heading" class="space-y-3">
+    <h2 id="beneficiary-heading" class="text-xs uppercase tracking-widest text-gray-300">Beneficiary</h2>
+    <p>{% include "my_garage/estate/portal/_designation.html" %}</p>
+    {% if conditional_note %}
+      <div class="border border-luxury-gold/60 bg-luxury-card rounded-md px-4 py-3">
+        <p class="text-xs uppercase tracking-widest text-luxury-gold mb-1">Owner's wishes for this item</p>
+        <p class="text-luxury-white whitespace-pre-line">{{ conditional_note }}</p>
+      </div>
+    {% endif %}
+  </section>
+
+  <!-- Provenance -->
+  <section aria-labelledby="details-heading" class="space-y-3">
+    <h2 id="details-heading" class="text-xs uppercase tracking-widest text-gray-300">Details</h2>
+    <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+      <div>
+        <dt class="text-xs text-gray-300">Purchase price</dt>
+        <dd class="text-luxury-white">{% include "my_garage/estate/portal/_money.html" with value=item.purchase_price %}</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-gray-300">Purchase date</dt>
+        <dd class="text-luxury-white">{% if item.purchase_date %}{{ item.purchase_date|date:"F j, Y" }}{% else %}&mdash;{% endif %}</dd>
+      </div>
+      {% for label, value in custom_fields %}
+        <div>
+          <dt class="text-xs text-gray-300">{{ label }}</dt>
+          <dd class="text-luxury-white">{{ value }}</dd>
+        </div>
+      {% endfor %}
+    </dl>
+    {% if item.notes %}
+      <div>
+        <h3 class="text-xs text-gray-300 mb-1">Item notes</h3>
+        <p class="text-luxury-white text-sm whitespace-pre-line">{{ item.notes }}</p>
+      </div>
+    {% endif %}
+  </section>
+
+  <!-- Service records -->
+  <section aria-labelledby="service-heading" class="space-y-3">
+    <h2 id="service-heading" class="text-xs uppercase tracking-widest text-gray-300">Service records</h2>
+    {% if service_records %}
+      <ul class="space-y-3">
+        {% for rec in service_records %}
+          <li class="bg-luxury-card border border-white/10 rounded-xl p-4 text-sm space-y-1">
+            <p class="text-luxury-white">{{ rec.date|date:"F j, Y" }} &middot; {{ rec.vendor }}</p>
+            <p class="text-xs text-gray-300">{{ rec.get_category_display }} &middot; {% include "my_garage/estate/portal/_money.html" with value=rec.total_cost %}</p>
+            <p class="text-gray-100 whitespace-pre-line">{{ rec.description }}</p>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="text-gray-300 text-sm">No service records</p>
+    {% endif %}
+  </section>
+
+  <!-- Valuation history -->
+  <section aria-labelledby="history-heading" class="space-y-3">
+    <h2 id="history-heading" class="text-xs uppercase tracking-widest text-gray-300">Valuation history</h2>
+    {% if valuation_history %}
+      <ul class="space-y-2 text-sm">
+        {% for v in valuation_history %}
+          <li class="flex justify-between bg-luxury-card border border-white/10 rounded-xl px-4 py-3">
+            <span class="text-gray-100">{{ v.date|date:"F j, Y g:i A" }}</span>
+            <span class="text-luxury-white">{% include "my_garage/estate/portal/_money.html" with value=v.value %}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="text-gray-300 text-sm">No valuation history</p>
+    {% endif %}
+  </section>
+
+</div>
+{% endblock %}

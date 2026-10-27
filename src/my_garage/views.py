@@ -18,10 +18,12 @@ from my_garage.models import (
 )
 
 from .api.selectors import (
+    get_item_display_custom_fields,
     get_item_estate_assignment,
     get_item_nfp_breakdown,
     get_portfolio_nfp_by_collection,
     get_portfolio_nfp_summary,
+    get_system_field_names,
     global_search,
     media_file_owner_id,
     portfolio_get_yoy_change,
@@ -466,24 +468,10 @@ def collection_item_detail(
     # Build set of form field names that are system-managed and must not be rendered
     # as editable inputs. Catches both "system": true flag and "system_json" type,
     # regardless of how the DB schema was seeded.
-    system_field_names = {
-        f"custom_{field['name']}"
-        for field in collection_type.field_schema.get("fields", [])
-        if field.get("system") or field.get("type") == "system_json"
-    }
+    system_field_names = get_system_field_names(collection_type)
 
-    # Keys injected by enrichment/migration scripts — rendered in their own
-    # panels (Technical Specs, Factory Features) or are internal flags.
-    _ENRICHMENT_KEYS = {"specs", "features", "migrated"}
-
-    # Non-system custom fields formatted for view-mode display
-    display_custom_fields = [
-        (key.replace("_", " ").title(), value)
-        for key, value in (item.custom_fields or {}).items()
-        if f"custom_{key}" not in system_field_names
-        and key not in _ENRICHMENT_KEYS
-        and value not in (None, "", [], {})
-    ]
+    # Non-system custom fields formatted for view-mode display (shared selector)
+    display_custom_fields = get_item_display_custom_fields(item, collection_type)
 
     nfp_breakdown = get_item_nfp_breakdown(item)
 
