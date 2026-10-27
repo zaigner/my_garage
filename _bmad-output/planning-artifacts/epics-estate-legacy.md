@@ -146,7 +146,7 @@ NFR20: PDF export records (timestamp, asset count) are retained for the lifetime
 | FR27 | Epic 2 | Executor — enforced read-only |
 | FR28 | Epic 3 | Beneficiary — scoped item access only |
 | FR29 | Epic 3 | Beneficiary — full item detail with owner note |
-| FR30 | Epic 3 | Beneficiary — personal inventory export |
+| FR30 | Epic 4 | Beneficiary — personal inventory export (Story 4.4) |
 | FR31 | Epic 4 | Full estate inventory PDF (executor) |
 | FR32 | Epic 4 | PDF legal disclaimer + metadata |
 | FR33 | Epic 4 | PDF export audit record |
@@ -185,10 +185,10 @@ The owner can activate estate access and generate a cryptographic code for their
 
 ### Epic 3: Beneficiary Scoped Access
 
-The executor can generate a scoped access link for any designated beneficiary. The beneficiary opens that link (no account required), sees only their designated items with full detail including the owner's personal note, and can export their personal inventory — with complete ORM-level data isolation.
+After activation, the executor issues a unique link for each beneficiary from the portal. The beneficiary uses the link once to start a 30-day session, and sees only their designated items with full detail including the owner's personal note, with complete ORM-level data isolation. Epic 3 first hardens the activation snapshot and estate scope that beneficiaries and the Epic 4 PDFs depend on.
 
-**FRs covered:** FR19, FR20, FR21, FR28, FR29, FR30
-**NFRs covered:** NFR3, NFR8, NFR9, NFR10, NFR12, NFR14
+**FRs covered:** FR19, FR20, FR21, FR28, FR29
+**NFRs covered:** NFR3, NFR8, NFR9, NFR10, NFR12, NFR14, NFR17
 **Dependency:** Epic 2
 
 ---
@@ -197,9 +197,9 @@ The executor can generate a scoped access link for any designated beneficiary. T
 
 The executor can generate a court-ready estate inventory PDF in one click: all assets with valuation-snapshot values, cost basis, beneficiary assignments, and a legal disclaimer. The beneficiary can export their personal item inventory. Every export is timestamped for audit.
 
-**FRs covered:** FR31, FR32, FR33, FR34
+**FRs covered:** FR30, FR31, FR32, FR33, FR34
 **NFRs covered:** NFR4, NFR16, NFR20
-**Dependency:** Epic 2
+**Dependency:** Epic 2, Epic 3 (snapshot integrity and the beneficiary session)
 
 ---
 
@@ -428,12 +428,16 @@ So that account management is in one place and my beneficiary data is fully prot
 
 ## Epic 2: Estate Access — Executor Token, Portal & Valuation Snapshot
 
-The owner activates their estate plan to generate a one-time executor access code and lock a valuation snapshot. The executor uses that code to enter a read-only portal (no Django account needed) where they can browse the full portfolio and item detail pages. The owner can see when the code is used and revoke it at any time.
+The owner activates their estate plan to generate an executor access code (it expires after 72 hours if never used; once used it stays valid until the owner revokes it) and lock a valuation snapshot. The executor uses that code to enter a read-only portal (no Django account needed) where they can browse the full portfolio and item detail pages. The owner can see when the code is used and revoke it at any time.
 
 **FRs covered:** FR4, FR15, FR16, FR17, FR18, FR22, FR23, FR24, FR25, FR26, FR27, FR36, FR37, FR38, FR39
-**NFRs covered:** NFR2, NFR3, NFR5, NFR6, NFR7, NFR11, NFR12, NFR13, NFR14, NFR17
+**NFRs covered:** NFR2, NFR5, NFR6, NFR7, NFR9, NFR10, NFR11, NFR13, NFR14, NFR17
 
 **Readiness fixes (2026-10-25):** Story 2.2 now also owns revocation (FR17), the `EstateAccessLog` model (FR18 / NFR11), and code and session expiry (NFR7). Stories 2.3 and 2.4 log portal views. The executor "Download PDF" button moved from Story 2.3 to Story 4.2. Story 2.1 shipped without setting `expires_at`; Story 2.2 sets it and backfills it for existing tokens.
+
+**Release gate (decided 2026-10-27):** before the first real executor code or beneficiary link is handed out, the owner adds a Cloudflare Access bypass for `/estate/portal/*` and `/estate/beneficiary/*`. Without it, recipients who have no Access login can only reach the portal on the LAN.
+
+**As built (reconciled 2026-10-27, sprint change proposal):** the technical notes below describe what shipped. Snapshot integrity, estate scope and executor replacement follow-ups from the Epic 2 retrospective are Stories 3.1 and 3.2.
 
 ---
 
@@ -452,7 +456,7 @@ So that my executor will have a stable record of asset values at the moment I ga
 
 **Given** owner clicks "Activate Estate Access" and submits the confirmation form
 **When** the activation is processed
-**Then** a cryptographically secure 32-character alphanumeric code is generated using Python `secrets.token_urlsafe()`
+**Then** a cryptographically secure code is generated with `secrets.token_urlsafe(32)` (43 URL-safe characters)
 **And** an `EstateAccessToken` record is created: `owner`, `token_hash` (SHA-256 of raw token, never stored raw), `issued_at`, `is_active=True`, `activated_by_owner=True`
 **And** a `ValuationSnapshot` record is created per item: `item FK`, `owner FK`, `snapshot_date=today`, `market_value` (from `item.current_market_value`), `cost_basis` (from `item.purchase_price`), `equity` (computed), `snapshot_trigger=ESTATE_ACTIVATION` — records are append-only, no update or delete ever issued
 **And** the raw token is shown once in the response and never again
@@ -471,10 +475,10 @@ So that my executor will have a stable record of asset values at the moment I ga
 **Then** `pixi run pytest tests/unit/ tests/functional/ -x -q` passes
 
 **Technical notes:**
-- New model `EstateAccessToken` in `models.py`: `owner OneToOneField(User CASCADE)`, `token_hash CharField(64)`, `issued_at auto_now_add`, `expires_at DateTimeField(null=True)`, `is_active BooleanField default=True`, `last_used_at DateTimeField(null=True)`, `use_count IntegerField(default=0)`
+- New model `EstateAccessToken` in `models.py`: `owner ForeignKey(User CASCADE)` (deactivated tokens are kept for the audit trail, so an owner has several tokens and at most one is active), `token_hash CharField(64)`, `issued_at auto_now_add`, `expires_at DateTimeField(null=True)`, `is_active BooleanField default=True`, `last_used_at DateTimeField(null=True)`, `use_count IntegerField(default=0)`
 - New model `ValuationSnapshot` in `models.py`: `item FK(DynamicCollectionItem CASCADE)`, `owner FK(User CASCADE)`, `snapshot_date DateField`, `market_value DecimalField(null=True)`, `cost_basis DecimalField(null=True)`, `equity DecimalField(null=True)`, `snapshot_trigger CharField(choices: ESTATE_ACTIVATION/MANUAL)`, `created_at auto_now_add` — no `update()` or `delete()` ever called on this model
 - Service `activate_estate_plan(user)` in `api/services.py`: generates token, hashes with `hashlib.sha256`, bulk-creates snapshot records in one query
-- Raw token returned from service function, stored nowhere — displayed once in view
+- The raw token is returned once from the service and stored only as its SHA-256 hash. It reaches the success page in a signed, HttpOnly, browser-session cookie scoped to that page, which reads it for at most 10 minutes. The page is `never_cache` and shows the code only while it matches the active token (Epic 2 retro fixes, PR #30).
 - `EstateActivateForm` — single checkbox: "I understand this code must be kept secure and cannot be recovered"
 
 ---
@@ -607,8 +611,8 @@ So that I can understand the full scope of assets I need to administer.
 **Then** `pixi run pytest tests/unit/ tests/functional/ -x -q` passes
 
 **Technical notes:**
-- Selector `get_executor_portfolio_context(owner_user)` in `api/selectors.py`: fetches all items + latest `ValuationSnapshot` per item + `BeneficiaryAssignment` in 3 ORM queries (no N+1)
-- Template: `estate/portal/dashboard.html` — standalone (no `{% extends %}`), minimal nav, luxury aesthetic
+- Selector `get_executor_portfolio_context(owner, token)` in `api/selectors.py`, 2 ORM queries. It reads the activation snapshots for the session's token (from Story 3.1, by `token`; previously `created_at >= token.issued_at`).
+- Template: `estate/portal/dashboard.html` extends `estate/portal/_base.html`
 - Session read wrapped in try/except; redirect to `/estate/portal/` on `User.DoesNotExist`
 - No "Download PDF" button here; Story 4.2 adds it together with the export it links to
 
@@ -643,63 +647,134 @@ So that I can verify provenance, condition, and estate assignment before acting 
 
 **Technical notes:**
 - URL: `path("portal/items/<int:item_id>/", ..., name="executor_item_detail")` in `estate_urls.py`
-- View: `DynamicCollectionItem.objects.get(pk=item_id, owner=session_owner)` — raises `Http404` on owner mismatch
-- Selector `get_executor_item_detail_context(item, owner)` in `api/selectors.py`
-- Template: `estate/portal/item_detail.html` — standalone
+- `get_executor_item(owner, item_id)` returns the item or `None`; the view raises `Http404`
+- Selector `get_executor_item_detail_context(owner, token, item_id)` in `api/selectors.py`, 4 queries; also returns service records and valuation history (FR23)
+- Photos are served by `/estate/portal/items/<id>/photo/` (`Cache-Control: private, no-store`)
+- Template: `estate/portal/item_detail.html` extends `_base.html`
 
 ---
 
 ## Epic 3: Beneficiary Scoped Access
 
-The owner generates a unique, revocable link per beneficiary. Each beneficiary follows their link to a scoped portal showing only their designated items — enforced at the ORM query level. Beneficiaries can view item detail and download a personal PDF summary.
+After activation, the executor issues a unique, revocable link for each beneficiary from the portal. The beneficiary uses the link once to start a 30-day session, then sees only their designated items, enforced at the ORM query level. Epic 3 first hardens the activation snapshot and the estate's scope, which beneficiaries and the Epic 4 PDFs depend on (Stories 3.1–3.2, from the Epic 2 retrospective).
 
-**FRs covered:** FR19, FR20, FR21, FR28, FR29, FR30, FR42 (partial — beneficiary data isolation)
-**NFRs covered:** NFR8, NFR9, NFR10, NFR15, NFR18, NFR19
+**FRs covered:** FR19, FR20, FR21, FR28, FR29 (FR38 and FR39 strengthened by Story 3.1)
+**NFRs covered:** NFR3, NFR8, NFR9, NFR10, NFR12, NFR14, NFR17 (NFR19 applies to Story 3.1's migration)
+**Dependency:** Epic 2
+
+**Restructured 2026-10-27 (sprint change proposal):** the executor issues beneficiary links (FR19, Journey 3), links are single-use and exchanged for a session (NFR8), and the beneficiary PDF moved to Story 4.4.
 
 ---
 
-### Story 3.1: Beneficiary Scoped Link Generation
+### Story 3.1: Activation Snapshot Integrity
 
 As an estate planner,
-I want to generate a unique, scoped access link for each beneficiary,
-So that each recipient can view only the items assigned to them and nothing else.
+I want each activation's valuation snapshot tied to the code it was taken for and kept even if I later delete an item,
+So that my executor and the estate PDF always show the values that were locked at activation (FR38, FR39, NFR17).
 
 **Acceptance Criteria:**
 
-**Given** owner visits `/estate/beneficiaries/`
-**When** they click "Generate Access Link" for a beneficiary
-**Then** a `BeneficiaryAccessLink` record is created with hashed token, `issued_at`, `is_active=True`
-**And** the full shareable URL is displayed once: `https://<host>/estate/beneficiary/<raw_token>/`
-**And** a warning is shown: "This link cannot be recovered. Save it now before closing."
+**Given** owner activates estate access
+**When** snapshots are created
+**Then** each `ValuationSnapshot` has `token` set to the new `EstateAccessToken` and `item_name` copied from the item
 
-**Given** owner generates a second link for the same beneficiary
-**When** the new link is created
-**Then** the previous `BeneficiaryAccessLink` is deactivated (`is_active=False`)
-**And** only one active link exists per beneficiary at any time
+**Given** an item is deleted after activation
+**When** the executor opens the portfolio dashboard
+**Then** its activation value is still counted in "value at activation"
+**And** it is listed as "Removed after activation" under its stored name, with no detail link
 
-**Given** owner visits the beneficiary list
-**When** the page renders
-**Then** each beneficiary row shows link status: "Active link" or "No link generated"
-**And** "Revoke" action is available for active links
+**Given** the portfolio and item-detail selectors
+**When** they read "value at activation"
+**Then** both filter `snapshot_trigger="ESTATE_ACTIVATION", token=<session token>` — no timestamp matching — so the two pages always agree
 
-**Given** owner clicks "Revoke" for an active link
-**When** the action is confirmed
-**Then** `is_active` is set to `False` and the token is immediately invalid
+**Given** existing snapshots
+**When** the migration runs
+**Then** `token` is backfilled to the token issued at the same activation (`created_at >= issued_at`, before the next token's `issued_at`) and `item_name` from the item
+**And** a reverse migration is provided (NFR19)
 
 **Given** new code is submitted
 **When** the quality gate runs
 **Then** `pixi run pytest tests/unit/ tests/functional/ -x -q` passes
 
 **Technical notes:**
-- New model `BeneficiaryAccessLink` in `models.py`: `beneficiary OneToOneField(Beneficiary CASCADE)`, `owner FK(User CASCADE)`, `link_token_hash CharField(64)`, `issued_at auto_now_add`, `expires_at DateTimeField(null=True)`, `is_active BooleanField default=True`, `last_accessed_at DateTimeField(null=True)`, `access_count IntegerField(default=0)`
-- `OneToOneField` on `beneficiary` enforces one-link-per-beneficiary at ORM level
-- Raw token: `secrets.token_urlsafe(32)`, hashed with `hashlib.sha256`, returned from service, displayed once, stored nowhere
-- Service `generate_beneficiary_link(beneficiary, owner)` in `api/services.py`
-- Revoke: `link.is_active = False; link.save(update_fields=["is_active"])` — no delete
+- `ValuationSnapshot`: add `token FK(EstateAccessToken, SET_NULL, null=True)` and `item_name CharField(200)`; change `item` to `FK(DynamicCollectionItem, SET_NULL, null=True)`
+- Still no `update()` or `delete()` on snapshots; `SET_NULL` on item deletion is the only change Django makes to a row
+- `activate_estate_plan` sets both fields in the same `bulk_create`
 
 ---
 
-### Story 3.2: Beneficiary Scoped Access Portal
+### Story 3.2: Estate Scope & Executor Replacement
+
+As an estate planner,
+I want the estate to contain only the collections I still keep, and replacing my executor to cut off the previous one,
+So that what my executor sees matches my intentions.
+
+**Acceptance Criteria:**
+
+**Given** a soft-deleted collection (`CollectionType.is_active=False`)
+**When** the owner activates, opens the estate dashboard, or the executor opens the portal or one of its items
+**Then** its items are excluded — no snapshot, not listed, item detail 404 — in `activate_estate_plan`, `get_estate_dashboard_context`, `get_executor_portfolio_context` and `get_executor_item` (beneficiary views and PDFs inherit this)
+
+**Given** an active executor code
+**When** the owner saves the executor form with a different **name**
+**Then** the page first confirms "this revokes the current access code"
+**And** on save the code is revoked and `TOKEN_REVOKED` is logged
+**And** a contact-only edit keeps the code
+
+**Given** the executor portal
+**When** snapshot figures render
+**Then** they are labelled "Purchase price" and "Value minus purchase price" (not "Cost basis" / "Equity"); the data is unchanged
+
+**Given** new code is submitted
+**When** the quality gate runs
+**Then** `pixi run pytest tests/unit/ tests/functional/ -x -q` passes
+
+**Technical notes:**
+- The snapshot keeps the raw purchase price (Story 2.1: a missing price stays null); only the labels change
+- Name-change detection compares the submitted name with the stored `EstateExecutor.name`; revocation uses `revoke_executor_access(user, request=request)`
+
+---
+
+### Story 3.3: Beneficiary Link Generation (Executor)
+
+As an executor,
+I want to issue a unique access link for each designated beneficiary from the portal,
+So that each recipient can view only the items assigned to them and nothing else (FR19).
+
+**Acceptance Criteria:**
+
+**Given** executor is on `/estate/portal/dashboard/`
+**When** the page renders
+**Then** every beneficiary with at least one designated item is listed with link status: "No link", "Issued — not yet opened (expires <date>)", "Opened <date>" or "Revoked"
+
+**Given** executor clicks "Issue link" for a beneficiary
+**When** the POST to `/estate/portal/beneficiaries/<id>/link/` is processed
+**Then** a `BeneficiaryAccessLink` is created (hashed token, `issued_at`, `expires_at = issued_at + 7 days`, `is_active=True`) and any previous active link for that beneficiary is deactivated
+**And** the URL `https://<PUBLIC_BASE_URL>/estate/beneficiary/claim/<raw_token>/` is shown once, using the same one-shot signed-cookie pattern as the activation code
+**And** a warning is shown: "This link cannot be recovered. Save it now before closing."
+
+**Given** executor clicks "Revoke" for an active link
+**When** the action is confirmed
+**Then** `is_active` is set to `False` and the link stops working on the beneficiary's next request
+
+**Given** the owner's activity panel
+**When** link events occur
+**Then** `LINK_ISSUED`, `LINK_REVOKED` and `LINK_CLAIMED` are listed as security events (the existing test keeps `ESTATE_SECURITY_EVENTS` / `ESTATE_VIEW_EVENTS` complete)
+
+**Given** new code is submitted
+**When** the quality gate runs
+**Then** `pixi run pytest tests/unit/ tests/functional/ -x -q` passes
+
+**Technical notes:**
+- The issue and revoke views are the portal's first state-changing views, an explicit exception to its safe-methods rule: POST only, CSRF-protected, behind `executor_required`. FR27 still holds — no estate or asset data changes.
+- New model `BeneficiaryAccessLink` in `models.py`: `beneficiary FK(Beneficiary CASCADE)` (FK, not OneToOne, so deactivated links stay for audit — the `EstateAccessToken` lesson), `owner FK(User CASCADE)`, `issued_by_token FK(EstateAccessToken SET_NULL null=True)`, `link_token_hash CharField(64, db_index=True)`, `issued_at auto_now_add`, `expires_at DateTimeField`, `claimed_at DateTimeField(null=True)`, `is_active BooleanField default=True`
+- At most one active link per beneficiary, enforced in the service `issue_beneficiary_link(beneficiary, token, request)`
+- A link is only usable while its issuing executor token is usable
+- Raw token: `secrets.token_urlsafe(32)`, stored only as its SHA-256 hash
+
+---
+
+### Story 3.4: Beneficiary Portal (Session)
 
 As a named beneficiary,
 I want to follow my unique link to view the items designated for me,
@@ -707,34 +782,43 @@ So that I can see what I will inherit without accessing anyone else's informatio
 
 **Acceptance Criteria:**
 
-**Given** beneficiary accesses `/estate/beneficiary/<token>/`
-**When** the token is valid and active
-**Then** the token is hashed and compared to `link_token_hash` using `secrets.compare_digest`
-**And** `last_accessed_at` and `access_count` are updated
-**And** the beneficiary's name, relationship, and a greeting are displayed
-**And** only items with a `BeneficiaryAssignment` pointing to this beneficiary are shown — enforced at ORM query level
+**Given** beneficiary opens `/estate/beneficiary/claim/<token>/`
+**When** the link is active, unclaimed, unexpired and its issuing executor token is usable
+**Then** the token is hashed and compared with `secrets.compare_digest`
+**And** `claimed_at` is set, session keys `estate_beneficiary_link_id` / `estate_beneficiary_owner_id` are written, `LINK_CLAIMED` is logged, and they are redirected to `/estate/beneficiary/`
 
-**Given** the token is invalid, revoked, or expired
+**Given** the same link is opened again, or is invalid, revoked or expired
 **When** the request arrives
-**Then** a 404 is returned (no information about whether the token ever existed)
+**Then** a 404 is returned (NFR8 — single-use; no information about whether the token ever existed); the beneficiary asks the executor to reissue
+
+**Given** a beneficiary session
+**When** they open `/estate/beneficiary/`
+**Then** the beneficiary's name, relationship and a greeting are shown
+**And** only items whose `BeneficiaryAssignment.beneficiary` is the session's beneficiary are listed — enforced at ORM query level
+**And** a `BENEFICIARY_VIEW` entry is written to `EstateAccessLog`
 
 **Given** beneficiary has zero items assigned
 **When** the portal renders
 **Then** an empty state is shown: "No items have been designated for you yet."
+
+**Given** the link is revoked, or the executor's token stops being usable, during a session
+**When** the beneficiary requests any page
+**Then** the `estate_beneficiary_*` keys are cleared and a 404 is returned
 
 **Given** new code is submitted
 **When** the quality gate runs
 **Then** `pixi run pytest tests/unit/ tests/functional/ -x -q` passes
 
 **Technical notes:**
-- View at `/estate/beneficiary/<str:token>/` — no `@login_required`, no `executor_required`
-- ORM isolation: `BeneficiaryAssignment.objects.filter(beneficiary=link.beneficiary).select_related("item")` — isolation enforced at query level, not UI layer
-- Template: `estate/beneficiary/portal.html` — standalone, no owner account chrome
-- `expires_at` check: if not null and `expires_at < now()`, treat as invalid (same 404)
+- `claim_beneficiary_link(raw_token, request)` in `api/services.py`; `beneficiary_required` decorator in `estate_views.py` re-checks the link on every request, applies `never_cache`, and sets a 30-day sliding expiry (NFR8)
+- Session namespace (NFR9): only the `estate_beneficiary_*` keys are written; executor and Django auth keys are never touched
+- Views use `require_safe` and log after render, GET only (Epic 2 patterns)
+- ORM isolation: `BeneficiaryAssignment.objects.filter(beneficiary=link.beneficiary, item__collection_type__is_active=True).select_related("item")`
+- Template: `estate/beneficiary/portal.html`, extending a beneficiary `_base.html` with no owner account chrome
 
 ---
 
-### Story 3.3: Beneficiary Item Detail View
+### Story 3.5: Beneficiary Item Detail View
 
 As a named beneficiary,
 I want to view the full details of an item designated to me,
@@ -743,12 +827,12 @@ So that I can understand exactly what asset is being left to me and under what c
 **Acceptance Criteria:**
 
 **Given** beneficiary clicks an item in their portal
-**When** they navigate to `/estate/beneficiary/<token>/items/<item_id>/`
-**Then** the page renders with item name, collection type, photo (or placeholder), purchase price, purchase date, notes, custom field values
+**When** they navigate to `/estate/beneficiary/items/<item_id>/`
+**Then** the page renders what FR29 lists: item name, collection type, photo (or placeholder), current value, purchase price and date, service records, notes, custom field values
 **And** `BeneficiaryAssignment.conditional_note` is prominently displayed if present
-**And** the `ValuationSnapshot` is shown: snapshot date, market value, cost basis
+**And** the activation snapshot is shown with the Story 3.2 labels: snapshot date, value at activation, purchase price
 
-**Given** the item is assigned to a different beneficiary
+**Given** the item is assigned to a different beneficiary, or not assigned
 **When** the request arrives
 **Then** a 404 is returned
 
@@ -757,40 +841,9 @@ So that I can understand exactly what asset is being left to me and under what c
 **Then** `pixi run pytest tests/unit/ tests/functional/ -x -q` passes
 
 **Technical notes:**
-- View verifies: (1) token valid + active, (2) `BeneficiaryAssignment` exists with `beneficiary=link.beneficiary` and `item.pk=item_id` — raises `Http404` if either fails
-- Template: `estate/beneficiary/item_detail.html` — standalone
-
----
-
-### Story 3.4: Beneficiary Personal Export
-
-As a named beneficiary,
-I want to download a personal summary of my designated items as a PDF,
-So that I have an offline record I can share with a solicitor or keep in a safe place.
-
-**Acceptance Criteria:**
-
-**Given** beneficiary clicks "Download My Summary (PDF)"
-**When** the PDF is generated
-**Then** it contains: beneficiary name, relationship, generation date, table of designated items with name, collection type, conditional note, snapshot valuation (or "—" if null)
-
-**Given** the token is revoked or expired
-**When** the PDF endpoint is accessed
-**Then** a 404 is returned
-
-**Given** beneficiary has zero items
-**When** PDF is generated
-**Then** the PDF contains the header and a "No items designated" note — no server error
-
-**Given** new code is submitted
-**When** the quality gate runs
-**Then** `pixi run pytest tests/unit/ tests/functional/ -x -q` passes
-
-**Technical notes:**
-- URL: `path("beneficiary/<str:token>/export/", ..., name="beneficiary_export")` in `estate_urls.py`
-- Shared helper `resolve_beneficiary_link(token)` → `BeneficiaryAccessLink` or 404, reused by Stories 3.2, 3.3, 3.4
-- PDF bytes from `render_beneficiary_pdf(link)` defined in Epic 4
-- View returns `HttpResponse(pdf_bytes, content_type="application/pdf")` with `Content-Disposition: attachment; filename="estate-summary-<name>.pdf"`
+- Behind `beneficiary_required`; the view verifies a `BeneficiaryAssignment` exists with `beneficiary=<session beneficiary>` and `item_id=item_id`, else `Http404`
+- Photo via a beneficiary photo route (same `static_serve` + `private, no-store` pattern as `/estate/portal/items/<id>/photo/`)
+- Template: `estate/beneficiary/item_detail.html`
 
 ---
 
@@ -798,9 +851,9 @@ So that I have an offline record I can share with a solicitor or keep in a safe 
 
 A reusable PDF rendering service (`pdf_service.py`) built on `reportlab` powers three export paths: full estate inventory for owner, same inventory for executor via portal session, and change-history audit log for solicitor use. All outputs are generated synchronously — PDFs are small enough for a single request cycle.
 
-**FRs covered:** FR31, FR32, FR33, FR34
+**FRs covered:** FR30, FR31, FR32, FR33, FR34
 **NFRs covered:** NFR4, NFR16, NFR20
-**Dependency:** Epic 2 (ValuationSnapshot), Epic 3 (BeneficiaryAccessLink helper)
+**Dependency:** Epic 2 (ValuationSnapshot), Epic 3 (Story 3.1 snapshot integrity, Story 3.4 beneficiary session). Nothing depends back on Epic 4.
 
 ---
 
@@ -815,7 +868,7 @@ So that all PDF outputs share consistent formatting and a single implementation 
 **Given** `render_estate_pdf(owner, items_with_context)` is called
 **When** it executes
 **Then** it returns raw PDF bytes using `reportlab`
-**And** the PDF contains a cover page with owner name and generation date, and a table with item name, collection type, assigned beneficiary, snapshot market value, cost basis, equity, conditional note
+**And** the PDF contains a cover page with owner name and generation date, and a table with item name, collection type, assigned beneficiary, value at activation, purchase price, value minus purchase price, conditional note
 **And** null monetary values render as "—" (em dash)
 **And** a zero-item list returns a valid PDF with header and empty table — no exception
 
@@ -832,8 +885,8 @@ So that all PDF outputs share consistent formatting and a single implementation 
 - New module `src/my_garage/services/pdf_service.py`
 - `reportlab` added via `pixi add reportlab`
 - `render_estate_pdf(owner, items_with_context: list[dict]) -> bytes`
-- `render_beneficiary_pdf(link: BeneficiaryAccessLink) -> bytes`
-- Table columns: Name | Collection | Beneficiary | Snapshot Value | Cost Basis | Equity | Note
+- `render_beneficiary_pdf(link: BeneficiaryAccessLink) -> bytes` (the link of the beneficiary's session, Story 3.4)
+- Table columns: Name | Collection | Beneficiary | Value at activation | Purchase price | Value minus purchase price | Note (labels per Story 3.2)
 - Page size: A4, margins 2cm
 
 ---
@@ -867,6 +920,7 @@ So that I have a printable record suitable for solicitors and probate proceeding
 - Executor view: `@executor_required`, reads owner from session, same PDF call
 - This story adds the "Download PDF" button to `estate/portal/dashboard.html` (deferred from Story 2.3) and logs each export to `EstateAccessLog` (FR33)
 - Selector `get_estate_pdf_context(owner)` in `api/selectors.py`: 3 ORM queries, no N+1
+- Executor PDF uses the session token's snapshot set (Story 3.1). Soft-deleted collections are excluded (Story 3.2). Items removed after activation are listed by their stored name.
 - URL (owner): `path("export/pdf/", ..., name="estate_pdf_export")`
 - URL (executor): `path("portal/export/pdf/", ..., name="executor_pdf_export")`
 
@@ -900,55 +954,80 @@ So that I can demonstrate to solicitors that assignments were intentional and wh
 
 ---
 
+### Story 4.4: Beneficiary Personal Export
+
+*(Formerly Story 3.4, moved after the PDF service on 2026-10-27.)*
+
+As a named beneficiary,
+I want to download a personal summary of my designated items as a PDF,
+So that I have an offline record I can share with a solicitor or keep in a safe place (FR30).
+
+**Acceptance Criteria:**
+
+**Given** beneficiary clicks "Download My Summary (PDF)"
+**When** the PDF is generated
+**Then** it contains: beneficiary name, relationship, generation date, and a table of designated items with name, collection type, conditional note, value at activation (or "—" if null)
+**And** the export is logged to `EstateAccessLog` (FR33)
+
+**Given** the beneficiary session is gone, or the link was revoked or its executor token is no longer usable
+**When** the PDF endpoint is accessed
+**Then** a 404 is returned
+
+**Given** beneficiary has zero items
+**When** PDF is generated
+**Then** the PDF contains the header and a "No items designated" note — no server error
+
+**Given** new code is submitted
+**When** the quality gate runs
+**Then** `pixi run pytest tests/unit/ tests/functional/ -x -q` passes
+
+**Technical notes:**
+- URL: `path("beneficiary/export/", ..., name="beneficiary_export")` in `estate_urls.py`, behind `beneficiary_required`
+- PDF bytes from `render_beneficiary_pdf(link)` (Story 4.1)
+- View returns `HttpResponse(pdf_bytes, content_type="application/pdf")` with `Content-Disposition: attachment; filename="estate-summary-<name>.pdf"`
+
+---
+
 ## Step 4 — Final Validation
 
 ### FR Coverage Map
 
+Keyed to the PRD's FR numbers (rebuilt 2026-10-27; the previous table used its own FR names).
+
 | FR | Story |
 |---|---|
-| FR1 (executor designation) | 1.2 |
-| FR2 (executor contact info) | 1.2 |
-| FR3 (one executor per account) | 1.2 |
-| FR4 (estate activation) | 2.1 |
-| FR5 (plan completeness view) | 1.4 |
-| FR6 (dashboard) | 1.4 |
-| FR7 (beneficiary profiles) | 1.1 |
-| FR8 (beneficiary CRUD) | 1.1 |
-| FR11 (per-item assignment) | 1.3 |
-| FR12 (conditional notes) | 1.3 |
-| FR13 (charitable designation) | 1.3 |
-| FR14 (change history) | 1.3 |
-| FR15 (access token generation) | 2.1 |
-| FR16 (token hashing) | 2.1 |
-| FR17 (token verification) | 2.2 |
-| FR18 (executor session) | 2.2 |
-| FR19 (beneficiary link generation) | 3.1 |
-| FR20 (link revocation) | 3.1 |
-| FR21 (one active link per beneficiary) | 3.1 |
-| FR22 (executor portfolio view) | 2.3 |
-| FR23 (executor item detail) | 2.4 |
-| FR24 (snapshot at activation) | 2.1 |
-| FR25 (snapshot append-only) | 2.1 |
-| FR26 (snapshot market value) | 2.1 |
-| FR27 (snapshot cost basis) | 2.1 |
-| FR28 (beneficiary scoped view) | 3.2 |
-| FR29 (ORM-level isolation) | 3.2 |
-| FR30 (beneficiary item detail) | 3.3 |
-| FR31 (full inventory PDF) | 4.2 |
-| FR32 (executor PDF) | 4.2 |
-| FR33 (beneficiary personal PDF) | 3.4 |
-| FR34 (audit log PDF) | 4.3 |
-| FR35 (change log) | 1.3 |
-| FR36 (token last used) | 2.2 |
-| FR37 (token use count) | 2.2 |
-| FR38 (executor session guard) | 2.2 |
-| FR39 (valuation null handling) | 2.1 |
-| FR40 (assignment history) | 1.3 |
-| FR41 (account deletion cascade) | 1.5 |
-| FR42 (profile integration) | 1.5 |
-| FR43 (profile estate card) | 1.5 |
+| FR1–FR3 (executor: designate, view/update, remove) | 1.2 |
+| FR4 (manual estate activation) | 2.1 |
+| FR5–FR6 (completeness summary, assignment list) | 1.4 |
+| FR7–FR8 (beneficiary profiles) | 1.1 |
+| FR9–FR10 | merged into FR11 |
+| FR11–FR14 (assignment, conditional note, change, charitable) | 1.3 |
+| FR15 (cryptographic access code) | 2.1 |
+| FR16 (code-based executor access) | 2.2 |
+| FR17 (revoke executor code) | 2.2 |
+| FR18 (access event log) | 2.2 (executor), 3.3–3.4 (beneficiary links) |
+| FR19 (executor issues beneficiary link) | 3.3 |
+| FR20 (beneficiary access without account) | 3.4 |
+| FR21 (link scoped at data layer) | 3.4 |
+| FR22 (executor full portfolio) | 2.3 |
+| FR23 (executor full item detail) | 2.4 |
+| FR24–FR25 (beneficiary per asset, unassigned flag) | 2.3 |
+| FR26 (activation snapshot view) | 2.3, 2.4 |
+| FR27 (executor read-only) | 2.2–2.4, 3.3 |
+| FR28 (beneficiary sees only their assets) | 3.4 |
+| FR29 (beneficiary item detail) | 3.5 |
+| FR30 (beneficiary personal export) | 4.4 |
+| FR31–FR32 (estate inventory PDF and its contents) | 4.1, 4.2 |
+| FR33 (PDF exports recorded) | 4.2, 4.4 |
+| FR34 (regenerate PDF while active) | 4.2 |
+| FR35 (uniform assignment interface) | 1.3 |
+| FR36–FR37 (post-setup assets, unassigned badge) | 2.3 |
+| FR38–FR39 (immutable activation snapshot) | 2.1, 3.1 |
+| FR40 (estate plan change history) | 1.3 |
+| FR41 (account deletion destroys estate data) | 1.5 |
+| FR42–FR43 (profile estate card and access) | 1.5 |
 
-**All 43 FRs covered. All 20 NFRs addressed across stories.**
+**All 43 FRs covered (FR9–FR10 merged into FR11). All 20 NFRs addressed across stories.**
 
 ### New Models Required (all in `src/my_garage/models.py`)
 
@@ -959,7 +1038,9 @@ So that I can demonstrate to solicitors that assignments were intentional and wh
 5. `EstateAccessToken` — Story 2.1
 6. `ValuationSnapshot` — Story 2.1
 7. `EstateAccessLog` — Story 2.2
-8. `BeneficiaryAccessLink` — Story 3.1
+8. `BeneficiaryAccessLink` — Story 3.3
+
+`ValuationSnapshot` gains `token` and `item_name` (and `item` becomes `SET_NULL`) in Story 3.1.
 
 ### Implementation Order
 
@@ -970,5 +1051,5 @@ Epic 1 → Epic 2 → Epic 3 → Epic 4 (each epic depends on prior models)
 - Estate access tokens: `secrets.token_urlsafe()` — never sequential
 - Beneficiary PII stored only within owner's account — never transmitted to third parties
 - Beneficiary data isolation enforced at ORM query level on every request — UI-layer filtering alone is insufficient
-- Valuation snapshots: append-only — no UPDATE or DELETE after creation
+- Valuation snapshots: append-only — no UPDATE or DELETE issued by the app. Item deletion nulls `item` and keeps the row (Story 3.1).
 - Token comparison: always `secrets.compare_digest` — constant-time

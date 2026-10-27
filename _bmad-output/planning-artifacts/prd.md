@@ -79,7 +79,7 @@ No estate planning tool has the asset-level richness that my_garage already main
 - Access control is strictly scoped — no cross-contamination between beneficiaries, no accidental full-portfolio exposure
 - Valuation snapshot captures exact `current_market_value` for all assets at activation time with immutable audit trail
 - PDF export includes all assets, valuations, photos, cost basis, and beneficiary assignments
-- Access credentials are single-use, time-limited, and cryptographically non-guessable
+- Access credentials are cryptographically non-guessable and revocable. Beneficiary links are single-use (exchanged for a session). Executor codes expire after 72 hours if unused.
 - Activating estate access never modifies, deletes, or alters the owner's original records
 
 ### Measurable Outcomes
@@ -218,7 +218,7 @@ The system had sent Marcus two quiet reminders — he dismissed both. The gap wa
 
 ### Access Control & Security
 
-- Executor and beneficiary access credentials are cryptographically random, single-use where possible, and revocable by owner at any time
+- Executor and beneficiary access credentials are cryptographically random and revocable by the owner at any time (beneficiary links also by the executor). Beneficiary links are single-use; executor codes expire if unused.
 - Executor sessions are read-only — no write operations permitted on any asset record
 - Beneficiary access is scoped at the ORM level — not UI-level hiding
 - All executor and beneficiary access events are logged with timestamp, IP, and action type
