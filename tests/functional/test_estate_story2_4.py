@@ -8,6 +8,7 @@ from decimal import Decimal
 import pytest
 from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
+from django.template.loader import render_to_string
 from django.test import Client, override_settings
 
 from my_garage.api.services import activate_estate_plan
@@ -280,3 +281,35 @@ class TestDashboardLinks:
         item = _item(owner, cars, "Linked")
         body = _executor_client(owner).get(DASH).content.decode()
         assert body.count(f'href="{detail(item.pk)}"') == 2  # table + card
+
+
+class TestMoneyAndTimes:
+    @pytest.mark.parametrize(
+        "value, shown",
+        [
+            (None, "\u2014"),
+            (Decimal("0"), "$0"),
+            (Decimal("-0.4"), "$0"),
+            (Decimal("-50"), "\u2212$50"),
+            (Decimal("-1234.6"), "\u2212$1,235"),
+            (Decimal("50"), "$50"),
+        ],
+    )
+    def test_money_partial(self, value, shown):
+        html = render_to_string("my_garage/estate/portal/_money.html", {"value": value})
+        assert html == shown
+
+    def test_negative_money_on_detail_page(self, owner, cars):
+        item = _item(owner, cars, value=Decimal("-50"))
+        client = _executor_client(owner)
+        body = client.get(detail(item.pk)).content.decode()
+        assert 'Current value: <span class="text-luxury-white">\u2212$50</span>' in body
+
+    def test_valuation_time_has_zone_label(self, owner, cars):
+        item = _item(owner, cars)
+        GenericValuationHistory.objects.create(item=item, value=Decimal("10"))
+        client = _executor_client(owner)
+        body = client.get(detail(item.pk)).content.decode()
+        start = body.index('id="history-heading"')
+        history = body[start : body.index("</section>", start)]
+        assert " UTC</span>" in history

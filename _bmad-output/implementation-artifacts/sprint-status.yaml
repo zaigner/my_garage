@@ -29,7 +29,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 10-25-2026 16:58
-last_updated: 10-27-2026 20:14
+last_updated: 10-27-2026 16:11
 project: my_garage
 project_key: NOKEY
 tracking_system: file-system
@@ -43,12 +43,12 @@ development_status:
   1-5-profile-page-estate-status-card-account-deletion-safeguard: done
   epic-1-retrospective: optional
 
-  epic-2: in-progress
+  epic-2: done
   2-1-estate-plan-activation-executor-token-generation-valuation-s: done
   2-2-executor-code-entry-session-revocation-access-log: done
   2-3-executor-portfolio-view: done
-  2-4-executor-item-detail-view: review
-  epic-2-retrospective: optional
+  2-4-executor-item-detail-view: done
+  epic-2-retrospective: done
 
   epic-3: backlog
   3-1-beneficiary-scoped-link-generation: backlog
@@ -62,3 +62,36 @@ development_status:
   4-2-full-estate-inventory-pdf-owner-executor: backlog
   4-3-audit-log-pdf-export: backlog
   epic-4-retrospective: optional
+action_items:
+  - id: "epic-2-retro-item-1-in-bmad-correct-course-decide-snapshot-t"
+    epic: 2
+    action: "In bmad-correct-course, decide: snapshot-to-token link and snapshot survival
+      on item delete (R4), lifetime of a used executor code (R5), revoking on executor
+      replacement (R6), soft-deleted collections in the estate (R7), cost-basis labels
+      (R8)"
+    owner: "Zaigner77"
+    status: open
+    ref: "_bmad-output/implementation-artifacts/epic-2-retro-2026-10-27.md"
+  - id: "epic-2-retro-item-2-in-bmad-correct-course-reconcile-the-epi"
+    epic: 2
+    action: "In bmad-correct-course, reconcile the Epic 2 technical notes in epics-estate-legacy.md
+      with the as-built code (OneToOne vs FK, 43-char code, selector signatures and
+      query counts, standalone templates, conflicting NFR lists)"
+    owner: "Zaigner77"
+    status: open
+    ref: "_bmad-output/implementation-artifacts/epic-2-retro-2026-10-27.md"
+  - id: "epic-2-retro-item-3-add-a-cloudflare-access-bypass-for-estat"
+    epic: 2
+    action: "Add a Cloudflare Access bypass for /estate/portal/* before the first
+      real executor code is issued"
+    owner: "Zaigner77"
+    status: open
+    ref: "_bmad-output/implementation-artifacts/epic-2-retro-2026-10-27.md"
+  - id: "epic-2-retro-item-4-process-when-a-story-builds-on-an-existi"
+    epic: 2
+    action: "Process: when a story builds on an existing page, test that the page's
+      rendered controls reach the new endpoint; reviews flag or-joined assertions
+      any page would satisfy"
+    owner: "Zaigner77"
+    status: open
+    ref: "_bmad-output/implementation-artifacts/epic-2-retro-2026-10-27.md"

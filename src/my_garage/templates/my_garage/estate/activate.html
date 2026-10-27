@@ -37,8 +37,8 @@
       <p class="text-luxury-white text-sm font-semibold">
         {% if access.state == "revoked" %}Revoked
         {% elif access.state == "expired" %}Expired &mdash; not used
-        {% elif access.state == "unused" %}Not yet used {% if access.token.expires_at %}&mdash; expires {{ access.token.expires_at|date:"M j, Y g:i A" }}{% endif %}
-        {% else %}In use &mdash; last used {{ access.token.last_used_at|date:"M j, Y g:i A" }}{% endif %}
+        {% elif access.state == "unused" %}Not yet used {% if access.token.expires_at %}&mdash; expires {{ access.token.expires_at|date:"M j, Y g:i A T" }}{% endif %}
+        {% else %}In use &mdash; code entered {{ access.token.last_used_at|date:"M j, Y g:i A T" }}{% if access.last_view_at %} &middot; last portal visit {{ access.last_view_at|date:"M j, Y g:i A T" }}{% endif %}{% endif %}
       </p>
       <p class="text-gray-400 text-xs">
         Issued {{ access.token.issued_at|date:"M j, Y" }} &middot; Used {{ access.token.use_count }} time{{ access.token.use_count|pluralize }}
@@ -51,11 +51,16 @@
         </form>
       {% endif %}
     {% endif %}
-    {% if access.recent_events %}
+    {% if access.security_events or access.view_count %}
       <h3 class="text-xs uppercase tracking-widest text-gray-400 pt-2">Recent activity</h3>
-      <ul class="space-y-1 text-xs text-gray-400">
-        {% for e in access.recent_events %}
-          <li>{{ e.get_event_display }} &middot; {{ e.timestamp|date:"M j, Y g:i A" }}{% if e.ip_address %} &middot; {{ e.ip_address }}{% endif %}{% if e.item_name %} &middot; {{ e.item_name }}{% endif %}</li>
+    {% endif %}
+    {% if access.view_count %}
+      <p class="text-xs text-gray-400" data-testid="portal-view-summary">Portal views with this code: {{ access.view_count }} &middot; last {{ access.last_view_at|date:"M j, Y g:i A T" }}</p>
+    {% endif %}
+    {% if access.security_events %}
+      <ul class="space-y-1 text-xs text-gray-400" data-testid="security-events">
+        {% for e in access.security_events %}
+          <li>{{ e.get_event_display }} &middot; {{ e.timestamp|date:"M j, Y g:i A T" }}{% if e.ip_address %} &middot; {{ e.ip_address }}{% endif %}</li>
         {% endfor %}
       </ul>
     {% endif %}

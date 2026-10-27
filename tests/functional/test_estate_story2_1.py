@@ -7,18 +7,27 @@ Covers:
   - Authenticated GET with no executor → 200, submit button disabled
   - Authenticated GET with executor → 200, submit button not disabled
   - POST with confirmed=True and executor → token created, snapshots created, redirect
-  - Success page shows token, purges from session after display
+  - Success page shows the active code, carried in a signed cookie (never the
+    session); expired, tampered or replaced codes redirect back to activate
   - POST without confirming checkbox → no token created
   - Reactivation → old token deactivated, new token active
-  - Direct GET to success with no session token → redirect to activate
+  - Direct GET to success with no code cookie → redirect to activate
 """
 
 from __future__ import annotations
 
-import pytest
-from django.contrib.auth import get_user_model
-from django.test import Client
+import time
+from unittest.mock import patch
 
+import pytest
+from bs4 import BeautifulSoup
+from django.contrib.auth import get_user_model
+from django.contrib.sessions.models import Session
+from django.core import signing
+from django.test import Client, override_settings
+
+from my_garage.api.services import hash_executor_code
+from my_garage.estate_views import ACTIVATION_COOKIE
 from my_garage.models import (
     CollectionType,
     DynamicCollectionItem,
@@ -155,29 +164,131 @@ class TestActivatePost:
         assert active_tokens.count() == 1
 
 
+def _shown_code(response):
+    soup = BeautifulSoup(response.content.decode(), "html5lib")
+    box = soup.select_one("div.select-all")
+    return box.get_text(strip=True) if box else None
+
+
+def _stale_timestamp(seconds):
+    """Make TimestampSigner stamp values as if signed `seconds` ago."""
+    return patch.object(
+        signing.TimestampSigner,
+        "timestamp",
+        lambda self: signing.b62_encode(int(time.time()) - seconds),
+    )
+
+
 class TestActivateSuccessPage:
-    def test_success_page_shows_token_from_session(self, auth_client, executor):
-        # POST to activate — places token in session and redirects
+    def test_success_page_shows_the_active_code(self, auth_client, executor):
         response = auth_client.post(ACTIVATE_URL, {"confirmed": "on"}, follow=True)
-        content = response.content.decode()
-        # The page should show SOMETHING that looks like a token (non-empty text)
-        assert "estate" in content.lower() or len(content) > 100
+        code = _shown_code(response)
+        token = EstateAccessToken.objects.get(owner=executor.owner, is_active=True)
+        assert code and hash_executor_code(code) == token.token_hash
 
-    def test_success_page_with_no_session_token_redirects(self, auth_client):
-        # Direct GET to success with no session token
+    def test_success_page_expiry_has_zone_label(self, auth_client, executor):
+        response = auth_client.post(ACTIVATE_URL, {"confirmed": "on"}, follow=True)
+        body = response.content.decode()
+        start = body.index("Expires ")
+        assert " UTC if unused." in body[start : body.index("</p>", start)]
+
+    def test_success_page_with_no_cookie_redirects(self, auth_client):
         response = auth_client.get(SUCCESS_URL)
         assert response.status_code == 302
         assert response["Location"] == ACTIVATE_URL
 
-    def test_success_page_purges_token_from_session(self, auth_client, executor):
-        # Activate to put token in session
+    def test_activate_sets_short_lived_scoped_cookie(self, auth_client, executor):
+        response = auth_client.post(ACTIVATE_URL, {"confirmed": "on"})
+        cookie = response.cookies[ACTIVATION_COOKIE]
+        assert cookie["httponly"] is True
+        assert cookie["samesite"] == "Strict"
+        assert cookie["path"] == SUCCESS_URL
+        # Browser-session cookie: never written to the on-disk cookie store
+        assert cookie["max-age"] == "" and cookie["expires"] == ""
+        assert "estate_activation_token" not in auth_client.session
+
+    @override_settings(SESSION_COOKIE_SECURE=True)
+    def test_cookie_is_secure_when_session_cookie_is(self, auth_client, executor):
+        response = auth_client.post(ACTIVATE_URL, {"confirmed": "on"})
+        assert response.cookies[ACTIVATION_COOKIE]["secure"] is True
+
+    def test_code_never_stored_in_session(self, auth_client, executor):
         auth_client.post(ACTIVATE_URL, {"confirmed": "on"})
-        # Visit success page — consumes the session token
-        auth_client.get(SUCCESS_URL)
-        # Second visit should redirect (no token left)
+        # Snapshot the stored sessions in the window before the redirect is followed
+        stored = [str(row.get_decoded()) for row in Session.objects.all()]
+        code = _shown_code(auth_client.get(SUCCESS_URL))
+        assert stored and code
+        assert all(code not in data for data in stored)
+
+    def test_success_page_is_never_cached(self, auth_client, executor):
+        response = auth_client.post(ACTIVATE_URL, {"confirmed": "on"}, follow=True)
+        assert "no-store" in response["Cache-Control"]
+
+    def test_success_page_deletes_cookie(self, auth_client, executor):
+        auth_client.post(ACTIVATE_URL, {"confirmed": "on"})
+        response = auth_client.get(SUCCESS_URL)
+        assert response.status_code == 200
+        cookie = response.cookies[ACTIVATION_COOKIE]
+        assert cookie.value == "" and int(cookie["max-age"]) == 0
+        assert cookie["path"] == SUCCESS_URL
+
+    def test_second_visit_redirects(self, auth_client, executor):
+        auth_client.post(ACTIVATE_URL, {"confirmed": "on"})
+        assert auth_client.get(SUCCESS_URL).status_code == 200
         response = auth_client.get(SUCCESS_URL)
         assert response.status_code == 302
         assert response["Location"] == ACTIVATE_URL
+        page = auth_client.get(ACTIVATE_URL).content.decode()
+        assert "An access code can only be shown once" in page
+
+    def test_expired_cookie_redirects(self, auth_client, executor):
+        with _stale_timestamp(601):
+            auth_client.post(ACTIVATE_URL, {"confirmed": "on"})
+        response = auth_client.get(SUCCESS_URL)
+        assert response.status_code == 302
+        assert response["Location"] == ACTIVATE_URL
+
+    def test_cookie_just_inside_lifetime_is_shown(self, auth_client, executor):
+        with _stale_timestamp(590):
+            auth_client.post(ACTIVATE_URL, {"confirmed": "on"})
+        assert auth_client.cookies[ACTIVATION_COOKIE].value
+        response = auth_client.get(SUCCESS_URL)
+        assert response.status_code == 200
+        code = _shown_code(response)
+        token = EstateAccessToken.objects.get(owner=executor.owner, is_active=True)
+        assert code and hash_executor_code(code) == token.token_hash
+
+    def test_tampered_cookie_redirects(self, auth_client, executor):
+        auth_client.post(ACTIVATE_URL, {"confirmed": "on"})
+        value = auth_client.cookies[ACTIVATION_COOKIE].value
+        raw, rest = value.split(":", 1)
+        forged = ("B" if raw[0] == "A" else "A") + raw[1:]
+        auth_client.cookies[ACTIVATION_COOKIE] = forged + ":" + rest
+        response = auth_client.get(SUCCESS_URL)
+        assert response.status_code == 302
+        assert response["Location"] == ACTIVATE_URL
+
+    def test_replaced_code_redirects_with_message(self, auth_client, executor):
+        auth_client.post(ACTIVATE_URL, {"confirmed": "on"})
+        first = auth_client.cookies[ACTIVATION_COOKIE].value
+        auth_client.post(ACTIVATE_URL, {"confirmed": "on"})
+        auth_client.cookies[ACTIVATION_COOKIE] = first
+        response = auth_client.get(SUCCESS_URL)
+        assert response.status_code == 302
+        assert response["Location"] == ACTIVATE_URL
+        page = auth_client.get(ACTIVATE_URL).content.decode()
+        assert "A newer access code was issued" in page
+
+    def test_revoked_code_redirects_with_message(self, auth_client, executor):
+        auth_client.post(ACTIVATE_URL, {"confirmed": "on"})
+        raw = auth_client.cookies[ACTIVATION_COOKIE].value.split(":", 1)[0]
+        auth_client.post("/estate/activate/revoke/")
+        response = auth_client.get(SUCCESS_URL)
+        assert response.status_code == 302
+        assert response["Location"] == ACTIVATE_URL
+        page = auth_client.get(ACTIVATE_URL).content.decode()
+        assert "no longer active" in page
+        assert raw not in response.content.decode() and raw not in page
 
     def test_unauthenticated_success_page_redirects_to_login(self, client):
         response = client.get(SUCCESS_URL)

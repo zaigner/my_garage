@@ -1,1 +1,1 @@
-{% load my_garage_extras %}{% if value is None %}—{% elif value == 0 %}$0{% else %}{{ value|currency_display }}{% endif %}
+{% load my_garage_extras %}{% if value is None %}—{% elif value == 0 %}$0{% elif value < -0.5 %}−{{ value|currency_display }}{% else %}{{ value|currency_display }}{% endif %}

@@ -1,5 +1,6 @@
 """Estate & Legacy views."""
 
+import secrets
 from datetime import timedelta
 from functools import wraps
 
@@ -26,6 +27,7 @@ from my_garage.api.selectors import (
 from my_garage.api.services import (
     activate_estate_plan,
     assign_beneficiary,
+    hash_executor_code,
     log_estate_access,
     remove_beneficiary_assignment,
     revoke_executor_access,
@@ -49,6 +51,10 @@ EXECUTOR_OWNER_KEY = "estate_executor_owner_id"
 EXECUTOR_TOKEN_KEY = "estate_executor_token_id"
 EXECUTOR_SESSION_DAYS = 30
 GENERIC_CODE_ERROR = "Invalid access code. Please contact the estate owner."
+# The raw code rides to the success page in a signed cookie, never the session
+ACTIVATION_COOKIE = "estate_activation_code"
+ACTIVATION_COOKIE_SALT = "my_garage.estate.activate_success"
+ACTIVATION_COOKIE_MAX_AGE = 600  # seconds
 
 
 def executor_required(view):
@@ -322,8 +328,19 @@ def estate_activate(request: HttpRequest) -> HttpResponse:
         form = EstateActivateForm(request.POST)
         if form.is_valid():
             raw_token = activate_estate_plan(request.user, request=request)
-            request.session["estate_activation_token"] = raw_token
-            return redirect("estate:activate_success")
+            response = redirect("estate:activate_success")
+            response.set_signed_cookie(
+                ACTIVATION_COOKIE,
+                raw_token,
+                salt=ACTIVATION_COOKIE_SALT,
+                # No max_age: a browser-session cookie never written to disk.
+                # get_signed_cookie enforces the 10-minute lifetime instead.
+                httponly=True,
+                secure=settings.SESSION_COOKIE_SECURE,
+                samesite="Strict",
+                path=reverse("estate:activate_success"),
+            )
+            return response
     else:
         form = EstateActivateForm()
 
@@ -350,12 +367,45 @@ def estate_revoke_access(request: HttpRequest) -> HttpResponse:
     return redirect("estate:activate")
 
 
+@never_cache
 @login_required
 def estate_activate_success(request: HttpRequest) -> HttpResponse:
-    raw_token = request.session.pop("estate_activation_token", None)
+    response = _activate_success_response(request)
+    # Show the code at most once: the cookie goes on every response
+    response.delete_cookie(
+        ACTIVATION_COOKIE,
+        path=reverse("estate:activate_success"),
+        samesite="Strict",
+    )
+    return response
+
+
+def _activate_success_response(request: HttpRequest) -> HttpResponse:
+    # A bad signature or a cookie older than max_age reads as missing
+    raw_token = request.get_signed_cookie(
+        ACTIVATION_COOKIE,
+        default=None,
+        salt=ACTIVATION_COOKIE_SALT,
+        max_age=ACTIVATION_COOKIE_MAX_AGE,
+    )
     if raw_token is None:
+        messages.info(
+            request,
+            "An access code can only be shown once. Issue a new code to get one.",
+        )
         return redirect("estate:activate")
     token = get_executor_access_status(request.user)["token"]
+    if token is None or not token.is_active:
+        messages.info(request, "That access code is no longer active.")
+        return redirect("estate:activate")
+    if not secrets.compare_digest(hash_executor_code(raw_token), token.token_hash):
+        # e.g. a double submit: never show a code that was already replaced
+        messages.info(
+            request,
+            "A newer access code was issued, so that one is no longer valid. "
+            "Issue a new code to see one.",
+        )
+        return redirect("estate:activate")
     # The executor is outside the LAN, so prefer the public URL over the request host
     portal_path = reverse("estate:portal_code_entry")
     if settings.PUBLIC_BASE_URL:
@@ -367,7 +417,7 @@ def estate_activate_success(request: HttpRequest) -> HttpResponse:
         "my_garage/estate/activate_success.html",
         {
             "raw_token": raw_token,
-            "expires_at": token.expires_at if token else None,
+            "expires_at": token.expires_at,
             "portal_url": portal_url,
         },
     )
