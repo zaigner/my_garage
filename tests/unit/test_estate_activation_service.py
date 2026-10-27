@@ -140,6 +140,19 @@ class TestActivateEstatePlanSnapshots:
         snap = ValuationSnapshot.objects.get(owner=user, item=item_with_values)
         assert snap.snapshot_trigger == "ESTATE_ACTIVATION"
 
+    def test_snapshots_bound_to_new_token_with_item_name(
+        self, user, item_with_values, item_no_values
+    ):
+        activate_estate_plan(user)
+        token = EstateAccessToken.objects.get(owner=user, is_active=True)
+        snaps = list(ValuationSnapshot.objects.filter(owner=user))
+        assert len(snaps) == 2
+        assert all(s.token_id == token.pk for s in snaps)
+        assert {s.item_name for s in snaps} == {
+            item_with_values.name,
+            item_no_values.name,
+        }
+
     def test_no_exception_when_portfolio_is_empty(self, user):
         raw = activate_estate_plan(user)
         assert isinstance(raw, str)
@@ -202,3 +215,17 @@ class TestActivateEstatePlanReactivation:
             owner=user, item=item_with_values
         ).count()
         assert count == 2
+
+    def test_reactivation_binds_new_snapshots_to_new_token(
+        self, user, item_with_values
+    ):
+        activate_estate_plan(user)
+        old_token = EstateAccessToken.objects.get(owner=user, is_active=True)
+        activate_estate_plan(user)
+        new_token = EstateAccessToken.objects.get(owner=user, is_active=True)
+        assert old_token.valuation_snapshots.count() == 1
+        assert new_token.valuation_snapshots.count() == 1
+        assert (
+            new_token.valuation_snapshots.get().pk
+            != old_token.valuation_snapshots.get().pk
+        )

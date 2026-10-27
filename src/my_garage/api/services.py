@@ -206,27 +206,9 @@ def activate_estate_plan(user, request=None) -> str:
     raw_token = secrets.token_urlsafe(32)
     token_hash = hash_executor_code(raw_token)
 
-    # Build valuation snapshots for all items; saved with the token below
+    # Token swap and snapshots succeed or fail together. Items are read inside
+    # the transaction so each snapshot's item still exists at bulk_create.
     today = date.today()
-    items = DynamicCollectionItem.objects.filter(owner=user)
-    snapshots = []
-    for item in items:
-        mv = item.current_market_value
-        cb = item.purchase_price  # raw purchase cost; None when unknown (per spec)
-        eq = (mv - cb) if (mv is not None and cb is not None) else None
-        snapshots.append(
-            ValuationSnapshot(
-                item=item,
-                owner=user,
-                snapshot_date=today,
-                market_value=mv,
-                cost_basis=cb,
-                equity=eq,
-                snapshot_trigger="ESTATE_ACTIVATION",
-            )
-        )
-
-    # Token swap and snapshots succeed or fail together
     with transaction.atomic():
         _deactivate_active_tokens(user, request=request)
         new_token = EstateAccessToken.objects.create(
@@ -236,6 +218,24 @@ def activate_estate_plan(user, request=None) -> str:
             expires_at=timezone.now() + timedelta(hours=72),
         )
         log_estate_access(user, "TOKEN_ISSUED", token=new_token, request=request)
+        snapshots = []
+        for item in DynamicCollectionItem.objects.filter(owner=user):
+            mv = item.current_market_value
+            cb = item.purchase_price  # raw purchase cost; None when unknown
+            eq = (mv - cb) if (mv is not None and cb is not None) else None
+            snapshots.append(
+                ValuationSnapshot(
+                    item=item,
+                    item_name=item.name,
+                    token=new_token,
+                    owner=user,
+                    snapshot_date=today,
+                    market_value=mv,
+                    cost_basis=cb,
+                    equity=eq,
+                    snapshot_trigger="ESTATE_ACTIVATION",
+                )
+            )
         ValuationSnapshot.objects.bulk_create(snapshots)
 
     return raw_token

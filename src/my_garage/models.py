@@ -616,6 +616,14 @@ class EstateAccessLog(models.Model):
 
 
 class ValuationSnapshot(models.Model):
+    """Append-only: application code never edits or deletes rows.
+
+    Deleting the item only nulls `item` (SET_NULL); `item_name` keeps the
+    name it had at activation. ESTATE_ACTIVATION rows carry the
+    EstateAccessToken they were taken for; MANUAL rows leave `token` null.
+    Deleting the owner still removes their snapshots (CASCADE).
+    """
+
     TRIGGER_CHOICES = [
         ("ESTATE_ACTIVATION", "Estate Activation"),
         ("MANUAL", "Manual"),
@@ -623,7 +631,17 @@ class ValuationSnapshot(models.Model):
 
     item = models.ForeignKey(
         "DynamicCollectionItem",
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="valuation_snapshots",
+    )
+    item_name = models.CharField(max_length=200, blank=True)
+    token = models.ForeignKey(
+        EstateAccessToken,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name="valuation_snapshots",
     )
     owner = models.ForeignKey(
@@ -646,7 +664,7 @@ class ValuationSnapshot(models.Model):
         ordering = ["-created_at"]
 
     def __str__(self):
-        return f"Snapshot {self.snapshot_date} — {self.item.name}"
+        return f"Snapshot {self.snapshot_date} — {self.item_name}"
 
 
 class PortfolioSnapshot(models.Model):

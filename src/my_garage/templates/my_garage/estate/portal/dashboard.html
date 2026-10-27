@@ -23,19 +23,27 @@
       <div class="bg-luxury-card border border-white/10 rounded-xl p-4">
         <dt class="text-xs uppercase tracking-widest text-gray-300">Items</dt>
         <dd class="text-2xl text-luxury-white mt-1">{{ items_total }}</dd>
+        {% if removed_count %}
+          <dd class="text-xs text-gray-300 mt-1">Plus {{ removed_count }} removed after activation</dd>
+        {% endif %}
       </div>
       <div class="bg-luxury-card border border-white/10 rounded-xl p-4">
         <dt class="text-xs uppercase tracking-widest text-gray-300">Value at activation</dt>
         <dd class="text-2xl text-luxury-white mt-1">{% include "my_garage/estate/portal/_money.html" with value=snapshot_total %}</dd>
-        {% if snapshot_count < items_total %}
-          <dd class="text-xs text-gray-300 mt-1">{{ snapshot_count }} of {{ items_total }} items valued</dd>
-        {% endif %}
+        {% with listed_total=items_total|add:removed_count %}
+          {% if snapshot_count < listed_total %}
+            <dd class="text-xs text-gray-300 mt-1">{{ snapshot_count }} of {{ listed_total }} items valued</dd>
+          {% endif %}
+        {% endwith %}
       </div>
       <div class="bg-luxury-card border border-white/10 rounded-xl p-4">
         <dt class="text-xs uppercase tracking-widest text-gray-300">Current value</dt>
         <dd class="text-2xl text-luxury-white mt-1">{% include "my_garage/estate/portal/_money.html" with value=current_total %}</dd>
         {% if current_count < items_total %}
           <dd class="text-xs text-gray-300 mt-1">{{ current_count }} of {{ items_total }} items valued</dd>
+        {% endif %}
+        {% if removed_count %}
+          <dd class="text-xs text-gray-300 mt-1">Excludes {{ removed_count }} removed after activation</dd>
         {% endif %}
       </div>
       <div class="bg-luxury-card border border-white/10 rounded-xl p-4">
@@ -61,7 +69,7 @@
   <section aria-labelledby="assets-heading" class="space-y-4">
     <h2 id="assets-heading" class="text-xs uppercase tracking-widest text-gray-300">Assets</h2>
 
-    {% if rows %}
+    {% if rows or removed_rows %}
       <!-- Wide screens: table -->
       <div class="hidden md:block bg-luxury-card border border-white/10 rounded-xl overflow-hidden">
         <table class="w-full text-sm">
@@ -83,6 +91,15 @@
                 <td class="px-4 py-3 text-right text-gray-100">{% include "my_garage/estate/portal/_snapshot_value.html" %}</td>
                 <td class="px-4 py-3 text-right text-gray-100">{% include "my_garage/estate/portal/_money.html" with value=row.current_value %}</td>
                 <td class="px-4 py-3">{% include "my_garage/estate/portal/_designation.html" %}</td>
+              </tr>
+            {% endfor %}
+            {% for row in removed_rows %}
+              <tr data-testid="removed-row">
+                <th scope="row" class="px-4 py-3 text-left font-normal text-luxury-white">{{ row.item_name }} <span class="block text-xs text-gray-300">Removed after activation</span></th>
+                <td class="px-4 py-3 text-gray-300">&mdash;</td>
+                <td class="px-4 py-3 text-right text-gray-100">{% include "my_garage/estate/portal/_money.html" with value=row.snapshot_value %}</td>
+                <td class="px-4 py-3 text-right text-gray-100">&mdash;</td>
+                <td class="px-4 py-3 text-gray-300">&mdash;</td>
               </tr>
             {% endfor %}
           </tbody>
@@ -110,6 +127,29 @@
             <div>
               <p class="text-xs text-gray-300 mb-1">Beneficiary</p>
               {% include "my_garage/estate/portal/_designation.html" %}
+            </div>
+          </li>
+        {% endfor %}
+        {% for row in removed_rows %}
+          <li data-testid="removed-card" class="bg-luxury-card border border-white/10 rounded-xl p-4 space-y-3">
+            <div>
+              <p class="text-luxury-white">{{ row.item_name }}</p>
+              <p class="text-xs text-gray-300">Removed after activation</p>
+              <p class="text-xs text-gray-300"><span class="sr-only">Collection: </span>&mdash;</p>
+            </div>
+            <dl class="grid grid-cols-2 gap-2 text-sm">
+              <div>
+                <dt class="text-xs text-gray-300">Value at activation</dt>
+                <dd class="text-gray-100">{% include "my_garage/estate/portal/_money.html" with value=row.snapshot_value %}</dd>
+              </div>
+              <div>
+                <dt class="text-xs text-gray-300">Current value</dt>
+                <dd class="text-gray-100">&mdash;</dd>
+              </div>
+            </dl>
+            <div>
+              <p class="text-xs text-gray-300 mb-1">Beneficiary</p>
+              <p class="text-sm text-gray-300">&mdash;</p>
             </div>
           </li>
         {% endfor %}

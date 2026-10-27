@@ -84,16 +84,23 @@ class TestRows:
     def test_ignores_manual_and_earlier_activation_snapshots(self, owner, cars):
         item = _item(owner, cars, "911", Decimal("100"))
         activate_estate_plan(owner)  # earlier activation: 100
+        earlier = EstateAccessToken.objects.get(owner=owner, is_active=True)
         item.current_market_value = Decimal("200")
         item.save()
         activate_estate_plan(owner)  # current activation: 200
-        ValuationSnapshot.objects.create(
-            item=item,
-            owner=owner,
-            snapshot_date=item.created_at.date(),
-            market_value=Decimal("999"),
-            snapshot_trigger="MANUAL",
-        )
+        current = EstateAccessToken.objects.get(owner=owner, is_active=True)
+        # A MANUAL row on the current token, and a row of the earlier token
+        # created after the current one was issued: both are ignored
+        for trigger, token in (("MANUAL", current), ("ESTATE_ACTIVATION", earlier)):
+            ValuationSnapshot.objects.create(
+                item=item,
+                item_name=item.name,
+                owner=owner,
+                token=token,
+                snapshot_date=item.created_at.date(),
+                market_value=Decimal("999"),
+                snapshot_trigger=trigger,
+            )
         assert _row(_ctx(owner), "911")["snapshot_value"] == Decimal("200")
 
     def test_other_owners_items_excluded(self, owner, cars):
