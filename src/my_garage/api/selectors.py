@@ -372,23 +372,29 @@ def get_executor_portfolio_context(owner, token) -> Dict[str, Any]:
     Read-only portfolio for the executor portal, in 2 ORM queries.
 
     `token` is the executor's EstateAccessToken; "value at activation" comes
-    only from the ESTATE_ACTIVATION snapshots taken when it was issued
-    (activate_estate_plan creates them right after the token, in one
-    transaction).
+    only from the ESTATE_ACTIVATION snapshots bound to it (activate_estate_plan
+    sets ValuationSnapshot.token). Snapshots of other tokens are ignored.
 
     Returns:
-        rows             — one dict per item: item, in_snapshot (item existed
-                           at activation), snapshot_value, current_value,
-                           beneficiary_name, charitable_org, is_charitable,
-                           is_unassigned
-        items_total      — int
-        unassigned_count — int
-        snapshot_total   — Decimal or None (sum of known snapshot values)
-        snapshot_count   — int, items with a known snapshot value
+        rows             — one dict per current item: item, in_snapshot (item
+                           existed at activation), snapshot_value,
+                           current_value, beneficiary_name, charitable_org,
+                           is_charitable, is_unassigned
+        removed_rows     — one dict per item deleted after activation (its
+                           snapshot row remains with item=None): item (None),
+                           item_name (stored at activation), snapshot_value,
+                           removed (True); ordered by name
+        removed_count    — int, len(removed_rows)
+        items_total      — int, current items only
+        unassigned_count — int, current items only
+        snapshot_total   — Decimal or None (sum of known snapshot values,
+                           removed items included)
+        snapshot_count   — int, items with a known snapshot value (removed
+                           items included)
         current_total    — Decimal or None (sum of known current values)
         current_count    — int, items with a known current value
         delta            — Decimal or None (current − snapshot, summed over
-                           items valued at both)
+                           current items valued at both)
         compared_count   — int, items included in delta
     """
     items = list(
@@ -397,13 +403,29 @@ def get_executor_portfolio_context(owner, token) -> Dict[str, Any]:
         .order_by("collection_type__name", "name")
     )  # Q1
 
-    activation_values = dict(
+    snapshots = list(
         ValuationSnapshot.objects.filter(
-            owner=owner,
-            snapshot_trigger="ESTATE_ACTIVATION",
-            created_at__gte=token.issued_at,
-        ).values_list("item_id", "market_value")
+            owner=owner, snapshot_trigger="ESTATE_ACTIVATION", token=token
+        ).values_list("item_id", "item_name", "market_value")
     )  # Q2
+    # Newest row first (Meta ordering), as the detail selector's .first() picks
+    activation_values: Dict[int, Any] = {}
+    for item_id, _, value in snapshots:
+        if item_id is not None:
+            activation_values.setdefault(item_id, value)
+    removed_rows = sorted(
+        (
+            {
+                "item": None,
+                "item_name": name,
+                "snapshot_value": value,
+                "removed": True,
+            }
+            for item_id, name, value in snapshots
+            if item_id is None
+        ),
+        key=lambda r: r["item_name"].lower(),
+    )
 
     rows = []
     for item in items:
@@ -429,12 +451,17 @@ def get_executor_portfolio_context(owner, token) -> Dict[str, Any]:
         else None
     )
 
+    activation_rows = rows + removed_rows
     return {
         "rows": rows,
+        "removed_rows": removed_rows,
+        "removed_count": len(removed_rows),
         "items_total": len(rows),
         "unassigned_count": sum(1 for r in rows if r["is_unassigned"]),
-        "snapshot_total": _sum_or_none(r["snapshot_value"] for r in rows),
-        "snapshot_count": sum(1 for r in rows if r["snapshot_value"] is not None),
+        "snapshot_total": _sum_or_none(r["snapshot_value"] for r in activation_rows),
+        "snapshot_count": sum(
+            1 for r in activation_rows if r["snapshot_value"] is not None
+        ),
         "current_total": _sum_or_none(r["current_value"] for r in rows),
         "current_count": sum(1 for r in rows if r["current_value"] is not None),
         "delta": delta,
@@ -451,8 +478,8 @@ def get_executor_item_detail_context(owner, token, item_id) -> Optional[Dict[str
     Returns:
         item, row            — row carries the designation fields shared with
                                the portfolio rows (plus conditional_note)
-        snapshot             — this activation's ValuationSnapshot, or None
-                               when the item was added after activation
+        snapshot             — the ValuationSnapshot bound to `token`, or
+                               None when the item was added after activation
         conditional_note     — str, blank when none
         custom_fields        — list of (label, value)
         service_records      — list, newest first
@@ -466,7 +493,7 @@ def get_executor_item_detail_context(owner, token, item_id) -> Optional[Dict[str
         item=item,
         owner=owner,
         snapshot_trigger="ESTATE_ACTIVATION",
-        created_at__gte=token.issued_at,
+        token=token,
     ).first()  # Q2
 
     designation = _designation_fields(item)

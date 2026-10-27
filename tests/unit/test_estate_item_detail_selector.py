@@ -64,16 +64,29 @@ def test_snapshot_scoped_to_activation(owner, cars):
     assert ctx["snapshot"].market_value == Decimal("100")
     assert ctx["row"]["in_snapshot"] is True
 
-    # A manual snapshot is ignored
+    # A manual snapshot is ignored, even on the same token
     ValuationSnapshot.objects.create(
         item=item,
+        item_name=item.name,
         owner=owner,
+        token=token,
         snapshot_date=datetime.date.today(),
         market_value=Decimal("999"),
         snapshot_trigger="MANUAL",
     )
     ctx = get_executor_item_detail_context(owner, token, item.pk)
     assert ctx["snapshot"].market_value == Decimal("100")
+
+    # A later activation's snapshot belongs to its own token only
+    item.current_market_value = Decimal("200")
+    item.save()
+    new_token = _token(owner)
+    assert get_executor_item_detail_context(owner, token, item.pk)[
+        "snapshot"
+    ].market_value == Decimal("100")
+    assert get_executor_item_detail_context(owner, new_token, item.pk)[
+        "snapshot"
+    ].market_value == Decimal("200")
 
 
 def test_added_after_activation_has_no_snapshot(owner, cars):
