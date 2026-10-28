@@ -619,6 +619,7 @@ class EstateAccessLog(models.Model):
         ("LINK_ISSUED", "Link issued"),
         ("LINK_REVOKED", "Link revoked"),
         ("LINK_CLAIMED", "Link claimed"),
+        ("BENEFICIARY_VIEW", "Beneficiary viewed"),
     ]
 
     owner = models.ForeignKey(

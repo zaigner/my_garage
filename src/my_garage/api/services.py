@@ -255,6 +255,48 @@ def revoke_beneficiary_link(beneficiary, token, request=None) -> bool:
         return _deactivate_active_links(beneficiary, token, request=request) > 0
 
 
+def claim_beneficiary_link(raw_token: str, request=None):
+    """
+    Claim a beneficiary link once. Returns the claimed link, or None when it is
+    unknown, already claimed, revoked, expired, or its executor token is no
+    longer usable. Failed claims log nothing; a claim logs LINK_CLAIMED.
+    """
+    from my_garage.api.selectors import get_claimable_beneficiary_link
+    from my_garage.models import Beneficiary, BeneficiaryAccessLink
+
+    link_hash = hash_executor_code(raw_token or "")
+    candidate = get_claimable_beneficiary_link(link_hash, timezone.now())
+    if candidate is None:
+        return None
+    with transaction.atomic():
+        # Same lock as issue/revoke, then re-check: two claims can't both win
+        locked = (
+            Beneficiary.objects.select_for_update()
+            .filter(pk=candidate.beneficiary_id)
+            .first()
+        )
+        if locked is None:  # deleted mid-claim
+            return None
+        now = timezone.now()
+        link = get_claimable_beneficiary_link(link_hash, now)
+        if link is None:
+            return None
+        claimed = BeneficiaryAccessLink.objects.filter(
+            pk=link.pk, claimed_at__isnull=True
+        ).update(claimed_at=now)
+        if not claimed:
+            return None
+        link.claimed_at = now
+        log_estate_access(
+            link.owner,
+            "LINK_CLAIMED",
+            token=link.issued_by_token,
+            request=request,
+            beneficiary=link.beneficiary,
+        )
+        return link
+
+
 def _person_name_key(name: str) -> str:
     """Compare names ignoring case and spacing: "jo  smith" == "Jo Smith"."""
     return " ".join((name or "").split()).casefold()

@@ -55,6 +55,7 @@ urlpatterns = [
         estate_views.portal_link_issued,
         name="portal_link_issued",
     ),
+    path("beneficiary/", estate_views.beneficiary_portal, name="beneficiary_portal"),
     path(
         "beneficiary/claim/<str:token>/",
         estate_views.beneficiary_claim,

@@ -278,12 +278,13 @@ class TestRevoke:
         assert "No active link." in response.content.decode()
 
 
-class TestClaimStub:
-    def test_claim_url_404(self, client, ann):
+class TestClaimUrl:
+    def test_issued_url_opens_the_claim_page(self, client, ann):
+        # Story 3.4 replaced the 404 stub: the URL shown once must be claimable
         _issue(client, ann.pk)
         body = client.get(issued_url(ann.pk)).content.decode()
         raw = body.split("/estate/beneficiary/claim/")[1].split("/")[0]
-        assert Client().get(f"/estate/beneficiary/claim/{raw}/").status_code == 404
+        assert Client().get(f"/estate/beneficiary/claim/{raw}/").status_code == 200
         assert Client().get("/estate/beneficiary/claim/nope/").status_code == 404
 
 

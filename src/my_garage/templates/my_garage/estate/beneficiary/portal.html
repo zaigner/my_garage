@@ -1,0 +1,34 @@
+{% extends "my_garage/estate/beneficiary/_base.html" %}
+
+{% block main_width %}max-w-3xl{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+
+  <header>
+    <p class="text-luxury-gold text-xs uppercase tracking-widest mb-1">Estate of {{ owner.get_full_name|default:owner.username }}</p>
+    <h1 class="text-3xl font-serif text-luxury-white">Hello, {{ beneficiary.name }}</h1>
+    <p class="text-gray-300 text-sm mt-2">{{ beneficiary.get_relationship_display }} &middot; Read-only view</p>
+  </header>
+
+  <section aria-labelledby="items-heading" class="space-y-4">
+    <h2 id="items-heading" class="text-xs uppercase tracking-widest text-gray-300">Items {{ owner.get_full_name|default:owner.username }} has designated for you</h2>
+    {% if assignments %}
+      <ul class="space-y-3" data-testid="beneficiary-items">
+        {% for a in assignments %}
+          <li class="bg-luxury-card border border-white/10 rounded-xl p-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p class="text-luxury-white">{{ a.item.name }}</p>
+              <p class="text-xs text-gray-300">{{ a.item.collection_type.name }}</p>
+            </div>
+            <p class="text-sm text-gray-200"><span class="sr-only">Current value: </span>{% include "my_garage/estate/portal/_money.html" with value=a.item.current_market_value %}</p>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="text-gray-300 text-sm" data-testid="beneficiary-empty">No items have been designated for you yet.</p>
+    {% endif %}
+  </section>
+
+</div>
+{% endblock %}
