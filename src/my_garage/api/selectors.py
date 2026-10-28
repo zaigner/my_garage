@@ -427,22 +427,74 @@ def get_beneficiary_session_link(link_id, owner_id) -> Optional[BeneficiaryAcces
     return link
 
 
+def _beneficiary_assignment_qs(link):
+    """
+    Isolation for every beneficiary read: only this beneficiary's
+    non-charitable assignments on the owner's items in active collections.
+    """
+    return BeneficiaryAssignment.objects.filter(
+        beneficiary=link.beneficiary,
+        is_charitable=False,
+        item__owner=link.owner,
+        item__collection_type__is_active=True,
+    ).select_related("item__collection_type")
+
+
 def get_beneficiary_assignments(link) -> List[BeneficiaryAssignment]:
-    """
-    The items designated to the link's beneficiary, in one query. Isolation
-    is enforced here: only this beneficiary's non-charitable assignments on
-    the owner's items in active collections.
-    """
+    """The items designated to the link's beneficiary, in one query."""
     return list(
-        BeneficiaryAssignment.objects.filter(
-            beneficiary=link.beneficiary,
-            is_charitable=False,
-            item__owner=link.owner,
-            item__collection_type__is_active=True,
+        _beneficiary_assignment_qs(link).order_by(
+            "item__collection_type__name", "item__name", "item__pk"
         )
-        .select_related("item__collection_type")
-        .order_by("item__collection_type__name", "item__name", "item__pk")
     )
+
+
+def get_beneficiary_assignment(link, item_id) -> Optional[BeneficiaryAssignment]:
+    """The beneficiary's assignment of this item, or None (callers answer 404)."""
+    # item__pk, not item_id: the pk lookup turns an out-of-range id into no
+    # match, where the raw FK column raises OverflowError on SQLite
+    return _beneficiary_assignment_qs(link).filter(item__pk=item_id).first()
+
+
+def get_beneficiary_item_detail_context(link, item_id) -> Optional[Dict[str, Any]]:
+    """
+    Read-only detail of one item designated to the link's beneficiary, in 3
+    ORM queries. None when the item is not theirs (callers answer 404).
+
+    Returns:
+        item
+        snapshot             — the ValuationSnapshot bound to the link's
+                               issuing token, or None when the item was
+                               added after activation
+        conditional_note     — str, blank when none
+        custom_fields        — list of (label, value)
+        service_records      — list, newest first
+    """
+    assignment = get_beneficiary_assignment(link, item_id)  # Q1
+    if assignment is None:
+        return None
+    item = assignment.item
+
+    snapshot = (
+        ValuationSnapshot.objects.filter(
+            item=item,
+            owner=link.owner,
+            snapshot_trigger="ESTATE_ACTIVATION",
+            token=link.issued_by_token,
+        )
+        .order_by("-created_at", "-pk")
+        .first()
+    )  # Q2
+
+    return {
+        "item": item,
+        "snapshot": snapshot,
+        "conditional_note": (assignment.conditional_note or "").strip(),
+        "custom_fields": get_item_display_custom_fields(item, item.collection_type),
+        "service_records": list(
+            GenericServiceRecord.objects.filter(item=item).order_by("-date", "-pk")
+        ),  # Q3
+    }
 
 
 def _sum_or_none(values) -> Optional[Decimal]:
