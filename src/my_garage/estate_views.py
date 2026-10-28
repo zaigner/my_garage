@@ -7,19 +7,21 @@ from functools import wraps
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.http import Http404, HttpRequest, HttpResponse
+from django.http import Http404, HttpRequest, HttpResponse, HttpResponseNotFound
 from django.middleware.csrf import rotate_token
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
-from django.views.decorators.http import require_safe
+from django.views.decorators.http import require_GET, require_POST, require_safe
 from django.views.static import serve as static_serve
 
 from my_garage.api.selectors import (
     get_estate_assign_items,
     get_estate_dashboard_context,
     get_executor_access_status,
+    get_executor_beneficiary,
+    get_executor_beneficiary_links,
     get_executor_item,
     get_executor_item_detail_context,
     get_executor_portfolio_context,
@@ -29,8 +31,10 @@ from my_garage.api.services import (
     activate_estate_plan,
     assign_beneficiary,
     hash_executor_code,
+    issue_beneficiary_link,
     log_estate_access,
     remove_beneficiary_assignment,
+    revoke_beneficiary_link,
     revoke_executor_access,
     save_executor,
     verify_executor_code,
@@ -44,6 +48,7 @@ from my_garage.forms import (
 )
 from my_garage.models import (
     Beneficiary,
+    BeneficiaryAccessLink,
     DynamicCollectionItem,
     EstateAccessToken,
     EstateExecutor,
@@ -57,6 +62,9 @@ GENERIC_CODE_ERROR = "Invalid access code. Please contact the estate owner."
 ACTIVATION_COOKIE = "estate_activation_code"
 ACTIVATION_COOKIE_SALT = "my_garage.estate.activate_success"
 ACTIVATION_COOKIE_MAX_AGE = 600  # seconds
+LINK_COOKIE = "estate_beneficiary_link"
+LINK_COOKIE_SALT = "my_garage.estate.beneficiary_link_issued"
+LINK_COOKIE_MAX_AGE = 600  # seconds
 
 
 def executor_required(view):
@@ -117,11 +125,104 @@ def portal_dashboard(request: HttpRequest) -> HttpResponse:
     context = get_executor_portfolio_context(owner, token)
     context["owner"] = owner
     context["activated_at"] = token.issued_at
+    context["beneficiary_links"] = get_executor_beneficiary_links(owner, token)
     response = render(request, "my_garage/estate/portal/dashboard.html", context)
     # Log only a page the executor actually received; HEAD carries no page
     if request.method == "GET":
         log_estate_access(owner, "PORTAL_VIEW", token=token, request=request)
     return response
+
+
+def _eligible_beneficiary_or_404(request: HttpRequest, pk: int) -> Beneficiary:
+    beneficiary = get_executor_beneficiary(request.estate_owner, pk)
+    if beneficiary is None:
+        raise Http404
+    return beneficiary
+
+
+@require_POST
+@executor_required
+def portal_link_issue(request: HttpRequest, pk: int) -> HttpResponse:
+    """Issue a beneficiary claim link; the raw URL rides in a one-shot cookie."""
+    beneficiary = _eligible_beneficiary_or_404(request, pk)
+    raw = issue_beneficiary_link(beneficiary, request.estate_token, request=request)
+    issued_path = reverse("estate:portal_link_issued", args=[beneficiary.pk])
+    response = redirect(issued_path)
+    response.set_signed_cookie(
+        LINK_COOKIE,
+        raw,
+        salt=LINK_COOKIE_SALT,
+        # No max_age: a browser-session cookie never written to disk.
+        # get_signed_cookie enforces the 10-minute lifetime instead.
+        httponly=True,
+        secure=settings.SESSION_COOKIE_SECURE,
+        samesite="Strict",
+        path=issued_path,
+    )
+    return response
+
+
+@require_POST
+@executor_required
+def portal_link_revoke(request: HttpRequest, pk: int) -> HttpResponse:
+    """Revoke a beneficiary's active link."""
+    beneficiary = _eligible_beneficiary_or_404(request, pk)
+    if revoke_beneficiary_link(beneficiary, request.estate_token, request=request):
+        messages.success(request, f"Link revoked for {beneficiary.name}.")
+    else:
+        messages.info(request, "No active link.")
+    return redirect("estate:portal_dashboard")
+
+
+@require_GET
+@executor_required
+def portal_link_issued(request: HttpRequest, pk: int) -> HttpResponse:
+    """Show a freshly issued claim URL at most once."""
+    issued_path = reverse("estate:portal_link_issued", args=[pk])
+    try:
+        response = _link_issued_response(request, pk)
+    except Http404:
+        response = HttpResponseNotFound()
+    response.delete_cookie(LINK_COOKIE, path=issued_path, samesite="Strict")
+    return response
+
+
+def _link_issued_response(request: HttpRequest, pk: int) -> HttpResponse:
+    beneficiary = _eligible_beneficiary_or_404(request, pk)
+    raw = request.get_signed_cookie(
+        LINK_COOKIE, default=None, salt=LINK_COOKIE_SALT, max_age=LINK_COOKIE_MAX_AGE
+    )
+    link = None
+    if raw is not None:
+        link = BeneficiaryAccessLink.objects.filter(
+            beneficiary=beneficiary,
+            is_active=True,
+            issued_by_token=request.estate_token,
+        ).first()
+    if link is None or not secrets.compare_digest(
+        hash_executor_code(raw), link.link_token_hash
+    ):
+        messages.info(
+            request,
+            "A link can only be shown once. Issue a new link to get one.",
+        )
+        return redirect("estate:portal_dashboard")
+    claim_path = reverse("estate:beneficiary_claim", args=[raw])
+    if settings.PUBLIC_BASE_URL:
+        claim_url = settings.PUBLIC_BASE_URL.rstrip("/") + claim_path
+    else:
+        claim_url = request.build_absolute_uri(claim_path)
+    return render(
+        request,
+        "my_garage/estate/portal/link_issued.html",
+        {"beneficiary": beneficiary, "claim_url": claim_url, "link": link},
+    )
+
+
+@never_cache
+def beneficiary_claim(request: HttpRequest, token: str) -> HttpResponse:
+    """Stub until Story 3.4: every claim URL is a 404."""
+    raise Http404
 
 
 @require_safe

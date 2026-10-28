@@ -568,6 +568,41 @@ class EstateAccessToken(models.Model):
         return self.is_active and (self.expires_at is None or self.expires_at > now)
 
 
+class BeneficiaryAccessLink(models.Model):
+    # ForeignKey (not OneToOneField) keeps deactivated links as audit trail.
+    # Service enforces: only one is_active=True per beneficiary at any time.
+    beneficiary = models.ForeignKey(
+        Beneficiary,
+        on_delete=models.CASCADE,
+        related_name="access_links",
+    )
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="beneficiary_access_links",
+    )
+    issued_by_token = models.ForeignKey(
+        EstateAccessToken,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="access_links",
+    )
+    link_token_hash = models.CharField(max_length=64, db_index=True)
+    issued_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    claimed_at = models.DateTimeField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["-issued_at", "-pk"]
+
+    def __str__(self):
+        return (
+            f"BeneficiaryAccessLink for {self.beneficiary_id} (active={self.is_active})"
+        )
+
+
 class EstateAccessLog(models.Model):
     """Append-only: application code never edits or deletes rows.
 
@@ -581,6 +616,9 @@ class EstateAccessLog(models.Model):
         ("CODE_REJECTED", "Code rejected"),
         ("PORTAL_VIEW", "Portal viewed"),
         ("ITEM_VIEW", "Item viewed"),
+        ("LINK_ISSUED", "Link issued"),
+        ("LINK_REVOKED", "Link revoked"),
+        ("LINK_CLAIMED", "Link claimed"),
     ]
 
     owner = models.ForeignKey(
@@ -604,6 +642,7 @@ class EstateAccessLog(models.Model):
         related_name="estate_access_logs",
     )
     item_name = models.CharField(max_length=200, blank=True)
+    beneficiary_name = models.CharField(max_length=200, blank=True)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     timestamp = models.DateTimeField(auto_now_add=True)
 

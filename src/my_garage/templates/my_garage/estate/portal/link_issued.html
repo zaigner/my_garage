@@ -1,0 +1,30 @@
+{% extends "my_garage/estate/portal/_base.html" %}
+
+{% block title %}Beneficiary Link Issued{% endblock %}
+{% block main_width %}max-w-2xl{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+  <header>
+    <p class="text-luxury-gold text-xs uppercase tracking-widest mb-1">Beneficiary link</p>
+    <h1 class="text-2xl font-serif text-luxury-white">Link issued for {{ beneficiary.name }}</h1>
+  </header>
+
+  <div role="alert" class="border border-yellow-400/60 bg-yellow-900/30 text-yellow-100 text-sm rounded-md px-4 py-3">
+    <strong class="font-semibold">This link cannot be recovered. Save it now before closing.</strong>
+    Share it directly and securely with {{ beneficiary.name }}.
+  </div>
+
+  <div class="bg-luxury-card border border-white/10 rounded-xl p-6 space-y-3">
+    <p class="text-xs uppercase tracking-widest text-gray-300">Beneficiary link</p>
+    <div class="bg-black/40 rounded-lg px-5 py-4 font-mono text-luxury-gold text-sm break-all select-all" data-testid="claim-url">{{ claim_url }}</div>
+    <p class="text-gray-300 text-xs">This link stops working if you issue a new link for {{ beneficiary.name }} or revoke it.</p>
+    <p class="text-gray-300 text-xs">Expires {{ link.expires_at|date:"M j, Y g:i A T" }} if not opened.</p>
+  </div>
+
+  <a href="{% url 'estate:portal_dashboard' %}"
+     class="inline-block border border-luxury-gold text-luxury-gold font-bold uppercase text-xs tracking-widest rounded-sm px-4 py-2 hover:bg-white/10 focus:outline focus:outline-2 focus:outline-luxury-gold">
+    Back to dashboard
+  </a>
+</div>
+{% endblock %}

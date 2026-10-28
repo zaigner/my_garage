@@ -7,6 +7,8 @@ from django.db.models import Count, Exists, Max, OuterRef, Q, Sum
 from django.utils import timezone
 
 from my_garage.models import (
+    Beneficiary,
+    BeneficiaryAccessLink,
     BeneficiaryAssignment,
     CollectionItemAttachment,
     DynamicCollectionItem,
@@ -269,6 +271,9 @@ ESTATE_SECURITY_EVENTS = (
     "TOKEN_REVOKED",
     "CODE_ACCEPTED",
     "CODE_REJECTED",
+    "LINK_ISSUED",
+    "LINK_REVOKED",
+    "LINK_CLAIMED",
 )
 ESTATE_VIEW_EVENTS = ("PORTAL_VIEW", "ITEM_VIEW")
 
@@ -315,6 +320,66 @@ def get_executor_access_status(user) -> Dict[str, Any]:
         "view_count": views["n"],
         "last_view_at": views["last"],
     }
+
+
+def _designated_beneficiaries(owner):
+    """Owner's beneficiaries with at least one designated item, item-counted."""
+    designated = Q(
+        assignments__is_charitable=False,
+        assignments__item__collection_type__is_active=True,
+    )
+    return (
+        Beneficiary.objects.filter(owner=owner)
+        .annotate(item_count=Count("assignments", filter=designated, distinct=True))
+        .filter(item_count__gt=0)
+        .order_by("name", "pk")
+    )
+
+
+def get_executor_beneficiary(owner, beneficiary_id) -> Optional[Beneficiary]:
+    """The owner's eligible beneficiary (>= 1 designated item), or None."""
+    return _designated_beneficiaries(owner).filter(pk=beneficiary_id).first()
+
+
+def beneficiary_link_status(link, now) -> str:
+    """none / revoked / opened / expired / issued for a link (or None)."""
+    if link is None:
+        return "none"
+    if not link.is_active:
+        return "revoked"
+    if link.claimed_at is not None:
+        return "opened"
+    if link.expires_at <= now:
+        return "expired"
+    return "issued"
+
+
+def get_executor_beneficiary_links(owner, token) -> List[Dict[str, Any]]:
+    """
+    Designated beneficiaries with their link status, in 2 queries.
+
+    Status comes from the newest link issued under `token`; links from an
+    earlier activation are ignored. Each dict: beneficiary, item_count, link,
+    status (none/issued/opened/revoked/expired).
+    """
+    beneficiaries = list(_designated_beneficiaries(owner))
+    newest: Dict[int, BeneficiaryAccessLink] = {}
+    if beneficiaries:
+        links = BeneficiaryAccessLink.objects.filter(
+            beneficiary__in=beneficiaries, issued_by_token=token
+        ).order_by("-issued_at", "-pk")
+        for link in links:
+            newest.setdefault(link.beneficiary_id, link)
+    now = timezone.now()
+    return [
+        {
+            "beneficiary": b,
+            "item_count": b.item_count,
+            "link": newest.get(b.pk),
+            "status": beneficiary_link_status(newest.get(b.pk), now),
+        }
+        for b in beneficiaries
+    ]
 
 
 def _sum_or_none(values) -> Optional[Decimal]:

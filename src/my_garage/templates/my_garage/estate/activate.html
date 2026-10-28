@@ -60,7 +60,7 @@
     {% if access.security_events %}
       <ul class="space-y-1 text-xs text-gray-400" data-testid="security-events">
         {% for e in access.security_events %}
-          <li>{{ e.get_event_display }} &middot; {{ e.timestamp|date:"M j, Y g:i A T" }}{% if e.ip_address %} &middot; {{ e.ip_address }}{% endif %}</li>
+          <li>{{ e.get_event_display }}{% if e.beneficiary_name %} &middot; {{ e.beneficiary_name }}{% endif %} &middot; {{ e.timestamp|date:"M j, Y g:i A T" }}{% if e.ip_address %} &middot; {{ e.ip_address }}{% endif %}</li>
         {% endfor %}
       </ul>
     {% endif %}
