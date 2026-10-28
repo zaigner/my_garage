@@ -28,24 +28,7 @@
   <section aria-labelledby="snapshot-heading" class="space-y-3">
     <h2 id="snapshot-heading" class="text-xs uppercase tracking-widest text-gray-300">Value at activation</h2>
     {% if snapshot %}
-      <dl class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="bg-luxury-card border border-white/10 rounded-xl p-4">
-          <dt class="text-xs uppercase tracking-widest text-gray-300">Snapshot date</dt>
-          <dd class="text-luxury-white mt-1">{{ snapshot.snapshot_date|date:"F j, Y" }}</dd>
-        </div>
-        <div class="bg-luxury-card border border-white/10 rounded-xl p-4">
-          <dt class="text-xs uppercase tracking-widest text-gray-300">Market value</dt>
-          <dd class="text-luxury-white mt-1">{% include "my_garage/estate/portal/_money.html" with value=snapshot.market_value %}</dd>
-        </div>
-        <div class="bg-luxury-card border border-white/10 rounded-xl p-4">
-          <dt class="text-xs uppercase tracking-widest text-gray-300">Purchase price</dt>
-          <dd class="text-luxury-white mt-1">{% include "my_garage/estate/portal/_money.html" with value=snapshot.cost_basis %}</dd>
-        </div>
-        <div class="bg-luxury-card border border-white/10 rounded-xl p-4">
-          <dt class="text-xs uppercase tracking-widest text-gray-300">Value minus purchase price</dt>
-          <dd class="text-luxury-white mt-1">{% if snapshot.equity is None %}—{% elif snapshot.equity == 0 %}$0{% else %}{{ snapshot.equity|nfp_display }}{% endif %}</dd>
-        </div>
-      </dl>
+      {% include "my_garage/estate/portal/_snapshot_detail.html" %}
     {% else %}
       <p class="text-gray-300 text-sm">Added after activation</p>
     {% endif %}

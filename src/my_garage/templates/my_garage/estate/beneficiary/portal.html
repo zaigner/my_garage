@@ -18,7 +18,7 @@
         {% for a in assignments %}
           <li class="bg-luxury-card border border-white/10 rounded-xl p-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p class="text-luxury-white">{{ a.item.name }}</p>
+              <p><a href="{% url 'estate:beneficiary_item_detail' a.item.pk %}" class="text-luxury-gold underline underline-offset-2 hover:text-luxury-white focus:outline focus:outline-2 focus:outline-luxury-gold">{{ a.item.name }}</a></p>
               <p class="text-xs text-gray-300">{{ a.item.collection_type.name }}</p>
             </div>
             <p class="text-sm text-gray-200"><span class="sr-only">Current value: </span>{% include "my_garage/estate/portal/_money.html" with value=a.item.current_market_value %}</p>

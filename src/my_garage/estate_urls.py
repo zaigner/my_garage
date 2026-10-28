@@ -57,6 +57,16 @@ urlpatterns = [
     ),
     path("beneficiary/", estate_views.beneficiary_portal, name="beneficiary_portal"),
     path(
+        "beneficiary/items/<int:item_id>/",
+        estate_views.beneficiary_item_detail,
+        name="beneficiary_item_detail",
+    ),
+    path(
+        "beneficiary/items/<int:item_id>/photo/",
+        estate_views.beneficiary_item_photo,
+        name="beneficiary_item_photo",
+    ),
+    path(
         "beneficiary/claim/<str:token>/",
         estate_views.beneficiary_claim,
         name="beneficiary_claim",

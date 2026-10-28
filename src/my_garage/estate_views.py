@@ -24,7 +24,9 @@ from django.views.defaults import page_not_found
 from django.views.static import serve as static_serve
 
 from my_garage.api.selectors import (
+    get_beneficiary_assignment,
     get_beneficiary_assignments,
+    get_beneficiary_item_detail_context,
     get_beneficiary_session_link,
     get_claimable_beneficiary_link,
     get_estate_assign_items,
@@ -323,6 +325,44 @@ def beneficiary_portal(request: HttpRequest) -> HttpResponse:
             request=request,
             beneficiary=link.beneficiary,
         )
+    return response
+
+
+@require_safe
+@beneficiary_required
+def beneficiary_item_detail(request: HttpRequest, item_id: int) -> HttpResponse:
+    """Read-only detail of one item designated to the session beneficiary."""
+    link = request.beneficiary_link
+    context = get_beneficiary_item_detail_context(link, item_id)
+    if context is None:
+        return _beneficiary_not_found(request)
+    response = render(request, "my_garage/estate/beneficiary/item_detail.html", context)
+    if request.method == "GET":
+        log_estate_access(
+            link.owner,
+            "BENEFICIARY_VIEW",
+            token=link.issued_by_token,
+            item=context["item"],
+            request=request,
+            beneficiary=link.beneficiary,
+        )
+    return response
+
+
+@require_safe
+@beneficiary_required
+def beneficiary_item_photo(request: HttpRequest, item_id: int) -> HttpResponse:
+    """Serve a designated item's photo to its beneficiary (serve_media: owner-only)."""
+    assignment = get_beneficiary_assignment(request.beneficiary_link, item_id)
+    if assignment is None or not assignment.item.photo:
+        return _beneficiary_not_found(request)
+    try:
+        response = static_serve(
+            request, assignment.item.photo.name, document_root=settings.MEDIA_ROOT
+        )
+    except Http404:
+        return _beneficiary_not_found(request)
+    response["Cache-Control"] = "private, no-store"
     return response
 
 
