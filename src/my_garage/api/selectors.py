@@ -1,3 +1,4 @@
+import secrets
 from datetime import date, timedelta
 from decimal import Decimal
 from typing import Any, Dict, List, Optional, Tuple
@@ -275,7 +276,10 @@ ESTATE_SECURITY_EVENTS = (
     "LINK_REVOKED",
     "LINK_CLAIMED",
 )
-ESTATE_VIEW_EVENTS = ("PORTAL_VIEW", "ITEM_VIEW")
+ESTATE_VIEW_EVENTS = ("PORTAL_VIEW", "ITEM_VIEW", "BENEFICIARY_VIEW")
+# Beneficiary views share the executor's token, so the owner's
+# "Portal views with this code" count leaves them out
+EXECUTOR_VIEW_EVENTS = ("PORTAL_VIEW", "ITEM_VIEW")
 
 
 def get_executor_access_status(user) -> Dict[str, Any]:
@@ -310,7 +314,7 @@ def get_executor_access_status(user) -> Dict[str, Any]:
     security_events = list(logs.filter(event__in=ESTATE_SECURITY_EVENTS)[:10])
     views = {"n": 0, "last": None}
     if token is not None:
-        views = logs.filter(token=token, event__in=ESTATE_VIEW_EVENTS).aggregate(
+        views = logs.filter(token=token, event__in=EXECUTOR_VIEW_EVENTS).aggregate(
             n=Count("pk"), last=Max("timestamp")
         )
     return {
@@ -380,6 +384,65 @@ def get_executor_beneficiary_links(owner, token) -> List[Dict[str, Any]]:
         }
         for b in beneficiaries
     ]
+
+
+def get_claimable_beneficiary_link(
+    link_hash: str, now
+) -> Optional[BeneficiaryAccessLink]:
+    """
+    The link with this SHA-256 hash if it can be claimed now, else None:
+    active, unclaimed, unexpired, and its issuing executor token usable.
+    Read-only; claim_beneficiary_link re-runs it under a lock.
+    """
+    link = (
+        BeneficiaryAccessLink.objects.filter(link_token_hash=link_hash)
+        .select_related("beneficiary", "owner", "issued_by_token")
+        .first()
+    )
+    if link is None or not secrets.compare_digest(link.link_token_hash, link_hash):
+        return None
+    if not link.is_active or link.claimed_at is not None or link.expires_at <= now:
+        return None
+    token = link.issued_by_token
+    if token is None or not token.is_usable(now):
+        return None
+    return link
+
+
+def get_beneficiary_session_link(link_id, owner_id) -> Optional[BeneficiaryAccessLink]:
+    """
+    The claimed link behind a beneficiary session if it still grants access:
+    active, claimed, and its issuing executor token usable. Else None.
+    """
+    link = (
+        BeneficiaryAccessLink.objects.filter(pk=link_id, owner_id=owner_id)
+        .select_related("beneficiary", "owner", "issued_by_token")
+        .first()
+    )
+    if link is None or not link.is_active or link.claimed_at is None:
+        return None
+    token = link.issued_by_token
+    if token is None or not token.is_usable(timezone.now()):
+        return None
+    return link
+
+
+def get_beneficiary_assignments(link) -> List[BeneficiaryAssignment]:
+    """
+    The items designated to the link's beneficiary, in one query. Isolation
+    is enforced here: only this beneficiary's non-charitable assignments on
+    the owner's items in active collections.
+    """
+    return list(
+        BeneficiaryAssignment.objects.filter(
+            beneficiary=link.beneficiary,
+            is_charitable=False,
+            item__owner=link.owner,
+            item__collection_type__is_active=True,
+        )
+        .select_related("item__collection_type")
+        .order_by("item__collection_type__name", "item__name", "item__pk")
+    )
 
 
 def _sum_or_none(values) -> Optional[Decimal]:

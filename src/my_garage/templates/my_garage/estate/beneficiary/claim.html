@@ -1,0 +1,19 @@
+{% extends "my_garage/estate/beneficiary/_base.html" %}
+
+{% block title %}Estate Access{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <div>
+    <p class="text-luxury-gold text-xs uppercase tracking-widest mb-1">Estate of {{ owner.get_full_name|default:owner.username }}</p>
+    <h1 class="text-2xl font-serif text-luxury-white">Your Designated Items</h1>
+    <p class="text-gray-300 text-sm mt-2">The estate's executor sent you this link so you can see the items designated for you.</p>
+  </div>
+
+  <form method="post" class="bg-luxury-card border border-white/10 rounded-xl p-6 space-y-4">
+    {% csrf_token %}
+    <p class="text-gray-300 text-sm">This link works once. It opens a private view in this browser that stays signed in for 30 days. If you lose access, ask the executor to send you a new link.</p>
+    <button type="submit" class="w-full bg-luxury-gold text-black font-bold uppercase text-xs tracking-widest rounded-sm px-6 py-4 hover:bg-yellow-600 focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-luxury-gold transition-colors">View my designated items</button>
+  </form>
+</div>
+{% endblock %}

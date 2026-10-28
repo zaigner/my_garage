@@ -12,11 +12,21 @@ from django.middleware.csrf import rotate_token
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.cache import add_never_cache_headers
 from django.views.decorators.cache import never_cache
-from django.views.decorators.http import require_GET, require_POST, require_safe
+from django.views.decorators.http import (
+    require_GET,
+    require_http_methods,
+    require_POST,
+    require_safe,
+)
+from django.views.defaults import page_not_found
 from django.views.static import serve as static_serve
 
 from my_garage.api.selectors import (
+    get_beneficiary_assignments,
+    get_beneficiary_session_link,
+    get_claimable_beneficiary_link,
     get_estate_assign_items,
     get_estate_dashboard_context,
     get_executor_access_status,
@@ -30,6 +40,7 @@ from my_garage.api.selectors import (
 from my_garage.api.services import (
     activate_estate_plan,
     assign_beneficiary,
+    claim_beneficiary_link,
     hash_executor_code,
     issue_beneficiary_link,
     log_estate_access,
@@ -65,6 +76,10 @@ ACTIVATION_COOKIE_MAX_AGE = 600  # seconds
 LINK_COOKIE = "estate_beneficiary_link"
 LINK_COOKIE_SALT = "my_garage.estate.beneficiary_link_issued"
 LINK_COOKIE_MAX_AGE = 600  # seconds
+# Beneficiary session keys; executor and Django auth keys are never touched
+BENEFICIARY_LINK_KEY = "estate_beneficiary_link_id"
+BENEFICIARY_OWNER_KEY = "estate_beneficiary_owner_id"
+BENEFICIARY_SESSION_DAYS = 30
 
 
 def executor_required(view):
@@ -219,10 +234,96 @@ def _link_issued_response(request: HttpRequest, pk: int) -> HttpResponse:
     )
 
 
+def _beneficiary_not_found(request: HttpRequest) -> HttpResponse:
+    """The same uncached 404 for every dead link or session: no hints."""
+    response = page_not_found(request, Http404())
+    add_never_cache_headers(response)
+    return response
+
+
+def beneficiary_required(view):
+    """Require a claimed, still-valid beneficiary link; re-checked every request."""
+
+    @wraps(view)
+    def wrapper(request: HttpRequest, *args, **kwargs):
+        link_id = request.session.get(BENEFICIARY_LINK_KEY)
+        owner_id = request.session.get(BENEFICIARY_OWNER_KEY)
+        link = None
+        if link_id is not None and owner_id is not None:
+            link = get_beneficiary_session_link(link_id, owner_id)
+        if link is None:
+            had_session = link_id is not None or owner_id is not None
+            request.session.pop(BENEFICIARY_LINK_KEY, None)
+            request.session.pop(BENEFICIARY_OWNER_KEY, None)
+            # Leave a live executor session's 30-day expiry alone
+            if had_session and EXECUTOR_TOKEN_KEY not in request.session:
+                request.session.set_expiry(None)
+            return _beneficiary_not_found(request)
+        request.beneficiary_link = link
+        request.session.set_expiry(timedelta(days=BENEFICIARY_SESSION_DAYS))
+        return never_cache(view)(request, *args, **kwargs)
+
+    return wrapper
+
+
 @never_cache
+@require_http_methods(["GET", "HEAD", "POST"])
 def beneficiary_claim(request: HttpRequest, token: str) -> HttpResponse:
-    """Stub until Story 3.4: every claim URL is a 404."""
-    raise Http404
+    """
+    GET shows a confirm page and changes nothing, so link previews can't use
+    the link up. The POST claims it once and starts the beneficiary session.
+    """
+    link_hash = hash_executor_code(token)
+    # Reopening your own claimed link (e.g. from the email) goes to the portal;
+    # any other reuse stays the same 404
+    session_link_id = request.session.get(BENEFICIARY_LINK_KEY)
+    session_owner_id = request.session.get(BENEFICIARY_OWNER_KEY)
+    if session_link_id is not None and session_owner_id is not None:
+        own = get_beneficiary_session_link(session_link_id, session_owner_id)
+        if own is not None and secrets.compare_digest(own.link_token_hash, link_hash):
+            return redirect("estate:beneficiary_portal")
+    if request.method != "POST":
+        link = get_claimable_beneficiary_link(link_hash, timezone.now())
+        if link is None:
+            return _beneficiary_not_found(request)
+        return render(
+            request, "my_garage/estate/beneficiary/claim.html", {"owner": link.owner}
+        )
+    link = claim_beneficiary_link(token, request=request)
+    if link is None:
+        return _beneficiary_not_found(request)
+    request.session.cycle_key()
+    rotate_token(request)
+    request.session[BENEFICIARY_LINK_KEY] = link.pk
+    request.session[BENEFICIARY_OWNER_KEY] = link.owner_id
+    request.session.set_expiry(timedelta(days=BENEFICIARY_SESSION_DAYS))
+    return redirect("estate:beneficiary_portal")
+
+
+@require_safe
+@beneficiary_required
+def beneficiary_portal(request: HttpRequest) -> HttpResponse:
+    """The beneficiary's designated items, and nothing else of the estate."""
+    link = request.beneficiary_link
+    response = render(
+        request,
+        "my_garage/estate/beneficiary/portal.html",
+        {
+            "beneficiary": link.beneficiary,
+            "owner": link.owner,
+            "assignments": get_beneficiary_assignments(link),
+        },
+    )
+    # Log only a page the beneficiary actually received; HEAD carries no page
+    if request.method == "GET":
+        log_estate_access(
+            link.owner,
+            "BENEFICIARY_VIEW",
+            token=link.issued_by_token,
+            request=request,
+            beneficiary=link.beneficiary,
+        )
+    return response
 
 
 @require_safe
