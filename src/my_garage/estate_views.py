@@ -17,6 +17,7 @@ from django.views.decorators.http import require_safe
 from django.views.static import serve as static_serve
 
 from my_garage.api.selectors import (
+    get_estate_assign_items,
     get_estate_dashboard_context,
     get_executor_access_status,
     get_executor_item,
@@ -31,6 +32,7 @@ from my_garage.api.services import (
     log_estate_access,
     remove_beneficiary_assignment,
     revoke_executor_access,
+    save_executor,
     verify_executor_code,
 )
 from my_garage.forms import (
@@ -211,18 +213,28 @@ def executor_view(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         form = EstateExecutorForm(request.POST, instance=executor)
         if form.is_valid():
-            exec_obj = form.save(commit=False)
-            exec_obj.owner = request.user
-            exec_obj.save()
-            messages.success(request, "Executor designated successfully.")
+            if save_executor(request.user, form, request=request):
+                messages.success(
+                    request,
+                    "Executor updated. Their previous access code has been "
+                    "revoked — issue a new code from Activate Estate Access.",
+                )
+            else:
+                messages.success(request, "Executor designated successfully.")
             return redirect("estate:executor")
     else:
         form = EstateExecutorForm(instance=executor)
 
+    # The Update form warns before a name change revokes this code. It matches
+    # what save_executor revokes: any token still flagged active.
+    token = get_executor_access_status(request.user)["token"] if executor else None
+    has_active_code = token is not None and token.is_active
+    if has_active_code:
+        form.fields["name"].widget.attrs["aria-describedby"] = "executor-name-hint"
     return render(
         request,
         "my_garage/estate/executor.html",
-        {"executor": executor, "form": form},
+        {"executor": executor, "form": form, "has_active_code": has_active_code},
     )
 
 
@@ -250,8 +262,9 @@ def item_assign(
     """Create or update the estate assignment for a collection item."""
     from my_garage.models import CollectionType
 
+    # Soft-deleted collections are out of the estate
     collection_type = get_object_or_404(
-        CollectionType, slug=collection_slug, owner=request.user
+        CollectionType, slug=collection_slug, owner=request.user, is_active=True
     )
     item = get_object_or_404(
         DynamicCollectionItem,
@@ -298,8 +311,9 @@ def item_assign_remove(
     """Remove the estate assignment for a collection item."""
     from my_garage.models import CollectionType
 
+    # Soft-deleted collections are out of the estate
     collection_type = get_object_or_404(
-        CollectionType, slug=collection_slug, owner=request.user
+        CollectionType, slug=collection_slug, owner=request.user, is_active=True
     )
     item = get_object_or_404(
         DynamicCollectionItem,
@@ -426,13 +440,8 @@ def _activate_success_response(request: HttpRequest) -> HttpResponse:
 @login_required
 def assign_overview(request: HttpRequest) -> HttpResponse:
     """List all collection items with their current estate assignment status."""
-    items = (
-        DynamicCollectionItem.objects.filter(owner=request.user)
-        .select_related("collection_type", "estate_assignment__beneficiary")
-        .order_by("collection_type__name", "name")
-    )
     return render(
         request,
         "my_garage/estate/assign_overview.html",
-        {"items": items},
+        {"items": get_estate_assign_items(request.user)},
     )

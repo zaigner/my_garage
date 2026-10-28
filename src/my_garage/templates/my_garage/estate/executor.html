@@ -46,7 +46,9 @@
       <h2 class="text-luxury-gold text-xs uppercase tracking-widest border-b border-white/10 pb-2 mb-6">
         Update Executor
       </h2>
-      <form method="post" action="{% url 'estate:executor' %}" novalidate>
+      <form method="post" action="{% url 'estate:executor' %}" novalidate
+            {% if has_active_code %}data-current-name="{{ executor.name }}"
+            onsubmit="var key = function (s) { return s.trim().split(/\s+/).join(' ').toLowerCase(); }; return key(this.elements['name'].value) === key(this.dataset.currentName) || confirm('You changed the executor name. Saving this revokes the current access code. Continue?');"{% endif %}>
         {% csrf_token %}
         <div class="space-y-4 mb-6">
           <div>
@@ -54,6 +56,9 @@
             {{ form.name }}
             {% if form.name.errors %}
               <p class="text-red-400 text-xs mt-1">{{ form.name.errors.0 }}</p>
+            {% endif %}
+            {% if has_active_code %}
+              <p id="executor-name-hint" class="text-gray-400 text-xs mt-1">Saving a different name revokes the current access code.</p>
             {% endif %}
           </div>
           <div>

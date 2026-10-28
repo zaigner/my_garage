@@ -38,11 +38,11 @@
           <dd class="text-luxury-white mt-1">{% include "my_garage/estate/portal/_money.html" with value=snapshot.market_value %}</dd>
         </div>
         <div class="bg-luxury-card border border-white/10 rounded-xl p-4">
-          <dt class="text-xs uppercase tracking-widest text-gray-300">Cost basis</dt>
+          <dt class="text-xs uppercase tracking-widest text-gray-300">Purchase price</dt>
           <dd class="text-luxury-white mt-1">{% include "my_garage/estate/portal/_money.html" with value=snapshot.cost_basis %}</dd>
         </div>
         <div class="bg-luxury-card border border-white/10 rounded-xl p-4">
-          <dt class="text-xs uppercase tracking-widest text-gray-300">Equity</dt>
+          <dt class="text-xs uppercase tracking-widest text-gray-300">Value minus purchase price</dt>
           <dd class="text-luxury-white mt-1">{% if snapshot.equity is None %}—{% elif snapshot.equity == 0 %}$0{% else %}{{ snapshot.equity|nfp_display }}{% endif %}</dd>
         </div>
       </dl>

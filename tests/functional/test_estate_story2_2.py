@@ -246,9 +246,10 @@ class TestRevoke:
         assert not EstateAccessToken.objects.get().is_active
         assert not EstateExecutor.objects.exists()
 
-    def test_executor_update_keeps_token(self, owner_client, executor, raw):
+    def test_executor_contact_update_keeps_token(self, owner_client, executor, raw):
+        # A name change revokes the code (Story 3.2); a contact edit keeps it
         owner_client.post(
-            "/estate/executor/", {"name": "New", "contact_info": "n@x.com"}
+            "/estate/executor/", {"name": "Jo", "contact_info": "n@x.com"}
         )
         assert EstateAccessToken.objects.get().is_active
 

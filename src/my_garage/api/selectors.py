@@ -215,11 +215,16 @@ def get_estate_dashboard_context(user) -> Dict[str, Any]:
         items_assigned   — int
         completeness_pct — int 0-100 (0 when items_total == 0)
         recent_log       — list of up to 10 EstateChangeLog entries (newest first)
+
+    Items in soft-deleted collections (CollectionType.is_active=False) are
+    left out of the list and every total.
     """
     executor = EstateExecutor.objects.filter(owner=user).first()  # Q1
 
     items = list(
-        DynamicCollectionItem.objects.filter(owner=user)
+        DynamicCollectionItem.objects.filter(
+            owner=user, collection_type__is_active=True
+        )
         .select_related("collection_type", "estate_assignment__beneficiary")
         .annotate(
             is_assigned=Exists(
@@ -243,6 +248,20 @@ def get_estate_dashboard_context(user) -> Dict[str, Any]:
         "completeness_pct": completeness_pct,
         "recent_log": recent_log,
     }
+
+
+def get_estate_assign_items(user) -> List[DynamicCollectionItem]:
+    """
+    The owner's items for the estate assign overview, with their designation,
+    ordered by collection then name. Soft-deleted collections are left out.
+    """
+    return list(
+        DynamicCollectionItem.objects.filter(
+            owner=user, collection_type__is_active=True
+        )
+        .select_related("collection_type", "estate_assignment__beneficiary")
+        .order_by("collection_type__name", "name")
+    )
 
 
 ESTATE_SECURITY_EVENTS = (
@@ -339,9 +358,14 @@ def get_item_display_custom_fields(
 
 
 def get_executor_item(owner, item_id) -> Optional[DynamicCollectionItem]:
-    """The owner's item, or None (the executor portal answers 404)."""
+    """
+    The owner's item, or None (the executor portal answers 404). Items in
+    soft-deleted collections are out of the estate, so they read as None.
+    """
     return (
-        DynamicCollectionItem.objects.filter(pk=item_id, owner=owner)
+        DynamicCollectionItem.objects.filter(
+            pk=item_id, owner=owner, collection_type__is_active=True
+        )
         .select_related("collection_type", "estate_assignment__beneficiary")
         .first()
     )
@@ -380,8 +404,10 @@ def get_executor_portfolio_context(owner, token) -> Dict[str, Any]:
                            existed at activation), snapshot_value,
                            current_value, beneficiary_name, charitable_org,
                            is_charitable, is_unassigned
-        removed_rows     — one dict per item deleted after activation (its
-                           snapshot row remains with item=None): item (None),
+        removed_rows     — one dict per snapshotted item no longer in the
+                           estate: deleted after activation (its snapshot
+                           row remains with item=None) or in a collection
+                           soft-deleted after activation. item (None),
                            item_name (stored at activation), snapshot_value,
                            removed (True); ordered by name
         removed_count    — int, len(removed_rows)
@@ -396,9 +422,14 @@ def get_executor_portfolio_context(owner, token) -> Dict[str, Any]:
         delta            — Decimal or None (current − snapshot, summed over
                            current items valued at both)
         compared_count   — int, items included in delta
+
+    Items in soft-deleted collections (CollectionType.is_active=False) are not
+    current items.
     """
     items = list(
-        DynamicCollectionItem.objects.filter(owner=owner)
+        DynamicCollectionItem.objects.filter(
+            owner=owner, collection_type__is_active=True
+        )
         .select_related("collection_type", "estate_assignment__beneficiary")
         .order_by("collection_type__name", "name")
     )  # Q1
@@ -406,26 +437,34 @@ def get_executor_portfolio_context(owner, token) -> Dict[str, Any]:
     snapshots = list(
         ValuationSnapshot.objects.filter(
             owner=owner, snapshot_trigger="ESTATE_ACTIVATION", token=token
-        ).values_list("item_id", "item_name", "market_value")
+        )
+        .order_by("-created_at", "-pk")
+        .values_list("item_id", "item_name", "market_value")
     )  # Q2
-    # Newest row first (Meta ordering), as the detail selector's .first() picks
+    # Newest row first, as the detail selector's .first() picks.
+    # A snapshot whose item is not a current item (deleted, or its collection
+    # soft-deleted after activation) becomes a removed row.
+    current_ids = {item.pk for item in items}
     activation_values: Dict[int, Any] = {}
-    for item_id, _, value in snapshots:
-        if item_id is not None:
+    out_of_scope_ids = set()
+    removed_rows = []
+    for item_id, name, value in snapshots:
+        if item_id in current_ids:
             activation_values.setdefault(item_id, value)
-    removed_rows = sorted(
-        (
+            continue
+        if item_id is not None:
+            if item_id in out_of_scope_ids:
+                continue
+            out_of_scope_ids.add(item_id)
+        removed_rows.append(
             {
                 "item": None,
                 "item_name": name,
                 "snapshot_value": value,
                 "removed": True,
             }
-            for item_id, name, value in snapshots
-            if item_id is None
-        ),
-        key=lambda r: r["item_name"].lower(),
-    )
+        )
+    removed_rows.sort(key=lambda r: r["item_name"].lower())
 
     rows = []
     for item in items:
@@ -489,12 +528,16 @@ def get_executor_item_detail_context(owner, token, item_id) -> Optional[Dict[str
     if item is None:
         return None
 
-    snapshot = ValuationSnapshot.objects.filter(
-        item=item,
-        owner=owner,
-        snapshot_trigger="ESTATE_ACTIVATION",
-        token=token,
-    ).first()  # Q2
+    snapshot = (
+        ValuationSnapshot.objects.filter(
+            item=item,
+            owner=owner,
+            snapshot_trigger="ESTATE_ACTIVATION",
+            token=token,
+        )
+        .order_by("-created_at", "-pk")
+        .first()
+    )  # Q2
 
     designation = _designation_fields(item)
     row = {
