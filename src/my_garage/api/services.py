@@ -187,6 +187,37 @@ def revoke_executor_access(user, request=None) -> bool:
         return _deactivate_active_tokens(user, request=request) > 0
 
 
+def _person_name_key(name: str) -> str:
+    """Compare names ignoring case and spacing: "jo  smith" == "Jo Smith"."""
+    return " ".join((name or "").split()).casefold()
+
+
+def save_executor(user, form, request=None) -> bool:
+    """
+    Save a valid EstateExecutorForm as the owner's executor.
+
+    A different person (name changed, ignoring case and spacing) must not keep
+    the previous executor's access code, so it is revoked (TOKEN_REVOKED is
+    logged). A contact-only edit or a first designation revokes nothing.
+    Returns True if an active code was revoked.
+    """
+    from my_garage.models import EstateExecutor
+
+    with transaction.atomic():
+        previous_name = (
+            EstateExecutor.objects.filter(owner=user)
+            .values_list("name", flat=True)
+            .first()
+        )
+        executor = form.save(commit=False)
+        executor.owner = user
+        executor.save()
+        replaced = previous_name is not None and (
+            _person_name_key(previous_name) != _person_name_key(executor.name)
+        )
+        return replaced and revoke_executor_access(user, request=request)
+
+
 def activate_estate_plan(user, request=None) -> str:
     """
     Generate an executor access token and lock a valuation snapshot for all
@@ -219,7 +250,10 @@ def activate_estate_plan(user, request=None) -> str:
         )
         log_estate_access(user, "TOKEN_ISSUED", token=new_token, request=request)
         snapshots = []
-        for item in DynamicCollectionItem.objects.filter(owner=user):
+        # Soft-deleted collections are out of the estate
+        for item in DynamicCollectionItem.objects.filter(
+            owner=user, collection_type__is_active=True
+        ):
             mv = item.current_market_value
             cb = item.purchase_price  # raw purchase cost; None when unknown
             eq = (mv - cb) if (mv is not None and cb is not None) else None

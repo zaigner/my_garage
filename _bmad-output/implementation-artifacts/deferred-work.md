@@ -9,3 +9,9 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-epic-2-retro-fixes.md`
   summary: Move the deploy workflow's superseded-commit guard into a script under version control with its own test (skip only when the deployed tag strictly descends from the built SHA; deploy for the same SHA, `latest`, an empty image, or an unknown tag).
   evidence: The guard in `.github/workflows/deploy.yml` is inline shell that no test or lint runs. Swapping the `merge-base --is-ancestor` arguments, or mistyping the step id, would either roll production back or skip every deploy while the job stays green, and only a real deploy would show it.
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-2-estate-scope-executor-replacement.md`
+  summary: Run the executor Update form's confirm-prompt logic in a test (browser or JS harness), and align its name normalisation with `_person_name_key` (casefold vs toLowerCase; Python `split()` vs JS `\s`, e.g. U+FEFF).
+  evidence: `TestConfirmPrompt` only asserts the rendered attributes. Flipping `===` or dropping the lower-casing in the inline handler passes every test. The repo has no Playwright or Selenium harness. Server-side revocation (`save_executor`) is covered and is the real safeguard.
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-2-estate-scope-executor-replacement.md`
+  summary: Decide whether app-wide item counts and totals should exclude soft-deleted collections, as the estate now does: the profile `total_items` (`src/config/views.py:150`), and the home NFP and year-over-year selectors (`api/selectors.py` around `:89`, `:102`, `:159`).
+  evidence: Story 3.2 excludes items in soft-deleted collections from every estate total. The profile page now shows `total_items` (all items) next to `estate_items_total` (active collections only), so the two counts can differ. The non-estate behaviour predates this story.
