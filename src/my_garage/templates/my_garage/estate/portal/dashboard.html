@@ -58,6 +58,49 @@
     </dl>
   </section>
 
+  <!-- Beneficiary links -->
+  <section aria-labelledby="links-heading" class="space-y-4">
+    <h2 id="links-heading" class="text-xs uppercase tracking-widest text-gray-300">Beneficiary links</h2>
+    {% if beneficiary_links %}
+      <ul class="space-y-3" data-testid="beneficiary-links">
+        {% for row in beneficiary_links %}
+          <li class="bg-luxury-card border border-white/10 rounded-xl p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p class="text-luxury-white">{{ row.beneficiary.name }} <span class="text-xs text-gray-300">&middot; {{ row.item_count }} item{{ row.item_count|pluralize }}</span></p>
+              <p class="text-sm text-gray-300" data-testid="link-status">
+                {% if row.status == "issued" %}Issued &mdash; not yet opened (expires {{ row.link.expires_at|date:"M j, Y" }})
+                {% elif row.status == "opened" %}Opened {{ row.link.claimed_at|date:"M j, Y" }}
+                {% elif row.status == "revoked" %}Revoked
+                {% elif row.status == "expired" %}Expired &mdash; not opened
+                {% else %}No link{% endif %}
+              </p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <form method="post" action="{% url 'estate:portal_link_issue' row.beneficiary.pk %}"
+                    {% if row.status == "issued" or row.status == "opened" %}onsubmit="return confirm('Issuing a new link revokes the current one immediately. Continue?');"{% endif %}>
+                {% csrf_token %}
+                <button type="submit" class="border border-luxury-gold text-luxury-gold font-bold uppercase text-xs tracking-widest rounded-sm px-4 py-2 hover:bg-white/10 focus:outline focus:outline-2 focus:outline-luxury-gold">
+                  {% if row.status == "issued" or row.status == "opened" %}Issue new link{% else %}Issue link{% endif %}<span class="sr-only"> for {{ row.beneficiary.name }}</span>
+                </button>
+              </form>
+              {% if row.status == "issued" or row.status == "opened" %}
+                <form method="post" action="{% url 'estate:portal_link_revoke' row.beneficiary.pk %}"
+                      onsubmit="return confirm('Revoke the link for {{ row.beneficiary.name|escapejs }}? It stops working immediately.');">
+                  {% csrf_token %}
+                  <button type="submit" class="border border-red-400 text-red-300 font-bold uppercase text-xs tracking-widest rounded-sm px-4 py-2 hover:bg-red-900/30 focus:outline focus:outline-2 focus:outline-red-300">
+                    Revoke<span class="sr-only"> link for {{ row.beneficiary.name }}</span>
+                  </button>
+                </form>
+              {% endif %}
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="text-gray-300 text-sm">No beneficiary has an item designated to them.</p>
+    {% endif %}
+  </section>
+
   {% if unassigned_count %}
     <div role="status" class="border border-yellow-400/60 bg-yellow-900/30 text-yellow-100 text-sm rounded-md px-4 py-3">
       <strong class="font-semibold">{{ unassigned_count }} asset{{ unassigned_count|pluralize }} {{ unassigned_count|pluralize:"has,have" }} no beneficiary designation.</strong>

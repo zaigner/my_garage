@@ -109,7 +109,9 @@ def client_ip(request) -> Optional[str]:
     return None
 
 
-def log_estate_access(owner, event, token=None, item=None, request=None):
+def log_estate_access(
+    owner, event, token=None, item=None, request=None, beneficiary=None
+):
     """Append an EstateAccessLog row."""
     from my_garage.models import EstateAccessLog
 
@@ -119,6 +121,7 @@ def log_estate_access(owner, event, token=None, item=None, request=None):
         event=event,
         item=item,
         item_name=item.name if item is not None else "",
+        beneficiary_name=beneficiary.name if beneficiary is not None else "",
         ip_address=client_ip(request),
     )
 
@@ -185,6 +188,71 @@ def revoke_executor_access(user, request=None) -> bool:
     """Revoke the owner's active executor code. True if one was active."""
     with transaction.atomic():
         return _deactivate_active_tokens(user, request=request) > 0
+
+
+BENEFICIARY_LINK_DAYS = 7
+
+
+def _deactivate_active_links(beneficiary, token, request=None) -> int:
+    """Deactivate the beneficiary's active links, logging each. Call inside atomic."""
+    from my_garage.models import BeneficiaryAccessLink
+
+    active = list(
+        BeneficiaryAccessLink.objects.select_for_update().filter(
+            beneficiary=beneficiary, is_active=True
+        )
+    )
+    ids = [link.pk for link in active]
+    if ids:
+        BeneficiaryAccessLink.objects.filter(pk__in=ids).update(is_active=False)
+        for _ in active:
+            log_estate_access(
+                beneficiary.owner,
+                "LINK_REVOKED",
+                token=token,
+                request=request,
+                beneficiary=beneficiary,
+            )
+    return len(ids)
+
+
+def issue_beneficiary_link(beneficiary, token, request=None) -> str:
+    """
+    Issue a claim link for a beneficiary. Returns the raw link token once; only
+    its SHA-256 hash is stored. Any previous active link is deactivated in the
+    same transaction (LINK_REVOKED logged). Expires after 7 days if unopened.
+    """
+    from my_garage.models import Beneficiary, BeneficiaryAccessLink
+
+    raw = secrets.token_urlsafe(32)
+    with transaction.atomic():
+        # Lock the beneficiary row: locking zero active links locks nothing
+        Beneficiary.objects.select_for_update().get(pk=beneficiary.pk)
+        _deactivate_active_links(beneficiary, token, request=request)
+        BeneficiaryAccessLink.objects.create(
+            beneficiary=beneficiary,
+            owner=beneficiary.owner,
+            issued_by_token=token,
+            link_token_hash=hash_executor_code(raw),
+            expires_at=timezone.now() + timedelta(days=BENEFICIARY_LINK_DAYS),
+        )
+        log_estate_access(
+            beneficiary.owner,
+            "LINK_ISSUED",
+            token=token,
+            request=request,
+            beneficiary=beneficiary,
+        )
+    return raw
+
+
+def revoke_beneficiary_link(beneficiary, token, request=None) -> bool:
+    """Revoke the beneficiary's active link. True if one was active."""
+    from my_garage.models import Beneficiary
+
+    with transaction.atomic():
+        Beneficiary.objects.select_for_update().get(pk=beneficiary.pk)
+        return _deactivate_active_links(beneficiary, token, request=request) > 0
 
 
 def _person_name_key(name: str) -> str:

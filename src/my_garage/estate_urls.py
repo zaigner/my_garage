@@ -40,6 +40,26 @@ urlpatterns = [
         estate_views.portal_item_photo,
         name="executor_item_photo",
     ),
+    path(
+        "portal/beneficiaries/<int:pk>/link/",
+        estate_views.portal_link_issue,
+        name="portal_link_issue",
+    ),
+    path(
+        "portal/beneficiaries/<int:pk>/link/revoke/",
+        estate_views.portal_link_revoke,
+        name="portal_link_revoke",
+    ),
+    path(
+        "portal/beneficiaries/<int:pk>/link/issued/",
+        estate_views.portal_link_issued,
+        name="portal_link_issued",
+    ),
+    path(
+        "beneficiary/claim/<str:token>/",
+        estate_views.beneficiary_claim,
+        name="beneficiary_claim",
+    ),
     path("assign/", estate_views.assign_overview, name="assign_overview"),
     path(
         "assign/<slug:collection_slug>/items/<int:item_id>/",
