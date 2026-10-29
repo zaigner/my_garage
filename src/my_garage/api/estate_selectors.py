@@ -139,6 +139,10 @@ ESTATE_SECURITY_EVENTS = (
     "LINK_REVOKED",
     "LINK_CLAIMED",
 )
+# Kept deliberately (not dead code; reviewed and kept twice, Epic 3 retro
+# EC11/ADV8 and the item 11 review): test_event_groups_cover_every_event_type
+# reads it to check every event is grouped, and Story 4.3's audit PDF is its
+# production reader
 ESTATE_VIEW_EVENTS = ("PORTAL_VIEW", "ITEM_VIEW", "BENEFICIARY_VIEW")
 # Beneficiary views share the executor's token, so the owner's
 # "Portal views with this code" count leaves them out
