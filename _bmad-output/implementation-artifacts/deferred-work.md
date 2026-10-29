@@ -19,3 +19,15 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-epic-3-retro-fixes.md`
   summary: The executor's link-issued page (`portal/link_issued.html:21`) should say the link also stops working when the owner revokes or replaces the executor code, not only on reissue or revoke.
   evidence: F3 fixed only the owner-facing copy. The executor hands the link over and is the one who must explain a dead link (review pass 1, B4).
+- source_spec: `_bmad-output/implementation-artifacts/epic-3-retro-2026-10-29.md`
+  summary: Log `LINK_REVOKED` for each beneficiary link that ends because its issuing executor code was deactivated (executor rename, reactivation, "Revoke access", executor removal).
+  evidence: F3. Links are usable only while their `issued_by_token` is (`get_beneficiary_session_link` in `api/selectors.py`), so those links stop working with no audit row; the owner's security panel shows only `TOKEN_REVOKED`. The retro fixes changed only the owner-facing copy.
+- source_spec: `_bmad-output/implementation-artifacts/epic-3-retro-2026-10-29.md`
+  summary: Warn on the claim confirm page when the browser holds executor session keys or a logged-in owner, since confirming spends the link and replaces nothing they need.
+  evidence: F7. An executor or owner who opens the URL to check it before sending it can claim it by pressing the button, and the beneficiary then gets the 404. Recoverable by reissue.
+- source_spec: `_bmad-output/implementation-artifacts/epic-3-retro-2026-10-29.md`
+  summary: Give code events and link events separate limits in the owner's security panel, and fix the `get_executor_access_status` docstring that still says "TOKEN_*/CODE_*".
+  evidence: F16. `ESTATE_SECURITY_EVENTS` now includes `LINK_*`, and each reissue logs two rows, so link churn can push `CODE_REJECTED` rows out of the 10-row panel. A `LINK_REJECTED` event (Q3) adds to it.
+- source_spec: `_bmad-output/implementation-artifacts/epic-3-retro-2026-10-29.md`
+  summary: Log `LINK_REVOKED` when deleting a beneficiary ends their active link.
+  evidence: F17. `BeneficiaryAccessLink.beneficiary` is `CASCADE` (`models.py`), so the link row disappears and no revoke is logged. The earlier `EstateAccessLog` rows survive because they store names, not FKs.

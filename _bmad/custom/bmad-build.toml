@@ -1,0 +1,9 @@
+# Team overrides for bmad-build. Merged over .claude/skills/bmad-build/customize.toml.
+
+[workflow]
+
+# Process lessons from the Epic 3 retrospective (2026-10-29, items 10 / P1-P2).
+persistent_facts = [
+  "Review triage: before rejecting a finding, check the triage logs of earlier specs in the same epic (_bmad-output/implementation-artifacts/spec-*.md). A finding that an earlier story's review already rejected goes to the human as an intent question; it is not rejected again. (Epic 3 F1 was rejected in two story reviews and turned out to be a live, invisible session.)",
+  "Concurrency: when a story introduces a locking or concurrency pattern, grep for the older writers of the same invariant and apply the pattern there too, or list them in the spec as out of scope with a reason. (Epic 3 F2: Story 3.3 locked the parent row but activate_estate_plan, from Story 2.1, was never revisited.)",
+]

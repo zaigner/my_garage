@@ -29,7 +29,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 10-25-2026 16:58
-last_updated: 10-29-2026 09:59
+last_updated: 10-29-2026 11:14
 project: my_garage
 project_key: NOKEY
 tracking_system: file-system
@@ -154,7 +154,7 @@ action_items:
       warning for executor or owner, noindex on claim page, split security-panel limits,
       LINK_REVOKED on beneficiary delete (F3, F7, F11, F16, F17)"
     owner: "dev"
-    status: open
+    status: done
     ref: "_bmad-output/implementation-artifacts/epic-3-retro-2026-10-29.md"
   - id: "epic-3-retro-item-13-reconcile-epics-estate-legacy-md-and-epi"
     epic: 3
@@ -162,7 +162,7 @@ action_items:
       built: 3.4 claim opens then confirms (POST); isolation filters include is_charitable=False
       and item__owner; 3.5 shows Value minus purchase price (F18-F20)"
     owner: "Zaigner77"
-    status: open
+    status: done
     ref: "_bmad-output/implementation-artifacts/epic-3-retro-2026-10-29.md"
   - id: "epic-3-retro-item-14-process-in-bmad-build-triage-send-a-find"
     epic: 3
@@ -170,5 +170,5 @@ action_items:
       story to the human; when a story adds a locking pattern, check older writers
       of the same invariant (P1, P2)"
     owner: "Zaigner77"
-    status: open
+    status: done
     ref: "_bmad-output/implementation-artifacts/epic-3-retro-2026-10-29.md"
