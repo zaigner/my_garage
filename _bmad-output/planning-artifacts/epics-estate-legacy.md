@@ -782,14 +782,18 @@ So that I can see what I will inherit without accessing anyone else's informatio
 
 **Acceptance Criteria:**
 
-**Given** beneficiary opens `/estate/beneficiary/claim/<token>/`
+**Given** beneficiary opens `/estate/beneficiary/claim/<token>/` and confirms
 **When** the link is active, unclaimed, unexpired and its issuing executor token is usable
-**Then** the token is hashed and compared with `secrets.compare_digest`
+**Then** the GET shows a confirm page and changes nothing, so link previews and mail scanners can't use the link up
+**And** on the confirm POST the token is hashed and compared with `secrets.compare_digest`
 **And** `claimed_at` is set, session keys `estate_beneficiary_link_id` / `estate_beneficiary_owner_id` are written, `LINK_CLAIMED` is logged, and they are redirected to `/estate/beneficiary/`
 
 **Given** the same link is opened again, or is invalid, revoked or expired
 **When** the request arrives
 **Then** a 404 is returned (NFR8 — single-use; no information about whether the token ever existed); the beneficiary asks the executor to reissue
+**And** the one exception: reopening a claimed link in the browser whose live session is that same link redirects to `/estate/beneficiary/`
+
+*As built (reconciled 2026-10-29, Epic 3 retro F18):* the original AC claimed the link on open. The confirm step and the reopen redirect were human decisions on 2026-10-28; see `spec-3-4-beneficiary-portal-session.md`.
 
 **Given** a beneficiary session
 **When** they open `/estate/beneficiary/`
@@ -813,7 +817,7 @@ So that I can see what I will inherit without accessing anyone else's informatio
 - `claim_beneficiary_link(raw_token, request)` in `api/services.py`; `beneficiary_required` decorator in `estate_views.py` re-checks the link on every request, applies `never_cache`, and sets a 30-day sliding expiry (NFR8)
 - Session namespace (NFR9): only the `estate_beneficiary_*` keys are written; executor and Django auth keys are never touched
 - Views use `require_safe` and log after render, GET only (Epic 2 patterns)
-- ORM isolation: `BeneficiaryAssignment.objects.filter(beneficiary=link.beneficiary, item__collection_type__is_active=True).select_related("item")`
+- ORM isolation: `BeneficiaryAssignment.objects.filter(beneficiary=link.beneficiary, is_charitable=False, item__owner=link.owner, item__collection_type__is_active=True).select_related("item__collection_type")` (as built: `_beneficiary_assignment_qs` in `api/selectors.py`; reconciled 2026-10-29, Epic 3 retro F19)
 - Template: `estate/beneficiary/portal.html`, extending a beneficiary `_base.html` with no owner account chrome
 
 ---
@@ -831,6 +835,7 @@ So that I can understand exactly what asset is being left to me and under what c
 **Then** the page renders what FR29 lists: item name, collection type, photo (or placeholder), current value, purchase price and date, service records, notes, custom field values
 **And** `BeneficiaryAssignment.conditional_note` is prominently displayed if present
 **And** the activation snapshot is shown with the Story 3.2 labels: snapshot date, value at activation, purchase price
+**And** (as built, accepted deviation, Epic 3 retro F20) it also shows "Value minus purchase price", because the snapshot block is the partial shared with the executor item page
 
 **Given** the item is assigned to a different beneficiary, or not assigned
 **When** the request arrives
@@ -854,6 +859,7 @@ A reusable PDF rendering service (`pdf_service.py`) built on `reportlab` powers 
 **FRs covered:** FR30, FR31, FR32, FR33, FR34
 **NFRs covered:** NFR4, NFR16, NFR20
 **Dependency:** Epic 2 (ValuationSnapshot), Epic 3 (Story 3.1 snapshot integrity, Story 3.4 beneficiary session). Nothing depends back on Epic 4.
+**Open scope question (Epic 3 retro Q5, to decide in Epic 4 planning):** should the activation snapshot also record each item's designated beneficiary at activation, so a later reassignment shows in the PDFs? Today a snapshot stores the item's figures only, and PDFs could show only current designations.
 
 ---
 
