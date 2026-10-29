@@ -223,7 +223,10 @@ class TestOwnerPanel:
 class TestRevoke:
     def test_revoke(self, owner_client, raw):
         r = owner_client.post("/estate/activate/revoke/", follow=True)
-        assert "Executor access revoked." in r.content.decode()
+        assert (
+            "Executor access revoked. Beneficiary links issued under the code no "
+            "longer work." in r.content.decode()
+        )
         assert not EstateAccessToken.objects.get().is_active
         assert EstateAccessLog.objects.filter(event="TOKEN_REVOKED").count() == 1
 

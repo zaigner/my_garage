@@ -15,6 +15,7 @@ from typing import Optional
 
 import requests
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.db.models import F
 from django.utils import timezone
@@ -193,8 +194,11 @@ def revoke_executor_access(user, request=None) -> bool:
 BENEFICIARY_LINK_DAYS = 7
 
 
-def _deactivate_active_links(beneficiary, token, request=None) -> int:
-    """Deactivate the beneficiary's active links, logging each. Call inside atomic."""
+def _deactivate_active_links(beneficiary, request=None) -> int:
+    """
+    Deactivate the beneficiary's active links, logging each under the token
+    that issued it. Call inside atomic.
+    """
     from my_garage.models import BeneficiaryAccessLink
 
     active = list(
@@ -205,11 +209,11 @@ def _deactivate_active_links(beneficiary, token, request=None) -> int:
     ids = [link.pk for link in active]
     if ids:
         BeneficiaryAccessLink.objects.filter(pk__in=ids).update(is_active=False)
-        for _ in active:
+        for link in active:
             log_estate_access(
                 beneficiary.owner,
                 "LINK_REVOKED",
-                token=token,
+                token=link.issued_by_token,
                 request=request,
                 beneficiary=beneficiary,
             )
@@ -228,7 +232,7 @@ def issue_beneficiary_link(beneficiary, token, request=None) -> str:
     with transaction.atomic():
         # Lock the beneficiary row: locking zero active links locks nothing
         Beneficiary.objects.select_for_update().get(pk=beneficiary.pk)
-        _deactivate_active_links(beneficiary, token, request=request)
+        _deactivate_active_links(beneficiary, request=request)
         BeneficiaryAccessLink.objects.create(
             beneficiary=beneficiary,
             owner=beneficiary.owner,
@@ -252,7 +256,7 @@ def revoke_beneficiary_link(beneficiary, token, request=None) -> bool:
 
     with transaction.atomic():
         Beneficiary.objects.select_for_update().get(pk=beneficiary.pk)
-        return _deactivate_active_links(beneficiary, token, request=request) > 0
+        return _deactivate_active_links(beneficiary, request=request) > 0
 
 
 def claim_beneficiary_link(raw_token: str, request=None):
@@ -351,6 +355,11 @@ def activate_estate_plan(user, request=None) -> str:
     # the transaction so each snapshot's item still exists at bulk_create.
     today = date.today()
     with transaction.atomic():
+        # Lock the owner row first: a first activation has no token rows to
+        # lock, so two concurrent ones could both create an active token.
+        # NO KEY UPDATE still serialises activations but doesn't block the FK
+        # KEY SHARE locks that log/link inserts (e.g. code entry) take on it
+        get_user_model().objects.select_for_update(no_key=True).get(pk=user.pk)
         _deactivate_active_tokens(user, request=request)
         new_token = EstateAccessToken.objects.create(
             owner=user,

@@ -30,8 +30,9 @@ EXECUTOR_URL = "/estate/executor/"
 ASSIGN_URL = "/estate/assign/"
 PROFILE_URL = "/accounts/profile/"
 REVOKED_MSG = (
-    "Executor updated. Their previous access code has been revoked — issue a new "
-    "code from Activate Estate Access."
+    "Executor updated. Their previous access code has been revoked, and beneficiary "
+    "links issued under it no longer work — issue a new code from Activate Estate "
+    "Access."
 )
 HINT = 'id="executor-name-hint"'
 SAVED_MSG = "Executor designated successfully."
@@ -244,7 +245,10 @@ class TestConfirmPrompt:
         tag = self._update_form(owner_client.get(EXECUTOR_URL).content.decode())
         assert 'data-current-name="Jo Smith"' in tag
         assert "onsubmit=" in tag
-        assert "revokes the current access code" in tag
+        assert (
+            "Saving this revokes the current access code and ends every "
+            "beneficiary link issued under it." in tag
+        )
 
     def test_hint_with_active_code(self, owner_client, owner):
         EstateExecutor.objects.create(owner=owner, name="Jo Smith")
@@ -252,7 +256,10 @@ class TestConfirmPrompt:
         body = owner_client.get(EXECUTOR_URL).content.decode()
         start = body.index(HINT)
         hint = body[start : body.index("</p>", start)]
-        assert "Saving a different name revokes the current access code." in hint
+        assert (
+            "Saving a different name revokes the current access code and ends "
+            "every beneficiary link issued under it." in hint
+        )
         start = body.index('name="name"')
         name_input = body[body.rindex("<input", 0, start) : body.index(">", start)]
         assert 'aria-describedby="executor-name-hint"' in name_input

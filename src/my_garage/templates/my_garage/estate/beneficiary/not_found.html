@@ -1,0 +1,13 @@
+{% extends "my_garage/estate/beneficiary/_base.html" %}
+
+{% block title %}Link no longer active{% endblock %}
+
+{# Identical for every dead link or session: no flash messages, no estate data #}
+{% block messages %}{% endblock %}
+
+{% block content %}
+<div class="bg-luxury-card border border-white/10 rounded-xl p-6 space-y-3">
+  <h1 class="text-2xl font-serif text-luxury-white">This link is no longer active</h1>
+  <p class="text-gray-300 text-sm">Please contact the estate's executor for a new link to view the items designated to you.</p>
+</div>
+{% endblock %}
