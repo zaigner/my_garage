@@ -7,10 +7,12 @@ from datetime import timedelta
 
 import pytest
 from django.contrib.auth import get_user_model
+from django.test import RequestFactory
 from django.utils import timezone
 
 from my_garage.api.estate_selectors import (
     get_beneficiary_assignments,
+    get_beneficiary_link_by_hash,
     get_beneficiary_session_link,
     get_claimable_beneficiary_link,
     get_executor_access_status,
@@ -19,6 +21,7 @@ from my_garage.api.services import (
     activate_estate_plan,
     claim_beneficiary_link,
     issue_beneficiary_link,
+    log_beneficiary_link_rejected,
     log_estate_access,
     revoke_beneficiary_link,
 )
@@ -252,3 +255,85 @@ class TestExecutorViewCount:
         log_estate_access(owner, "PORTAL_VIEW", token=token)
         log_estate_access(owner, "BENEFICIARY_VIEW", token=token)
         assert get_executor_access_status(owner)["view_count"] == 1
+
+
+def _rejections():
+    return EstateAccessLog.objects.filter(event="LINK_REJECTED")
+
+
+class TestLinkByHash:
+    def test_finds_link_whatever_its_state(self, ann, token, raw):
+        claim_beneficiary_link(raw)
+        revoke_beneficiary_link(ann, token)
+        link = get_beneficiary_link_by_hash(_hash(raw))
+        assert link is not None and link.beneficiary == ann
+
+    def test_unknown_hash(self, raw):
+        assert get_beneficiary_link_by_hash(_hash("nope")) is None
+
+
+class TestLinkRejected:
+    def test_logs_owner_token_beneficiary_and_ip(self, owner, token, raw):
+        claim_beneficiary_link(raw)
+        request = RequestFactory().get("/", REMOTE_ADDR="198.51.100.4")
+        entry = log_beneficiary_link_rejected(raw, request=request)
+        assert entry is not None and entry.event == "LINK_REJECTED"
+        assert entry.owner == owner and entry.token == token
+        assert entry.beneficiary_name == "Ann"
+        assert entry.ip_address == "198.51.100.4"
+
+    @pytest.mark.parametrize("bad", ["", "nope", "x" * 43])
+    def test_unknown_token_logs_nothing(self, raw, bad):
+        assert log_beneficiary_link_rejected(bad) is None
+        assert not _rejections().exists()
+
+    def test_once_per_24_hours(self, raw):
+        assert log_beneficiary_link_rejected(raw) is not None
+        assert log_beneficiary_link_rejected(raw) is None
+        # The link must predate the row, or the dedupe ignores it
+        BeneficiaryAccessLink.objects.update(
+            issued_at=timezone.now() - timedelta(days=2)
+        )
+        _rejections().update(timestamp=timezone.now() - timedelta(hours=23))
+        assert log_beneficiary_link_rejected(raw) is None
+        _rejections().update(timestamp=timezone.now() - timedelta(hours=24))
+        assert log_beneficiary_link_rejected(raw) is not None
+        assert _rejections().count() == 2
+
+    def test_dedupe_is_per_link(self, owner, cars, token, raw):
+        bob = _beneficiary(owner, "Bob")
+        _assign(owner, cars, bob, "Bob car")
+        bob_raw = issue_beneficiary_link(bob, token)
+        assert log_beneficiary_link_rejected(raw) is not None
+        assert log_beneficiary_link_rejected(bob_raw) is not None
+        assert sorted(_rejections().values_list("beneficiary_name", flat=True)) == [
+            "Ann",
+            "Bob",
+        ]
+
+    def test_reissue_under_same_token_is_a_new_link(self, ann, token, raw):
+        assert log_beneficiary_link_rejected(raw) is not None
+        new_raw = issue_beneficiary_link(ann, token)
+        entry = log_beneficiary_link_rejected(new_raw)
+        assert entry is not None and entry.token == token
+        assert _rejections().count() == 2
+
+    def test_new_issuing_token_is_a_new_link(self, owner, ann, raw):
+        assert log_beneficiary_link_rejected(raw) is not None
+        activate_estate_plan(owner)
+        new_token = EstateAccessToken.objects.get(owner=owner, is_active=True)
+        new_raw = issue_beneficiary_link(ann, new_token)
+        entry = log_beneficiary_link_rejected(new_raw)
+        assert entry is not None and entry.token == new_token
+
+    def test_deleted_token_still_dedupes(self, token, raw):
+        token.delete()
+        entry = log_beneficiary_link_rejected(raw)
+        assert entry is not None and entry.token is None
+        assert log_beneficiary_link_rejected(raw) is None
+
+    def test_does_not_change_the_link(self, raw):
+        log_beneficiary_link_rejected(raw)
+        link = BeneficiaryAccessLink.objects.get()
+        assert link.claimed_at is None and link.is_active
+        assert claim_beneficiary_link(raw) is not None

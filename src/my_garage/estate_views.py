@@ -46,6 +46,7 @@ from my_garage.api.services import (
     claim_beneficiary_link,
     hash_executor_code,
     issue_beneficiary_link,
+    log_beneficiary_link_rejected,
     log_estate_access,
     remove_beneficiary_assignment,
     revoke_beneficiary_link,
@@ -303,12 +304,16 @@ def beneficiary_claim(request: HttpRequest, token: str) -> HttpResponse:
     if request.method != "POST":
         link = get_claimable_beneficiary_link(link_hash, timezone.now())
         if link is None:
+            # HEAD changes nothing, so it logs nothing either
+            if request.method == "GET":
+                log_beneficiary_link_rejected(token, request=request)
             return _beneficiary_not_found(request)
         return render(
             request, "my_garage/estate/beneficiary/claim.html", {"owner": link.owner}
         )
     link = claim_beneficiary_link(token, request=request)
     if link is None:
+        log_beneficiary_link_rejected(token, request=request)
         return _beneficiary_not_found(request)
     request.session.cycle_key()
     rotate_token(request)

@@ -138,6 +138,7 @@ ESTATE_SECURITY_EVENTS = (
     "LINK_ISSUED",
     "LINK_REVOKED",
     "LINK_CLAIMED",
+    "LINK_REJECTED",
 )
 # Kept deliberately (not dead code; reviewed and kept twice, Epic 3 retro
 # EC11/ADV8 and the item 11 review): test_event_groups_cover_every_event_type
@@ -156,7 +157,7 @@ def get_executor_access_status(user) -> Dict[str, Any]:
     Returns:
       token           active token, else latest, else None
       state           none/revoked/expired/unused/in_use
-      security_events last 10 TOKEN_*/CODE_* log rows, newest first; page
+      security_events last 10 TOKEN_*/CODE_*/LINK_* log rows, newest first; page
                       views are left out so they can't crowd these off
       view_count      PORTAL_VIEW + ITEM_VIEW rows for the returned token
       last_view_at    newest of those rows' timestamps, or None
@@ -281,6 +282,18 @@ def get_executor_beneficiary_links(owner, token) -> List[Dict[str, Any]]:
     ]
 
 
+def get_beneficiary_link_by_hash(link_hash: str) -> Optional[BeneficiaryAccessLink]:
+    """The link with this SHA-256 hash, whatever its state, else None. Read-only."""
+    link = (
+        BeneficiaryAccessLink.objects.filter(link_token_hash=link_hash)
+        .select_related("beneficiary", "owner", "issued_by_token")
+        .first()
+    )
+    if link is None or not secrets.compare_digest(link.link_token_hash, link_hash):
+        return None
+    return link
+
+
 def get_claimable_beneficiary_link(
     link_hash: str, now
 ) -> Optional[BeneficiaryAccessLink]:
@@ -289,12 +302,8 @@ def get_claimable_beneficiary_link(
     active, unclaimed, unexpired, and its issuing executor token usable.
     Read-only; claim_beneficiary_link re-runs it under a lock.
     """
-    link = (
-        BeneficiaryAccessLink.objects.filter(link_token_hash=link_hash)
-        .select_related("beneficiary", "owner", "issued_by_token")
-        .first()
-    )
-    if link is None or not secrets.compare_digest(link.link_token_hash, link_hash):
+    link = get_beneficiary_link_by_hash(link_hash)
+    if link is None:
         return None
     if not link.is_active or link.claimed_at is not None or link.expires_at <= now:
         return None

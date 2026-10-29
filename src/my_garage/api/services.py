@@ -263,7 +263,8 @@ def claim_beneficiary_link(raw_token: str, request=None):
     """
     Claim a beneficiary link once. Returns the claimed link, or None when it is
     unknown, already claimed, revoked, expired, or its executor token is no
-    longer usable. Failed claims log nothing; a claim logs LINK_CLAIMED.
+    longer usable. A claim logs LINK_CLAIMED; a failed claim logs nothing here,
+    and the claim view calls log_beneficiary_link_rejected for it.
     """
     from my_garage.api.estate_selectors import get_claimable_beneficiary_link
     from my_garage.models import Beneficiary, BeneficiaryAccessLink
@@ -299,6 +300,42 @@ def claim_beneficiary_link(raw_token: str, request=None):
             beneficiary=link.beneficiary,
         )
         return link
+
+
+LINK_REJECTED_DEDUPE = timedelta(hours=24)
+
+
+def log_beneficiary_link_rejected(raw_token: str, request=None):
+    """
+    Log LINK_REJECTED for a failed claim-URL request whose hash matches a real
+    link, whatever made it unclaimable. Returns the new row, or None for an
+    unknown hash or when this link already logged one in the last 24 hours.
+    The log has no link FK, so a link is its issuing token plus beneficiary.
+    """
+    from my_garage.api.estate_selectors import get_beneficiary_link_by_hash
+    from my_garage.models import EstateAccessLog
+
+    link = get_beneficiary_link_by_hash(hash_executor_code(raw_token or ""))
+    if link is None:
+        return None
+    recent = EstateAccessLog.objects.filter(
+        owner=link.owner,
+        event="LINK_REJECTED",
+        token=link.issued_by_token,
+        beneficiary_name=link.beneficiary.name,
+        timestamp__gt=timezone.now() - LINK_REJECTED_DEDUPE,
+        # A reissue shares token and name; only rows since this link count
+        timestamp__gte=link.issued_at,
+    ).exists()
+    if recent:
+        return None
+    return log_estate_access(
+        link.owner,
+        "LINK_REJECTED",
+        token=link.issued_by_token,
+        request=request,
+        beneficiary=link.beneficiary,
+    )
 
 
 def _person_name_key(name: str) -> str:

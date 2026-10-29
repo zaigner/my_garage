@@ -248,6 +248,13 @@ class DynamicCollectionItemForm(forms.ModelForm):
             ),
             "notes": forms.Textarea(attrs={"class": "form-control", "rows": 4}),
         }
+        help_texts = {
+            "notes": (
+                "If you designate this item to a beneficiary, they will see its "
+                "full details once estate access is activated, including these "
+                "notes, custom fields, photo and service records."
+            ),
+        }
 
     def __init__(self, *args, collection_type=None, **kwargs):  # noqa: C901
         super().__init__(*args, **kwargs)

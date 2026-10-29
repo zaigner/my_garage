@@ -235,6 +235,9 @@
                                             {{ field.label }}
                                         </label>
                                         {{ field }}
+                                        {% if field.name == "notes" and field.help_text %}
+                                            <p class="text-gray-500 text-xs mt-1">{{ field.help_text }}</p>
+                                        {% endif %}
                                     </div>
                                 {% endif %}
                             {% endfor %}

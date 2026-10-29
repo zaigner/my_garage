@@ -40,3 +40,6 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-epic-3-retro-item-11-estate-shared-helpers.md`
   summary: Fix the `get_item_display_custom_fields` docstring, which names the owner page and executor portal but not the beneficiary item page.
   evidence: Story 3.5 added the beneficiary caller (`get_beneficiary_item_detail_context`). Review pass 1, B1b.
+- source_spec: `_bmad-output/implementation-artifacts/spec-epic-3-retro-decisions-q2-q4.md`
+  summary: Check what a beneficiary sees after double-clicking "View my designated items"; the second POST may carry the cycled-away session and show a 404 although the claim succeeded.
+  evidence: Unverified (review pass 1, E2). The first POST claims and calls `session.cycle_key()`; a second POST in flight still sends the old cookie, so the reopen check fails and the claim fails. Whether the browser shows the first or the second response decides the outcome. Settle it with a double-submit in a real browser; if true, disable the button on submit. Pre-existing since Story 3.4.
