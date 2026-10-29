@@ -956,7 +956,7 @@ This is not optional — it is how agent interactions improve over time.
 
 ### Output: Two Artifacts
 
-**1. Session log** — Written to `memory/retros/YYYY-MM-DD.md`:
+**1. Session log** — Written to `memory/retros/YYYY-MM-DD.md` (full path below):
 
 ```markdown
 # Retrospective — YYYY-MM-DD
@@ -972,8 +972,12 @@ This is not optional — it is how agent interactions improve over time.
 - <concrete, actionable rules>
 ```
 
-**2. Memory updates** — For every "went wrong" item that represents a repeatable mistake, save or update a memory file under:
+**2. Memory updates** — For every "went wrong" item that represents a repeatable mistake, save or update a memory file and add its line to `MEMORY.md`.
 
-`/home/zaigner77/.claude/projects/-home-zaigner77-projects-zaigner/memory/`
+**One location for both.** Memories, retros and the `MEMORY.md` index all live in the my_garage project memory folder, which is the one auto-loaded for sessions in this repo:
 
-Session logs: `.../memory/retros/YYYY-MM-DD.md`
+`/home/zaigner77/.claude/projects/-home-zaigner77-projects-zaigner-my-garage/memory/`
+
+Session logs: `/home/zaigner77/.claude/projects/-home-zaigner77-projects-zaigner-my-garage/memory/retros/YYYY-MM-DD.md`. If a log for that date already exists, add a `(2)` section to it rather than overwriting it.
+
+The older `-home-zaigner77-projects-zaigner/memory/` folder was merged into this one on 2026-10-29 and now holds only a pointer. Don't write there.
