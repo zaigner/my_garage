@@ -29,7 +29,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 10-25-2026 16:58
-last_updated: 10-28-2026 15:00
+last_updated: 10-29-2026 09:30
 project: my_garage
 project_key: NOKEY
 tracking_system: file-system
@@ -50,13 +50,13 @@ development_status:
   2-4-executor-item-detail-view: done
   epic-2-retrospective: done
 
-  epic-3: in-progress
+  epic-3: done
   3-1-activation-snapshot-integrity: done
   3-2-estate-scope-executor-replacement: done
   3-3-beneficiary-link-generation-executor: done
   3-4-beneficiary-portal-session: done
-  3-5-beneficiary-item-detail-view: review
-  epic-3-retrospective: optional
+  3-5-beneficiary-item-detail-view: done
+  epic-3-retrospective: done
 
   epic-4: backlog
   4-1-pdf-rendering-service: backlog
@@ -95,5 +95,80 @@ action_items:
       rendered controls reach the new endpoint; reviews flag or-joined assertions
       any page would satisfy"
     owner: "Zaigner77"
-    status: open
+    status: done
     ref: "_bmad-output/implementation-artifacts/epic-2-retro-2026-10-27.md"
+  - id: "epic-3-retro-item-5-let-the-executor-see-and-revoke-the-link"
+    epic: 3
+    action: "Let the executor see and revoke the link of any beneficiary with an active
+      link under the current token, whatever their item count; add the claim, then
+      remove last designation, then revoke cross-story test (F1)"
+    owner: "dev"
+    status: open
+    ref: "_bmad-output/implementation-artifacts/epic-3-retro-2026-10-29.md"
+  - id: "epic-3-retro-item-6-lock-a-per-owner-row-at-the-start-of-act"
+    epic: 3
+    action: "Lock a per-owner row at the start of activate_estate_plan so concurrent
+      first activations cannot create two active tokens; add a test (F2)"
+    owner: "dev"
+    status: open
+    ref: "_bmad-output/implementation-artifacts/epic-3-retro-2026-10-29.md"
+  - id: "epic-3-retro-item-7-add-one-beneficiary-404-page-identical-f"
+    epic: 3
+    action: "Add one beneficiary 404 page, identical for every dead link or session
+      and uncached, telling them to contact the executor (F8)"
+    owner: "dev"
+    status: open
+    ref: "_bmad-output/implementation-artifacts/epic-3-retro-2026-10-29.md"
+  - id: "epic-3-retro-item-8-owner-copy-executor-rename-revoke-remove"
+    epic: 3
+    action: "Owner copy: executor rename, revoke, remove and reactivate also end every
+      beneficiary link issued under the code (F3)"
+    owner: "dev"
+    status: open
+    ref: "_bmad-output/implementation-artifacts/epic-3-retro-2026-10-29.md"
+  - id: "epic-3-retro-item-9-executor_required-skip-set_expiry-none-w"
+    epic: 3
+    action: "executor_required: skip set_expiry(None) while beneficiary keys are in
+      the session; add the mirror TestSharedSession test (F4)"
+    owner: "dev"
+    status: open
+    ref: "_bmad-output/implementation-artifacts/epic-3-retro-2026-10-29.md"
+  - id: "epic-3-retro-item-10-_deactivate_active_links-log-link_revoke"
+    epic: 3
+    action: "_deactivate_active_links: log LINK_REVOKED with token=link.issued_by_token
+      (F5)"
+    owner: "dev"
+    status: open
+    ref: "_bmad-output/implementation-artifacts/epic-3-retro-2026-10-29.md"
+  - id: "epic-3-retro-item-11-before-epic-4-extract-the-token-bound-sn"
+    epic: 3
+    action: "Before Epic 4, extract the token-bound snapshot lookup, item-photo serving,
+      one designated-assignment queryset and the item-detail template body; consider
+      splitting estate_selectors.py out (F13, F14)"
+    owner: "dev"
+    status: open
+    ref: "_bmad-output/implementation-artifacts/epic-3-retro-2026-10-29.md"
+  - id: "epic-3-retro-item-12-record-in-deferred-work-md-link_revoked"
+    epic: 3
+    action: "Record in deferred-work.md: LINK_REVOKED on token deactivation, claim-page
+      warning for executor or owner, noindex on claim page, split security-panel limits,
+      LINK_REVOKED on beneficiary delete (F3, F7, F11, F16, F17)"
+    owner: "dev"
+    status: open
+    ref: "_bmad-output/implementation-artifacts/epic-3-retro-2026-10-29.md"
+  - id: "epic-3-retro-item-13-reconcile-epics-estate-legacy-md-and-epi"
+    epic: 3
+    action: "Reconcile epics-estate-legacy.md and epic-3-context.md with what was
+      built: 3.4 claim opens then confirms (POST); isolation filters include is_charitable=False
+      and item__owner; 3.5 shows Value minus purchase price (F18-F20)"
+    owner: "Zaigner77"
+    status: open
+    ref: "_bmad-output/implementation-artifacts/epic-3-retro-2026-10-29.md"
+  - id: "epic-3-retro-item-14-process-in-bmad-build-triage-send-a-find"
+    epic: 3
+    action: "Process: in bmad-build triage, send a finding rejected in an earlier
+      story to the human; when a story adds a locking pattern, check older writers
+      of the same invariant (P1, P2)"
+    owner: "Zaigner77"
+    status: open
+    ref: "_bmad-output/implementation-artifacts/epic-3-retro-2026-10-29.md"
