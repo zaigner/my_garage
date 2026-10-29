@@ -7,7 +7,7 @@ from decimal import Decimal
 import pytest
 from django.contrib.auth import get_user_model
 
-from my_garage.api.selectors import get_executor_portfolio_context
+from my_garage.api.estate_selectors import get_executor_portfolio_context
 from my_garage.api.services import activate_estate_plan
 from my_garage.models import (
     Beneficiary,

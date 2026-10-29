@@ -265,7 +265,7 @@ def claim_beneficiary_link(raw_token: str, request=None):
     unknown, already claimed, revoked, expired, or its executor token is no
     longer usable. Failed claims log nothing; a claim logs LINK_CLAIMED.
     """
-    from my_garage.api.selectors import get_claimable_beneficiary_link
+    from my_garage.api.estate_selectors import get_claimable_beneficiary_link
     from my_garage.models import Beneficiary, BeneficiaryAccessLink
 
     link_hash = hash_executor_code(raw_token or "")

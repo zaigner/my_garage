@@ -10,7 +10,7 @@ from django.contrib.auth import get_user_model
 from django.db import connection
 from django.utils import timezone
 
-from my_garage.api.selectors import (
+from my_garage.api.estate_selectors import (
     get_executor_beneficiary,
     get_executor_beneficiary_links,
     get_executor_link_beneficiary,

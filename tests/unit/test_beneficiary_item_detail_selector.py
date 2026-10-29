@@ -8,7 +8,7 @@ from decimal import Decimal
 import pytest
 from django.contrib.auth import get_user_model
 
-from my_garage.api.selectors import (
+from my_garage.api.estate_selectors import (
     get_beneficiary_assignment,
     get_beneficiary_item_detail_context,
 )

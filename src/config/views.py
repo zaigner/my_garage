@@ -7,8 +7,8 @@ from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 from django.views.decorators.http import require_POST
 
+from my_garage.api.estate_selectors import get_estate_dashboard_context
 from my_garage.api.selectors import (
-    get_estate_dashboard_context,
     get_portfolio_nfp_summary,
     portfolio_get_yoy_change,
 )

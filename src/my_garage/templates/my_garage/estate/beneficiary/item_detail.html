@@ -10,18 +10,7 @@
     <a href="{% url 'estate:beneficiary_portal' %}" class="text-luxury-gold underline underline-offset-2 text-sm hover:text-luxury-white focus:outline focus:outline-2 focus:outline-luxury-gold">&larr; Back to your items</a>
   </nav>
 
-  <!-- Identity -->
-  <header class="space-y-4">
-    <div>
-      <p class="text-luxury-gold text-xs uppercase tracking-widest mb-1">{{ item.collection_type.name }}</p>
-      <h1 class="text-3xl font-serif text-luxury-white">{{ item.name }}</h1>
-    </div>
-    {% if item.photo %}
-      <img src="{% url 'estate:beneficiary_item_photo' item.pk %}" alt="{{ item.name }}" class="w-full max-h-96 object-cover rounded-xl border border-white/10">
-    {% else %}
-      <div class="w-full h-48 flex items-center justify-center rounded-xl border border-white/10 bg-luxury-card text-gray-300 text-sm" data-testid="photo-placeholder">No photo</div>
-    {% endif %}
-  </header>
+  {% include "my_garage/estate/portal/_item_header.html" with photo_route="estate:beneficiary_item_photo" %}
 
   {% if conditional_note %}
     <section aria-labelledby="wishes-heading" class="border border-luxury-gold/60 bg-luxury-card rounded-md px-4 py-3" data-testid="conditional-note">
@@ -30,61 +19,9 @@
     </section>
   {% endif %}
 
-  <!-- Activation snapshot -->
-  <section aria-labelledby="snapshot-heading" class="space-y-3">
-    <h2 id="snapshot-heading" class="text-xs uppercase tracking-widest text-gray-300">Value at activation</h2>
-    {% if snapshot %}
-      {% include "my_garage/estate/portal/_snapshot_detail.html" %}
-    {% else %}
-      <p class="text-gray-300 text-sm">Added after activation</p>
-    {% endif %}
-    <p class="text-sm text-gray-300">Current value: <span class="text-luxury-white">{% include "my_garage/estate/portal/_money.html" with value=item.current_market_value %}</span></p>
-  </section>
+  {% include "my_garage/estate/portal/_item_activation.html" %}
 
-  <!-- Provenance -->
-  <section aria-labelledby="details-heading" class="space-y-3">
-    <h2 id="details-heading" class="text-xs uppercase tracking-widest text-gray-300">Details</h2>
-    <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-      <div>
-        <dt class="text-xs text-gray-300">Purchase price</dt>
-        <dd class="text-luxury-white">{% include "my_garage/estate/portal/_money.html" with value=item.purchase_price %}</dd>
-      </div>
-      <div>
-        <dt class="text-xs text-gray-300">Purchase date</dt>
-        <dd class="text-luxury-white">{% if item.purchase_date %}{{ item.purchase_date|date:"F j, Y" }}{% else %}&mdash;{% endif %}</dd>
-      </div>
-      {% for label, value in custom_fields %}
-        <div>
-          <dt class="text-xs text-gray-300">{{ label }}</dt>
-          <dd class="text-luxury-white">{{ value }}</dd>
-        </div>
-      {% endfor %}
-    </dl>
-    {% if item.notes %}
-      <div>
-        <h3 class="text-xs text-gray-300 mb-1">Item notes</h3>
-        <p class="text-luxury-white text-sm whitespace-pre-line">{{ item.notes }}</p>
-      </div>
-    {% endif %}
-  </section>
-
-  <!-- Service records -->
-  <section aria-labelledby="service-heading" class="space-y-3">
-    <h2 id="service-heading" class="text-xs uppercase tracking-widest text-gray-300">Service records</h2>
-    {% if service_records %}
-      <ul class="space-y-3">
-        {% for rec in service_records %}
-          <li class="bg-luxury-card border border-white/10 rounded-xl p-4 text-sm space-y-1">
-            <p class="text-luxury-white">{{ rec.date|date:"F j, Y" }} &middot; {{ rec.vendor }}</p>
-            <p class="text-xs text-gray-300">{{ rec.get_category_display }} &middot; {% include "my_garage/estate/portal/_money.html" with value=rec.total_cost %}</p>
-            <p class="text-gray-100 whitespace-pre-line">{{ rec.description }}</p>
-          </li>
-        {% endfor %}
-      </ul>
-    {% else %}
-      <p class="text-gray-300 text-sm">No service records</p>
-    {% endif %}
-  </section>
+  {% include "my_garage/estate/portal/_item_provenance.html" %}
 
 </div>
 {% endblock %}

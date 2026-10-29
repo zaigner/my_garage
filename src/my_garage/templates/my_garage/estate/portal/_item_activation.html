@@ -1,0 +1,11 @@
+{# Shared by the executor and beneficiary item pages; reads item, snapshot. #}
+<!-- Activation snapshot -->
+<section aria-labelledby="snapshot-heading" class="space-y-3">
+  <h2 id="snapshot-heading" class="text-xs uppercase tracking-widest text-gray-300">Value at activation</h2>
+  {% if snapshot %}
+    {% include "my_garage/estate/portal/_snapshot_detail.html" %}
+  {% else %}
+    <p class="text-gray-300 text-sm">Added after activation</p>
+  {% endif %}
+  <p class="text-sm text-gray-300">Current value: <span class="text-luxury-white">{% include "my_garage/estate/portal/_money.html" with value=item.current_market_value %}</span></p>
+</section>

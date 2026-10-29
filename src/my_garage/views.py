@@ -17,9 +17,9 @@ from my_garage.models import (
     GenericValuationHistory,
 )
 
+from .api.estate_selectors import get_item_estate_assignment
 from .api.selectors import (
     get_item_display_custom_fields,
-    get_item_estate_assignment,
     get_item_nfp_breakdown,
     get_portfolio_nfp_by_collection,
     get_portfolio_nfp_summary,

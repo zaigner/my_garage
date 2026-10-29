@@ -31,3 +31,12 @@
 - source_spec: `_bmad-output/implementation-artifacts/epic-3-retro-2026-10-29.md`
   summary: Log `LINK_REVOKED` when deleting a beneficiary ends their active link.
   evidence: F17. `BeneficiaryAccessLink.beneficiary` is `CASCADE` (`models.py`), so the link row disappears and no revoke is logged. The earlier `EstateAccessLog` rows survive because they store names, not FKs.
+- source_spec: `_bmad-output/implementation-artifacts/spec-epic-3-retro-item-11-estate-shared-helpers.md`
+  summary: Make the owner dashboard's "assigned" count agree with the executor portal when an item's beneficiary has been deleted.
+  evidence: `BeneficiaryAssignment.beneficiary` is `SET_NULL`. `get_estate_dashboard_context` counts any assignment row as assigned (`Exists`), so `completeness_pct` includes the orphaned item, while `_designation_fields` marks it `is_unassigned` and the portal's `unassigned_count` includes it. Pre-existing; review pass 1, B5.
+- source_spec: `_bmad-output/implementation-artifacts/spec-epic-3-retro-item-11-estate-shared-helpers.md`
+  summary: Update CLAUDE.md §2 and §6 for `api/estate_selectors.py` and its one-way import rule (it may import `selectors`; `selectors` never imports it).
+  evidence: Both sections still describe a single `api/selectors.py`, so a future session may add estate queries back there. Review pass 1, B16.
+- source_spec: `_bmad-output/implementation-artifacts/spec-epic-3-retro-item-11-estate-shared-helpers.md`
+  summary: Fix the `get_item_display_custom_fields` docstring, which names the owner page and executor portal but not the beneficiary item page.
+  evidence: Story 3.5 added the beneficiary caller (`get_beneficiary_item_detail_context`). Review pass 1, B1b.
