@@ -3,6 +3,7 @@
 import secrets
 from datetime import timedelta
 from functools import wraps
+from typing import Optional
 
 from django.conf import settings
 from django.contrib import messages
@@ -22,7 +23,7 @@ from django.views.decorators.http import (
 )
 from django.views.static import serve as static_serve
 
-from my_garage.api.selectors import (
+from my_garage.api.estate_selectors import (
     get_beneficiary_assignment,
     get_beneficiary_assignments,
     get_beneficiary_item_detail_context,
@@ -364,21 +365,29 @@ def beneficiary_item_detail(request: HttpRequest, item_id: int) -> HttpResponse:
     return response
 
 
+def _serve_item_photo(
+    request: HttpRequest, item: Optional[DynamicCollectionItem]
+) -> HttpResponse:
+    """
+    An item's photo, never cached. Raises Http404 for no item, no photo or a
+    missing file. Callers have already scoped `item` to the session.
+    """
+    if item is None or not item.photo:
+        raise Http404
+    response = static_serve(request, item.photo.name, document_root=settings.MEDIA_ROOT)
+    response["Cache-Control"] = "private, no-store"
+    return response
+
+
 @require_safe
 @beneficiary_required
 def beneficiary_item_photo(request: HttpRequest, item_id: int) -> HttpResponse:
     """Serve a designated item's photo to its beneficiary (serve_media: owner-only)."""
     assignment = get_beneficiary_assignment(request.beneficiary_link, item_id)
-    if assignment is None or not assignment.item.photo:
-        return _beneficiary_not_found(request)
     try:
-        response = static_serve(
-            request, assignment.item.photo.name, document_root=settings.MEDIA_ROOT
-        )
+        return _serve_item_photo(request, assignment.item if assignment else None)
     except Http404:
         return _beneficiary_not_found(request)
-    response["Cache-Control"] = "private, no-store"
-    return response
 
 
 @require_safe
@@ -402,12 +411,7 @@ def portal_item_detail(request: HttpRequest, item_id: int) -> HttpResponse:
 @executor_required
 def portal_item_photo(request: HttpRequest, item_id: int) -> HttpResponse:
     """Serve an owned item's photo to the executor (serve_media is owner-only)."""
-    item = get_executor_item(request.estate_owner, item_id)
-    if item is None or not item.photo:
-        raise Http404
-    response = static_serve(request, item.photo.name, document_root=settings.MEDIA_ROOT)
-    response["Cache-Control"] = "private, no-store"
-    return response
+    return _serve_item_photo(request, get_executor_item(request.estate_owner, item_id))
 
 
 @login_required

@@ -12,7 +12,7 @@ from django.contrib.auth import get_user_model
 from django.test import RequestFactory
 from django.utils import timezone
 
-from my_garage.api.selectors import (
+from my_garage.api.estate_selectors import (
     ESTATE_SECURITY_EVENTS,
     ESTATE_VIEW_EVENTS,
     get_executor_access_status,

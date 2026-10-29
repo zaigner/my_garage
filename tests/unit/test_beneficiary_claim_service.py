@@ -9,7 +9,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 
-from my_garage.api.selectors import (
+from my_garage.api.estate_selectors import (
     get_beneficiary_assignments,
     get_beneficiary_session_link,
     get_claimable_beneficiary_link,
@@ -110,7 +110,7 @@ class TestClaim:
         stale = get_claimable_beneficiary_link(_hash(raw), timezone.now())
         first = claim_beneficiary_link(raw)
         monkeypatch.setattr(
-            "my_garage.api.selectors.get_claimable_beneficiary_link",
+            "my_garage.api.estate_selectors.get_claimable_beneficiary_link",
             lambda *args: stale,
         )
         assert claim_beneficiary_link(raw) is None
@@ -121,7 +121,7 @@ class TestClaim:
         stale = get_claimable_beneficiary_link(_hash(raw), timezone.now())
         ann.delete()
         monkeypatch.setattr(
-            "my_garage.api.selectors.get_claimable_beneficiary_link",
+            "my_garage.api.estate_selectors.get_claimable_beneficiary_link",
             lambda *args: stale,
         )
         assert claim_beneficiary_link(raw) is None

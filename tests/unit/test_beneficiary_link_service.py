@@ -9,7 +9,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 
-from my_garage.api.selectors import (
+from my_garage.api.estate_selectors import (
     get_executor_beneficiary,
     get_executor_beneficiary_links,
 )

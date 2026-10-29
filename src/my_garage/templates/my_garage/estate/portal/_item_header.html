@@ -1,0 +1,13 @@
+{# Shared by the executor and beneficiary item pages; reads item, takes photo_route (the photo URL name). #}
+<!-- Identity -->
+<header class="space-y-4">
+  <div>
+    <p class="text-luxury-gold text-xs uppercase tracking-widest mb-1">{{ item.collection_type.name }}</p>
+    <h1 class="text-3xl font-serif text-luxury-white">{{ item.name }}</h1>
+  </div>
+  {% if item.photo %}
+    <img src="{% url photo_route item.pk %}" alt="{{ item.name }}" class="w-full max-h-96 object-cover rounded-xl border border-white/10">
+  {% else %}
+    <div class="w-full h-48 flex items-center justify-center rounded-xl border border-white/10 bg-luxury-card text-gray-300 text-sm" data-testid="photo-placeholder">No photo</div>
+  {% endif %}
+</header>
