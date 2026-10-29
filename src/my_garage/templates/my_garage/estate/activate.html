@@ -45,7 +45,7 @@
       </p>
       {% if access.token.is_active %}
         <form method="post" action="{% url 'estate:revoke_access' %}"
-              onsubmit="return confirm('Revoke executor access? Your executor will lose access immediately.');">
+              onsubmit="return confirm('Revoke executor access? Your executor will lose access immediately, and every beneficiary link issued under the code will stop working.');">
           {% csrf_token %}
           <button type="submit" class="border border-red-400 text-red-300 font-bold uppercase text-xs tracking-widest rounded-sm px-4 py-2 hover:bg-red-900/30 transition-colors">Revoke access</button>
         </form>
@@ -68,14 +68,14 @@
 
   <!-- Activation form -->
   <form method="post" novalidate
-        {% if access.token.is_active %}onsubmit="return confirm('Issuing a new code revokes the current one immediately. Continue?');"{% endif %}>
+        {% if access.token.is_active %}onsubmit="return confirm('Issuing a new code revokes the current one immediately and ends every beneficiary link issued under it. Continue?');"{% endif %}>
     {% csrf_token %}
     <div class="bg-luxury-card border border-white/5 rounded-xl p-6 space-y-6">
 
       <div class="space-y-2">
         <h2 class="text-luxury-white font-semibold text-sm uppercase tracking-widest">Confirmation Required</h2>
         {% if access.token.is_active %}
-          <p class="text-yellow-400 text-sm">Issuing a new code revokes the current one immediately.</p>
+          <p class="text-yellow-400 text-sm">Issuing a new code revokes the current one immediately and ends every beneficiary link issued under it.</p>
         {% endif %}
         <label class="flex items-start gap-3 cursor-pointer">
           {{ form.confirmed }}

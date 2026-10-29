@@ -252,6 +252,9 @@ class TestLinkCookie:
     def test_404_path_deletes_cookie(self, client, ann):
         _issue(client, ann.pk)
         BeneficiaryAssignment.objects.update(is_charitable=True)
+        # Emptied but still link-holding would show the URL (Epic 3 retro F1);
+        # with the link revoked too, Ann is out of the executor's scope
+        BeneficiaryAccessLink.objects.update(is_active=False)
         response = client.get(issued_url(ann.pk))
         assert response.status_code == 404
         cookie = response.cookies["estate_beneficiary_link"]

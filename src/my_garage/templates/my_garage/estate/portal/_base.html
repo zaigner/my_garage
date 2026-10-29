@@ -33,7 +33,7 @@
 </head>
 <body class="bg-luxury-black text-luxury-white font-sans min-h-screen">
     <main class="{% block main_width %}max-w-xl{% endblock %} mx-auto px-4 sm:px-6 py-10">
-        {% if messages %}
+        {% block messages %}{% if messages %}
         <div class="space-y-2 mb-6">
             {% for message in messages %}
             {% if message.level_tag == "error" %}
@@ -43,7 +43,7 @@
             {% endif %}
             {% endfor %}
         </div>
-        {% endif %}
+        {% endif %}{% endblock %}
         {% block content %}{% endblock %}
     </main>
 </body>

@@ -20,7 +20,6 @@ from django.views.decorators.http import (
     require_POST,
     require_safe,
 )
-from django.views.defaults import page_not_found
 from django.views.static import serve as static_serve
 
 from my_garage.api.selectors import (
@@ -36,6 +35,7 @@ from my_garage.api.selectors import (
     get_executor_beneficiary_links,
     get_executor_item,
     get_executor_item_detail_context,
+    get_executor_link_beneficiary,
     get_executor_portfolio_context,
     get_item_estate_assignment,
 )
@@ -101,7 +101,9 @@ def executor_required(view):
         if token is None or not token.is_usable(timezone.now()):
             request.session.pop(EXECUTOR_OWNER_KEY, None)
             request.session.pop(EXECUTOR_TOKEN_KEY, None)
-            request.session.set_expiry(None)
+            # Leave a live beneficiary session's 30-day expiry alone
+            if BENEFICIARY_LINK_KEY not in request.session:
+                request.session.set_expiry(None)
             if owner_id is not None or token_id is not None:
                 messages.error(request, GENERIC_CODE_ERROR)
             return redirect("estate:portal_code_entry")
@@ -157,6 +159,17 @@ def _eligible_beneficiary_or_404(request: HttpRequest, pk: int) -> Beneficiary:
     return beneficiary
 
 
+def _link_beneficiary_or_404(request: HttpRequest, pk: int) -> Beneficiary:
+    """A designated or link-holding beneficiary, so an emptied one's link can
+    still be revoked or shown once."""
+    beneficiary = get_executor_link_beneficiary(
+        request.estate_owner, request.estate_token, pk
+    )
+    if beneficiary is None:
+        raise Http404
+    return beneficiary
+
+
 @require_POST
 @executor_required
 def portal_link_issue(request: HttpRequest, pk: int) -> HttpResponse:
@@ -183,7 +196,7 @@ def portal_link_issue(request: HttpRequest, pk: int) -> HttpResponse:
 @executor_required
 def portal_link_revoke(request: HttpRequest, pk: int) -> HttpResponse:
     """Revoke a beneficiary's active link."""
-    beneficiary = _eligible_beneficiary_or_404(request, pk)
+    beneficiary = _link_beneficiary_or_404(request, pk)
     if revoke_beneficiary_link(beneficiary, request.estate_token, request=request):
         messages.success(request, f"Link revoked for {beneficiary.name}.")
     else:
@@ -205,7 +218,7 @@ def portal_link_issued(request: HttpRequest, pk: int) -> HttpResponse:
 
 
 def _link_issued_response(request: HttpRequest, pk: int) -> HttpResponse:
-    beneficiary = _eligible_beneficiary_or_404(request, pk)
+    beneficiary = _link_beneficiary_or_404(request, pk)
     raw = request.get_signed_cookie(
         LINK_COOKIE, default=None, salt=LINK_COOKIE_SALT, max_age=LINK_COOKIE_MAX_AGE
     )
@@ -238,7 +251,9 @@ def _link_issued_response(request: HttpRequest, pk: int) -> HttpResponse:
 
 def _beneficiary_not_found(request: HttpRequest) -> HttpResponse:
     """The same uncached 404 for every dead link or session: no hints."""
-    response = page_not_found(request, Http404())
+    response = render(
+        request, "my_garage/estate/beneficiary/not_found.html", status=404
+    )
     add_never_cache_headers(response)
     return response
 
@@ -459,7 +474,8 @@ def executor_view(request: HttpRequest) -> HttpResponse:
                 messages.success(
                     request,
                     "Executor updated. Their previous access code has been "
-                    "revoked — issue a new code from Activate Estate Access.",
+                    "revoked, and beneficiary links issued under it no longer "
+                    "work — issue a new code from Activate Estate Access.",
                 )
             else:
                 messages.success(request, "Executor designated successfully.")
@@ -490,7 +506,8 @@ def executor_remove(request: HttpRequest) -> HttpResponse:
         executor.delete()
         messages.success(
             request,
-            "Executor removed. Their access code has been revoked."
+            "Executor removed. Their access code has been revoked, and "
+            "beneficiary links issued under it no longer work."
             if revoked
             else "Executor removed.",
         )
@@ -617,7 +634,11 @@ def estate_revoke_access(request: HttpRequest) -> HttpResponse:
     if request.method != "POST":
         return redirect("estate:activate")
     if revoke_executor_access(request.user, request=request):
-        messages.success(request, "Executor access revoked.")
+        messages.success(
+            request,
+            "Executor access revoked. Beneficiary links issued under the code "
+            "no longer work.",
+        )
     else:
         messages.info(request, "No active access code.")
     return redirect("estate:activate")

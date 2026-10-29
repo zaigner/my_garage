@@ -15,3 +15,7 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-2-estate-scope-executor-replacement.md`
   summary: Decide whether app-wide item counts and totals should exclude soft-deleted collections, as the estate now does: the profile `total_items` (`src/config/views.py:150`), and the home NFP and year-over-year selectors (`api/selectors.py` around `:89`, `:102`, `:159`).
   evidence: Story 3.2 excludes items in soft-deleted collections from every estate total. The profile page now shows `total_items` (all items) next to `estate_items_total` (active collections only), so the two counts can differ. The non-estate behaviour predates this story.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-epic-3-retro-fixes.md`
+  summary: The executor's link-issued page (`portal/link_issued.html:21`) should say the link also stops working when the owner revokes or replaces the executor code, not only on reissue or revoke.
+  evidence: F3 fixed only the owner-facing copy. The executor hands the link over and is the one who must explain a dead link (review pass 1, B4).

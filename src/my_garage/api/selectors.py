@@ -345,6 +345,39 @@ def get_executor_beneficiary(owner, beneficiary_id) -> Optional[Beneficiary]:
     return _designated_beneficiaries(owner).filter(pk=beneficiary_id).first()
 
 
+def _executor_link_beneficiaries(owner, token, now=None):
+    """
+    Owner's beneficiaries the executor can see: designated (>= 1 designated
+    item) or link-holding (a live link issued under `token`: active, and
+    claimed or not yet expired). item_count may be 0 for link-holders.
+    """
+    designated = BeneficiaryAssignment.objects.filter(
+        beneficiary=OuterRef("pk"),
+        is_charitable=False,
+        item__collection_type__is_active=True,
+    )
+    live_link = BeneficiaryAccessLink.objects.filter(
+        beneficiary=OuterRef("pk"), is_active=True, issued_by_token=token
+    ).filter(Q(claimed_at__isnull=False) | Q(expires_at__gt=now or timezone.now()))
+    counted = Q(
+        assignments__is_charitable=False,
+        assignments__item__collection_type__is_active=True,
+    )
+    return (
+        Beneficiary.objects.filter(owner=owner)
+        .filter(Q(Exists(designated)) | Q(Exists(live_link)))
+        .annotate(item_count=Count("assignments", filter=counted, distinct=True))
+        .order_by("name", "pk")
+    )
+
+
+def get_executor_link_beneficiary(
+    owner, token, beneficiary_id
+) -> Optional[Beneficiary]:
+    """The owner's designated or link-holding beneficiary, or None."""
+    return _executor_link_beneficiaries(owner, token).filter(pk=beneficiary_id).first()
+
+
 def beneficiary_link_status(link, now) -> str:
     """none / revoked / opened / expired / issued for a link (or None)."""
     if link is None:
@@ -360,13 +393,16 @@ def beneficiary_link_status(link, now) -> str:
 
 def get_executor_beneficiary_links(owner, token) -> List[Dict[str, Any]]:
     """
-    Designated beneficiaries with their link status, in 2 queries.
+    Designated or link-holding beneficiaries with their link status, in 2
+    queries.
 
     Status comes from the newest link issued under `token`; links from an
-    earlier activation are ignored. Each dict: beneficiary, item_count, link,
+    earlier activation are ignored. Each dict: beneficiary, item_count (0 for
+    a link-holder with nothing designated), can_issue (item_count > 0), link,
     status (none/issued/opened/revoked/expired).
     """
-    beneficiaries = list(_designated_beneficiaries(owner))
+    now = timezone.now()
+    beneficiaries = list(_executor_link_beneficiaries(owner, token, now))
     newest: Dict[int, BeneficiaryAccessLink] = {}
     if beneficiaries:
         links = BeneficiaryAccessLink.objects.filter(
@@ -374,11 +410,11 @@ def get_executor_beneficiary_links(owner, token) -> List[Dict[str, Any]]:
         ).order_by("-issued_at", "-pk")
         for link in links:
             newest.setdefault(link.beneficiary_id, link)
-    now = timezone.now()
     return [
         {
             "beneficiary": b,
             "item_count": b.item_count,
+            "can_issue": b.item_count > 0,
             "link": newest.get(b.pk),
             "status": beneficiary_link_status(newest.get(b.pk), now),
         }
