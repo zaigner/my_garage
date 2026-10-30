@@ -5,13 +5,20 @@ The headline case is two users adopting the same blueprint: CollectionType.slug
 used to carry a global unique constraint, so the second user hit an IntegrityError.
 Uniqueness is now scoped to (owner, slug), which also means every user's
 automobiles collection lives at the same stable URL.
+
+Also covers the /welcome/ checklist links, which must resolve for a user who
+adopted any mix of starters (step 2 once hard-coded the automobiles slug).
 """
 
 from __future__ import annotations
 
+import re
+from datetime import timedelta
+
 import pytest
 from django.contrib.auth import get_user_model
 from django.urls import reverse
+from django.utils import timezone
 
 from my_garage.collection_blueprints import COLLECTION_BLUEPRINTS
 from my_garage.models import CollectionType, DynamicCollectionItem
@@ -252,3 +259,106 @@ class TestTemplatesPage:
         client.force_login(alice)
         response = client.get(reverse("collections:collection_type_list"))
         assert response.context["has_unadopted_templates"] is True
+
+
+# ---------------------------------------------------------------------------
+# /welcome/ checklist links
+# ---------------------------------------------------------------------------
+
+
+def _internal_links(response) -> set[str]:
+    return set(re.findall(r'href="(/[^"]*)"', response.content.decode()))
+
+
+def _step2_hrefs(response) -> list[str]:
+    """The step-2 anchor's own href; the nav repeats the same URLs."""
+    return re.findall(
+        r'href="([^"]*)"\s*data-testid="step2-view-link"', response.content.decode()
+    )
+
+
+def _add_item(owner, slug, name, *, days_ago=0):
+    ctype = CollectionType.objects.get(owner=owner, slug=slug)
+    item = DynamicCollectionItem.objects.create(
+        owner=owner, collection_type=ctype, name=name
+    )
+    if days_ago:
+        DynamicCollectionItem.objects.filter(pk=item.pk).update(
+            created_at=timezone.now() - timedelta(days=days_ago)
+        )
+    return item
+
+
+class TestOnboardingChecklistLinks:
+    def test_wine_only_guest_gets_200_from_every_link(self, client, alice):
+        """Step 2 used to hard-code the automobiles slug and 404 here."""
+        provision_collections(alice, ["wine-collection"])
+        _add_item(alice, "wine-collection", "1996 Krug")
+        client.force_login(alice)
+        response = client.get(reverse("onboarding"))
+
+        for link in _internal_links(response):
+            assert client.get(link).status_code == 200, link
+
+    def test_no_valuable_items_shows_note_not_link(self, client, alice):
+        """Wine can't be valued, so step 2 explains instead of linking."""
+        provision_collections(alice, ["wine-collection"])
+        _add_item(alice, "wine-collection", "1996 Krug")
+        client.force_login(alice)
+        response = client.get(reverse("onboarding"))
+
+        assert response.context["valuation_collection_slug"] is None
+        assert _step2_hrefs(response) == []
+        assert b'data-testid="step2-unavailable-note"' in response.content
+
+    def test_no_items_shows_neither_link_nor_note(self, client, alice):
+        provision_collections(alice, ["automobiles"])
+        client.force_login(alice)
+        response = client.get(reverse("onboarding"))
+
+        assert _step2_hrefs(response) == []
+        assert b'data-testid="step2-unavailable-note"' not in response.content
+
+    def test_step2_links_to_collection_holding_the_item(self, client, alice):
+        provision_collections(alice, ["automobiles"])
+        car = _add_item(alice, "automobiles", "1990 Miata")
+        client.force_login(alice)
+        response = client.get(reverse("onboarding"))
+
+        step2 = reverse("collections:collection_list", args=["automobiles"])
+        assert _step2_hrefs(response) == [step2]
+        assert car in client.get(step2).context["items"]
+        for link in _internal_links(response):
+            assert client.get(link).status_code == 200, link
+
+    def test_step2_prefers_valuable_over_newer_unvaluable(self, client, alice):
+        provision_collections(alice, ["automobiles", "wine-collection"])
+        _add_item(alice, "automobiles", "1990 Miata", days_ago=1)
+        _add_item(alice, "wine-collection", "1996 Krug")
+        client.force_login(alice)
+        response = client.get(reverse("onboarding"))
+
+        assert _step2_hrefs(response) == [
+            reverse("collections:collection_list", args=["automobiles"])
+        ]
+
+    def test_step2_targets_latest_valuable_item(self, client, alice):
+        provision_collections(alice, ["automobiles", "horology-salon"])
+        _add_item(alice, "automobiles", "1990 Miata", days_ago=1)
+        _add_item(alice, "horology-salon", "Speedmaster")
+        client.force_login(alice)
+        response = client.get(reverse("onboarding"))
+
+        assert _step2_hrefs(response) == [
+            reverse("collections:collection_list", args=["horology-salon"])
+        ]
+
+    def test_step2_ignores_other_users_items(self, client, alice, bob):
+        provision_collections(alice, ["wine-collection"])
+        _add_item(alice, "wine-collection", "1996 Krug")
+        provision_collections(bob, ["automobiles"])
+        _add_item(bob, "automobiles", "1990 Miata")
+        client.force_login(alice)
+        response = client.get(reverse("onboarding"))
+
+        assert _step2_hrefs(response) == []

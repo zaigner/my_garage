@@ -1,0 +1,50 @@
+- id: "1"
+  title: Fix the welcome checklist step-2 link
+  description: >-
+    Point the step-2 "View →" link on /welcome/ at a collection holding one
+    of the guest's items instead of the hard-coded automobiles slug (CAP-1;
+    brownfield.md "Defect").
+  spec_checkpoint: true
+  done_checkpoint: false
+  invoke_dev_with: >-
+    The onboarding view is in src/config/views.py, not my_garage/views.py.
+    Regression test: a guest with only Wine Collection and one item gets 200
+    from every checklist link.
+- id: "2"
+  title: Recorder harness, embed partial and Video 1
+  description: >-
+    Build `pixi run record-tutorials` end to end (seeded throwaway DB, cursor
+    and caption overlays, MP4 + poster output) and the shared embed partial,
+    then record and embed Video 1 on /welcome/ and /collections/templates/
+    (CAP-2, CAP-5, CAP-6 in part; recording-pipeline.md). Includes
+    per-video re-recording (`record-tutorials video1`) and the 6 MB
+    combined-size check.
+  spec_checkpoint: true
+  done_checkpoint: false
+  invoke_dev_with: >-
+    Commit the recorded MP4 and poster in the same PR as the embeds.
+    Playwright and ffmpeg go in feature.dev only; confirm the prod env lock
+    is unchanged. Record Video 1's size and the encoder settings used in
+    the story's Implementation Notes; if it can't fit about 2 MB with
+    legible captions, ask the owner before changing the budget.
+- id: "3"
+  title: "Video 2: your first item"
+  description: >-
+    Script, record and embed Video 2 in the collection list empty state,
+    absent once the collection has an item (CAP-3).
+  spec_checkpoint: true
+  done_checkpoint: false
+  invoke_dev_with: >-
+    Reuse Story 2's harness and caption helpers. The photo fixture must
+    already be upright (no EXIF rotation), so frames match across runs.
+- id: "4"
+  title: "Video 3: build a collection for anything"
+  description: >-
+    Script, record and embed Video 3 on /collections/create/ in create mode
+    only, with the generate-schema request intercepted; then verify full
+    CAP-6 acceptance across all three videos (CAP-4, CAP-6).
+  spec_checkpoint: true
+  done_checkpoint: false
+  invoke_dev_with: >-
+    Fail the run if the generate-schema route interception isn't hit. Prove
+    determinism by running record-tutorials twice and comparing.
