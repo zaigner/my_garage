@@ -186,11 +186,15 @@
                         </div>
                         {% if has_valuation %}
                         <span class="flex-shrink-0 text-luxury-gold text-xs uppercase tracking-widest">Done</span>
-                        {% elif has_items %}
-                        <a href="{% url 'collections:collection_list' 'automobiles' %}"
+                        {% elif valuation_collection_slug %}
+                        <a href="{% url 'collections:collection_list' valuation_collection_slug %}"
+                           data-testid="step2-view-link"
                            class="flex-shrink-0 px-4 py-2 border border-white/20 text-luxury-text hover:border-luxury-gold hover:text-luxury-gold transition-colors text-xs uppercase tracking-widest rounded-sm font-bold">
                             View &rarr;
                         </a>
+                        {% elif has_items %}
+                        <span data-testid="step2-unavailable-note"
+                              class="flex-shrink-0 max-w-[10rem] text-right text-luxury-text text-xs leading-relaxed">Valuations are available for vehicles and watches</span>
                         {% endif %}
                     </div>
                 </div>

@@ -3,6 +3,7 @@ from datetime import datetime
 from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
+from django.db.models import Max
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 from django.views.decorators.http import require_POST
@@ -23,6 +24,7 @@ from my_garage.services.collection_provisioning import (
     get_catalog,
     provision_collections,
 )
+from my_garage.services.collection_services import get_collection_services
 
 
 def get_sort_date(item):
@@ -200,6 +202,23 @@ def onboarding(request: HttpRequest) -> HttpResponse:
     has_items = DynamicCollectionItem.objects.filter(owner=user).exists()
     has_valuation = GenericValuationHistory.objects.filter(item__owner=user).exists()
     has_service = GenericServiceRecord.objects.filter(item__owner=user).exists()
+    # Step 2 points at the collection holding the user's latest item that can
+    # actually be valued (vehicles, watches). None means no such item yet, and
+    # the template explains instead of linking to a dead end.
+    valuation_collection_slug = next(
+        (
+            ctype.slug
+            for ctype in CollectionType.objects.filter(
+                owner=user, is_active=True, items__owner=user
+            )
+            .annotate(latest_item=Max("items__created_at"))
+            .order_by("-latest_item", "-pk")
+            if get_collection_services(
+                ctype.service_provider_key
+            ).supports_valuation_refresh()
+        ),
+        None,
+    )
     catalog = get_catalog(user)
     return render(
         request,
@@ -208,6 +227,7 @@ def onboarding(request: HttpRequest) -> HttpResponse:
             "has_items": has_items,
             "has_valuation": has_valuation,
             "has_service": has_service,
+            "valuation_collection_slug": valuation_collection_slug,
             "catalog": catalog,
             "has_collections": any(entry["already_owned"] for entry in catalog),
             "all_adopted": all(entry["already_owned"] for entry in catalog),
