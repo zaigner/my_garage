@@ -92,11 +92,11 @@ NFR12: Beneficiary PII is stored only within the owner's account and is never tr
 NFR13: All data in transit encrypted via HTTPS (TLS 1.2 minimum)
 NFR14: Executor portal and beneficiary view meet WCAG 2.1 AA — contrast ratio ≥4.5:1, keyboard-navigable, labelled form fields, descriptive error messages
 NFR15: Owner estate management views meet WCAG 2.1 A (platform standard)
-NFR16: PDF exports use readable font sizes (minimum 10pt body text) and logical reading order for screen reader compatibility
+NFR16: PDF exports use readable font sizes (minimum 10pt body text), real text (not images) and a logical reading order. Tagged PDF/UA is not required (reworded 2026-10-29, Epic 4 planning: reportlab can't tag)
 NFR17: Valuation snapshots stored in append-only table — no UPDATE or DELETE operations permitted after creation
 NFR18: Estate plan records excluded from any routine data cleanup, archival, or TTL policies
 NFR19: Database migrations affecting estate models must include a rollback script and be tested against production data volume before deployment
-NFR20: PDF export records (timestamp, asset count) are retained for the lifetime of the owner account
+NFR20: PDF export records (timestamp, asset count, export hash) are retained for the lifetime of the owner account
 
 ### Additional Requirements
 
@@ -854,12 +854,37 @@ So that I can understand exactly what asset is being left to me and under what c
 
 ## Epic 4: Estate Inventory PDF Export
 
-A reusable PDF rendering service (`pdf_service.py`) built on `reportlab` powers three export paths: full estate inventory for owner, same inventory for executor via portal session, and change-history audit log for solicitor use. All outputs are generated synchronously — PDFs are small enough for a single request cycle.
+Epic 4 builds a reusable PDF rendering service, `pdf_service.py`, on `reportlab`. It serves four exports:
+- the owner's estate inventory;
+- the executor's estate inventory, through the portal session;
+- an audit PDF of the change history and access history, for solicitors;
+- the beneficiary's personal summary.
+
+Every PDF is generated synchronously, because each one is small enough for a single request.
 
 **FRs covered:** FR30, FR31, FR32, FR33, FR34
-**NFRs covered:** NFR4, NFR16, NFR20
+**NFRs covered:** NFR4, NFR16 (reworded 2026-10-29), NFR20
 **Dependency:** Epic 2 (ValuationSnapshot), Epic 3 (Story 3.1 snapshot integrity, Story 3.4 beneficiary session). Nothing depends back on Epic 4.
-**Open scope question (Epic 3 retro Q5, to decide in Epic 4 planning):** should the activation snapshot also record each item's designated beneficiary at activation, so a later reassignment shows in the PDFs? Today a snapshot stores the item's figures only, and PDFs could show only current designations.
+**Release gate:** the Cloudflare Access bypass for `/estate/portal/*` and `/estate/beneficiary/*` is still open. The executor and beneficiary exports can be built and tested, but nobody without an Access login can reach them until the bypass ships.
+
+### Planning decisions (Zaigner77, 2026-10-29)
+
+- **Q5: record each designation at activation.** `ValuationSnapshot` gains the item's designation at activation (Story 4.2). The executor PDF shows designations as at activation and flags any item reassigned since. This resolves the Epic 3 retro's open scope question (ADV12).
+- **The owner's PDF uses current figures.** It is a planning document, so it shows current market values and current designations, labelled "Current value". The executor's PDF uses the activation snapshot (FR31). The two are no longer "the same inventory".
+- **The audit PDF covers changes and access.** Story 4.3 has two sections: the assignment changes (`EstateChangeLog`) and the access history (`EstateAccessLog`: views, codes, links, exports). This makes Story 4.3 the production reader of `ESTATE_VIEW_EVENTS`, as the comment in `api/estate_selectors.py` says.
+- **PDF library: reportlab, with NFR16 reworded.** Pin `reportlab = "==5.0.1"`, because 5.1.0 was published on 2026-10-25 and is too new. Embed DejaVu Sans (TTF, in `src/my_garage/services/fonts/`, next to `pdf_service.py`, so rendering never depends on collectstatic) so that names outside Latin-1 render. reportlab can't produce tagged PDF/UA, so NFR16 now asks for 10pt minimum body text, real text (not images), and a logical reading order, without accessibility tags.
+
+**Defaults settled in planning:** these change no product behavior. Listed here so that stories don't re-decide them.
+- **Export record (FR33, NFR20).** Each export writes one `EstateAccessLog` row with a new event: `INVENTORY_EXPORTED` (owner or executor), `AUDIT_EXPORTED` or `BENEFICIARY_EXPORTED`.
+  - Two new nullable fields on the row: `asset_count` and `export_sha256` (the SHA-256 of the PDF bytes, per the PRD's NFR20 "export hash").
+  - Owner exports leave `token` null. Executor and beneficiary exports carry the session's token.
+  - A new `ESTATE_EXPORT_EVENTS` group holds the three events, and `test_event_groups_cover_every_event_type` must still pass. These rows are not security events, so they stay out of the 10-row security panel.
+  - `EstateAccessLog` is append-only and never cleaned up, so the rows last as long as the account (NFR20).
+- **Sync only (NFR4).** The PRD's Celery path above 100 items is superseded. The PDFs stay synchronous, and Story 4.2 tests 200 items in under 10 seconds.
+- **Storage location (FR31).** No storage-location field exists on items, so the PDFs leave it out until one is added.
+- **No IP addresses in the audit PDF.** IPs stay in the database and the owner's panel only, because the PDF goes to third parties.
+- **Selector location.** New estate selectors go in `api/estate_selectors.py`, not `api/selectors.py`, per the Epic 3 retro item 11 split.
+- **Concurrency (persistent fact).** The Q5 snapshot reads assignments inside `activate_estate_plan`'s transaction, which already holds the owner-row lock. `assign_beneficiary` and `remove_beneficiary_assignment` take no lock. A reassignment that races an activation is recorded on one side or the other, and the change log orders it. Locking those writers is out of scope: the owner is the only writer, and the PDF flags any later change.
 
 ---
 
@@ -871,29 +896,46 @@ So that all PDF outputs share consistent formatting and a single implementation 
 
 **Acceptance Criteria:**
 
-**Given** `render_estate_pdf(owner, items_with_context)` is called
+**Given** `render_estate_pdf(owner, rows, *, basis)` is called with `basis` set to `"current"` or `"activation"`
 **When** it executes
 **Then** it returns raw PDF bytes using `reportlab`
-**And** the PDF contains a cover page with owner name and generation date, and a table with item name, collection type, assigned beneficiary, value at activation, purchase price, value minus purchase price, conditional note
-**And** null monetary values render as "—" (em dash)
-**And** a zero-item list returns a valid PDF with header and empty table — no exception
+**And** the cover page shows:
+- the owner name;
+- the generation date and time in UTC;
+- for `"activation"`, the valuation snapshot date, or for `"current"`, the words "Current values";
+- the legal disclaimer that the document is for estate planning reference only (FR32).
 
-**Given** `render_beneficiary_pdf(link)` is called
+**And** the table columns are:
+- item name;
+- collection type;
+- beneficiary;
+- the value column, labelled "Value at activation" or "Current value" depending on `basis`;
+- purchase price;
+- value minus purchase price;
+- service summary, as a count and the last date (FR31);
+- conditional note.
+
+**And** null monetary values render as "—" (em dash)
+**And** a zero-item list returns a valid PDF with the header and an empty table, without raising
+**And** body text is at least 10pt, and names outside Latin-1 (e.g. "Zoë Łukasz 王") render in the embedded font (NFR16 as reworded)
+
+**Given** `render_beneficiary_pdf(link, rows)` is called
 **When** it executes
 **Then** it returns raw PDF bytes for only the beneficiary's designated items
-**And** the cover page shows beneficiary name, relationship, generation date
+**And** the cover page shows the beneficiary name, relationship, generation date (UTC) and the disclaimer
 
 **Given** new code is submitted
 **When** the quality gate runs
-**Then** `pixi run pytest tests/unit/ -x -q` passes (tested with byte-length and keyword assertions)
+**Then** `pixi run pytest tests/unit/ -x -q` passes (tested with byte-length and keyword assertions; extract the text with reportlab's own parser or by checking for the uncompressed text)
 
 **Technical notes:**
-- New module `src/my_garage/services/pdf_service.py`
-- `reportlab` added via `pixi add reportlab`
-- `render_estate_pdf(owner, items_with_context: list[dict]) -> bytes`
-- `render_beneficiary_pdf(link: BeneficiaryAccessLink) -> bytes` (the link of the beneficiary's session, Story 3.4)
-- Table columns: Name | Collection | Beneficiary | Value at activation | Purchase price | Value minus purchase price | Note (labels per Story 3.2)
-- Page size: A4, margins 2cm
+- New module `src/my_garage/services/pdf_service.py`. It renders only: it receives rows already built by selectors and makes no ORM queries.
+- `reportlab` is added via `pixi add "reportlab==5.0.1"`. It is noarch, so no linux-aarch64 build is needed.
+- DejaVu Sans goes in `src/my_garage/services/fonts/` and is registered once with `pdfmetrics.registerFont`. Its licence file sits alongside it.
+- `render_estate_pdf(owner, rows: list[dict], *, basis: str) -> bytes`
+- `render_beneficiary_pdf(link: BeneficiaryAccessLink, rows: list[dict]) -> bytes` (`link` is the beneficiary session's link, Story 3.4)
+- `render_audit_pdf(owner, changes, accesses) -> bytes` belongs to Story 4.3.
+- Page size A4, margins 2cm. The table header repeats on every page (`repeatRows=1`).
 
 ---
 
@@ -905,56 +947,90 @@ So that I have a printable record suitable for solicitors and probate proceeding
 
 **Acceptance Criteria:**
 
-**Given** authenticated owner visits `/estate/`
-**When** they click "Download Full Inventory (PDF)"
-**Then** a POST to `/estate/export/pdf/` returns a PDF with every `DynamicCollectionItem`, snapshot valuation, and beneficiary assignment
+**Given** the activation snapshot (Q5)
+**When** `activate_estate_plan` takes the snapshot
+**Then** each `ESTATE_ACTIVATION` row also records the item's designation at that moment: `beneficiary_name`, `beneficiary_relationship`, `is_charitable`, `charitable_org`, `conditional_note`, with `designation_recorded=True`
+**And** an item with no assignment, or with an assignment whose beneficiary was deleted, records blank fields with `designation_recorded=True` (shown as unassigned)
+**And** existing snapshots keep `designation_recorded=False` and show "Not recorded"
+**And** `MANUAL` snapshots leave all of these fields blank
 
-**Given** executor is on `/estate/portal/dashboard/`
+**Given** an authenticated owner on `/estate/`
+**When** they click "Download Full Inventory (PDF)"
+**Then** a POST to `/estate/export/pdf/` returns a PDF with `basis="current"`
+**And** the PDF contains every item in an active collection, with its current market value and current designation
+**And** soft-deleted collections are excluded (Story 3.2)
+
+**Given** an executor on `/estate/portal/dashboard/`
 **When** they click "Download PDF"
-**Then** a GET to `/estate/portal/export/pdf/` generates the same full inventory (owner identified via executor session)
+**Then** a GET to `/estate/portal/export/pdf/` returns a PDF with `basis="activation"`, built from the session token's snapshot set (Story 3.1)
+**And** the PDF uses each snapshot's recorded designation
+**And** any item whose current designation differs from the recorded one shows "Reassigned since activation: now <name>" in its note column
+**And** items removed after activation are listed by their stored `item_name`
+**And** FR34 holds: the executor can regenerate the PDF while access is active, and each download produces a new PDF and a new log row
 
 **Given** the owner has 200+ items
 **When** the PDF is generated
 **Then** the response completes within 10 seconds and the PDF paginates correctly
+
+**Given** either export succeeds
+**When** the response is returned
+**Then** one `INVENTORY_EXPORTED` row is written with `asset_count` and `export_sha256` (FR33, NFR20)
 
 **Given** new code is submitted
 **When** the quality gate runs
 **Then** `pixi run pytest tests/unit/ tests/functional/ -x -q` passes
 
 **Technical notes:**
-- Owner view: `@login_required @require_POST`, calls `render_estate_pdf(owner, context_list)`
-- Executor view: `@executor_required`, reads owner from session, same PDF call
-- This story adds the "Download PDF" button to `estate/portal/dashboard.html` (deferred from Story 2.3) and logs each export to `EstateAccessLog` (FR33)
-- Selector `get_estate_pdf_context(owner)` in `api/selectors.py`: 3 ORM queries, no N+1
-- Executor PDF uses the session token's snapshot set (Story 3.1). Soft-deleted collections are excluded (Story 3.2). Items removed after activation are listed by their stored name.
+- Migration adds to `ValuationSnapshot`:
+  - `beneficiary_name` (CharField 200, blank)
+  - `beneficiary_relationship` (CharField 50, blank)
+  - `is_charitable` (bool, default False)
+  - `charitable_org` (CharField 200, blank)
+  - `conditional_note` (TextField, blank)
+  - `designation_recorded` (bool, default False)
+- These are AddField operations only, so the migration reverses without a script (NFR19). The table stays append-only (NFR17).
+- `activate_estate_plan` adds `select_related("estate_assignment__beneficiary")` to its item query, so the snapshot adds no extra queries.
+- Selectors go in `api/estate_selectors.py`:
+  - `get_owner_inventory_pdf_rows(owner)`, for current figures;
+  - `get_executor_inventory_pdf_rows(owner, token)`, for snapshot figures plus current designations, to flag reassignments.
+- Each selector runs a fixed number of queries with no N+1, including the service-record summary (an annotated count and max date).
+- Owner view: `@login_required @require_POST`.
+- Executor view: `@executor_required`, which reads the owner and token from the session.
+- This story adds the "Download PDF" button to `estate/portal/dashboard.html` (deferred from Story 2.3).
 - URL (owner): `path("export/pdf/", ..., name="estate_pdf_export")`
 - URL (executor): `path("portal/export/pdf/", ..., name="executor_pdf_export")`
+- Responses use `Content-Disposition: attachment` and are `never_cache`.
 
 ---
 
 ### Story 4.3: Audit Log PDF Export
 
 As an estate planner,
-I want to download a PDF of my estate change history,
-So that I can demonstrate to solicitors that assignments were intentional and when they were made.
+I want to download a PDF of my estate change history and access history,
+So that I can show solicitors that assignments were intentional and when they were made, and who accessed the estate.
 
 **Acceptance Criteria:**
 
-**Given** owner clicks "Download Change History (PDF)"
+**Given** the owner clicks "Download Change History (PDF)"
 **When** the POST to `/estate/export/audit-pdf/` is processed
-**Then** a PDF is returned containing every `EstateChangeLog` row: timestamp, action, item name, beneficiary name, ordered ascending by timestamp
+**Then** the PDF has two sections, each ordered ascending by timestamp (UTC):
+- **Changes:** every `EstateChangeLog` row, with timestamp, action, item name and beneficiary name.
+- **Access history:** every `EstateAccessLog` row in `ESTATE_VIEW_EVENTS`, `ESTATE_SECURITY_EVENTS` and `ESTATE_EXPORT_EVENTS`, with timestamp, event label, item name and beneficiary name. IP addresses are left out.
 
-**Given** owner has no change log entries
+**And** one `AUDIT_EXPORTED` row is written with `asset_count` (the number of rows across both sections) and `export_sha256`
+
+**Given** a section has no rows
 **When** the PDF is generated
-**Then** the PDF contains the header and "No changes recorded" — no server error
+**Then** that section shows its header and "No changes recorded" or "No access recorded", with no server error
 
 **Given** new code is submitted
 **When** the quality gate runs
 **Then** `pixi run pytest tests/unit/ tests/functional/ -x -q` passes
 
 **Technical notes:**
-- New function `render_audit_pdf(owner) -> bytes` in `pdf_service.py`
-- Table columns: Timestamp | Action | Item | Beneficiary
+- New function `render_audit_pdf(owner, changes, accesses) -> bytes` in `pdf_service.py`.
+- The selector `get_audit_pdf_rows(owner)` goes in `api/estate_selectors.py`. Event labels come from `EstateAccessLog.EVENT_CHOICES`.
+- Table columns: Timestamp | Action/Event | Item | Beneficiary
 - `@login_required @require_POST` guard
 - URL: `path("export/audit-pdf/", ..., name="estate_audit_pdf_export")`
 
@@ -970,18 +1046,19 @@ So that I have an offline record I can share with a solicitor or keep in a safe 
 
 **Acceptance Criteria:**
 
-**Given** beneficiary clicks "Download My Summary (PDF)"
+**Given** the beneficiary clicks "Download My Summary (PDF)"
 **When** the PDF is generated
-**Then** it contains: beneficiary name, relationship, generation date, and a table of designated items with name, collection type, conditional note, value at activation (or "—" if null)
-**And** the export is logged to `EstateAccessLog` (FR33)
+**Then** it contains the beneficiary name, relationship, generation date (UTC) and the disclaimer
+**And** it contains a table of the beneficiary's currently designated items (the same set the beneficiary portal shows, NFR10), with name, collection type, conditional note, and value at activation (or "—" if null)
+**And** one `BENEFICIARY_EXPORTED` row is written with `asset_count` and `export_sha256` (FR33)
 
-**Given** the beneficiary session is gone, or the link was revoked or its executor token is no longer usable
+**Given** the beneficiary session is gone, or the link was revoked, or its executor token is no longer usable
 **When** the PDF endpoint is accessed
-**Then** a 404 is returned
+**Then** the beneficiary 404 page is returned (`_beneficiary_not_found`), matching the other beneficiary views
 
-**Given** beneficiary has zero items
-**When** PDF is generated
-**Then** the PDF contains the header and a "No items designated" note — no server error
+**Given** the beneficiary has zero items
+**When** the PDF is generated
+**Then** the PDF contains the header and a "No items designated" note, with no server error
 
 **Given** new code is submitted
 **When** the quality gate runs
@@ -989,8 +1066,9 @@ So that I have an offline record I can share with a solicitor or keep in a safe 
 
 **Technical notes:**
 - URL: `path("beneficiary/export/", ..., name="beneficiary_export")` in `estate_urls.py`, behind `beneficiary_required`
-- PDF bytes from `render_beneficiary_pdf(link)` (Story 4.1)
-- View returns `HttpResponse(pdf_bytes, content_type="application/pdf")` with `Content-Disposition: attachment; filename="estate-summary-<name>.pdf"`
+- Rows come from `get_beneficiary_assignments(link)` and `get_activation_snapshot` (`api/estate_selectors.py`). The PDF bytes come from `render_beneficiary_pdf(link, rows)` (Story 4.1).
+- The selection uses current designations: they decide what the beneficiary can access, and the Q5 snapshot designation is for the executor's record.
+- The view returns `HttpResponse(pdf_bytes, content_type="application/pdf")` with `Content-Disposition: attachment; filename="estate-summary-<slug of name>.pdf"`. The name is slugified so the header stays ASCII-safe.
 
 ---
 
