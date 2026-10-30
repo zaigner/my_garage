@@ -43,3 +43,18 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-epic-3-retro-decisions-q2-q4.md`
   summary: Check what a beneficiary sees after double-clicking "View my designated items"; the second POST may carry the cycled-away session and show a 404 although the claim succeeded.
   evidence: Unverified (review pass 1, E2). The first POST claims and calls `session.cycle_key()`; a second POST in flight still sends the old cookie, so the reopen check fails and the claim fails. Whether the browser shows the first or the second response decides the outcome. Settle it with a double-submit in a real browser; if true, disable the button on submit. Pre-existing since Story 3.4.
+- source_spec: `_bmad-output/specs/spec-tutorial-videos/stories/1-fix-welcome-checklist-step-2-link.md`
+  summary: Stop the `templates/base.html` nav from hard-coding the `automobiles` and `horology-salon` slugs (its Vehicles and Timepieces links).
+  evidence: `collection_item_confirm_delete.html` extends `base.html`, so a guest who deletes an item sees two nav links that 404 when they lack those starters (`collection_list` is `get_object_or_404(owner=request.user)`). Same defect class as CAP-1, outside that story's checklist scope. Found during Story 1 planning.
+- source_spec: `_bmad-output/specs/spec-tutorial-videos/stories/1-fix-welcome-checklist-step-2-link.md`
+  summary: Decide where Video 2 appears for themed collections. `collection_list.html` renders `rendered_ui` and skips the default branch (and its empty state at line 174) whenever `ui_theme_html` is set, so Coin Collection guests would never see it (CAP-3).
+  evidence: Verified at `collection_list.html:29` (`{% if rendered_ui %}`). Story 3 spec gap, found in Story 1 review (Blind Hunter).
+- source_spec: `_bmad-output/specs/spec-tutorial-videos/stories/1-fix-welcome-checklist-step-2-link.md`
+  summary: Spec how the recorder reaches a throwaway SQLite DB and logs in as the seeded demo user; `src/config/settings/local.py:13` hard-codes `BASE_DIR / "db.sqlite3"` (CAP-6).
+  evidence: Neither `recording-pipeline.md` nor `brownfield.md` names a recording settings module or env override. Story 2 spec gap, Story 1 review.
+- source_spec: `_bmad-output/specs/spec-tutorial-videos/stories/1-fix-welcome-checklist-step-2-link.md`
+  summary: Define what the CAP-6 determinism check compares; two Chromium captures plus ffmpeg encodes won't be byte-identical.
+  evidence: Story 4's "run twice and compare" has no stated comparison (step/caption timeline log, seeded DB, frame hashes with tolerance). Story 4 spec gap, Story 1 review.
+- source_spec: `_bmad-output/specs/spec-tutorial-videos/stories/1-fix-welcome-checklist-step-2-link.md`
+  summary: Name the DB field the success signal uses for a guest's first sign-in.
+  evidence: `last_login` is overwritten each login; `date_joined` is first sign-in only if guests self-register, not if the owner pre-creates accounts. SPEC success-signal gap, Story 1 review.
