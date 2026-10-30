@@ -468,7 +468,7 @@ The Estate & Legacy feature is a brownfield addition to an existing Django 5.2 M
 
 - **NFR14:** Executor portal and beneficiary view meet **WCAG 2.1 AA** — minimum contrast ratio 4.5:1, all interactive elements keyboard-navigable, form fields have associated labels, error messages are descriptive
 - **NFR15:** Owner estate management views meet WCAG 2.1 A (platform standard)
-- **NFR16:** PDF exports use readable font sizes (minimum 10pt body text) and logical reading order for screen reader compatibility
+- **NFR16:** PDF exports use readable font sizes (minimum 10pt body text), real text (not images) and a logical reading order. Tagged PDF/UA is not required *(reworded 2026-10-29, Epic 4 planning: the chosen library, reportlab, can't produce tagged PDF)*
 
 ### Data Reliability & Durability
 
