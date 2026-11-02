@@ -85,9 +85,20 @@ mongodb = ">=4.4"
 # Came in with the BMAD agent tooling (8885dce); nothing in prod runs node.
 nodejs = ">=24.12.0,<25.8"
 
+# Tutorial-video recorder only. Kept in its own feature so the default (CI) and
+# prod envs, and the Docker image, do not carry Playwright or ffmpeg.
+[feature.tutorials.dependencies]
+playwright-python = ">=1.50"
+ffmpeg = ">=7"
+
+[feature.tutorials.tasks]
+record-tutorials = { cmd = "python -m record_tutorials", depends-on = ["install-chromium"], env = { PYTHONPATH = "src:scripts" } }
+install-chromium = "playwright install chromium"
+
 [environments]
 default = ["dev"]
 prod = []
+tutorials = { features = ["tutorials"], solve-group = "default" }
 
 [activation]
 env = { PYTHONPATH = "src" }

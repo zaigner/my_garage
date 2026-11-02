@@ -1,4 +1,5 @@
 {% extends "my_garage/base.html" %}
+{% load static %}
 
 {% block title %}Collection Templates{% endblock %}
 
@@ -43,6 +44,11 @@
                 </a>
             </div>
         {% else %}
+        {% static 'tutorials/video1.mp4' as video1_src %}
+        {% static 'tutorials/video1.jpg' as video1_poster %}
+        <div class="mb-6">
+            {% include "includes/_tutorial_video.html" with src=video1_src poster=video1_poster title="Your vault in 60 seconds" duration="1:00" %}
+        </div>
         <form method="post" class="space-y-6">
             {% csrf_token %}
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

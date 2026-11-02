@@ -164,6 +164,7 @@ pixi run manage <cmd>     # Django management commands
 pixi run mongo            # Start local MongoDB
 pixi run pytest           # Run all tests
 pixi run refresh-context  # Refresh BMAD portfolio context
+pixi run record-tutorials [video…]  # Re-record tutorial videos into static/tutorials/ (auto-selects the tutorials env)
 pixi run start-app        # starts all services
 ```
 

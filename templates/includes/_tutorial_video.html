@@ -1,0 +1,40 @@
+{% comment %}
+Collapsed tutorial-video card. Tapping it expands an inline player in place.
+
+Params: src, poster, title, duration (display text, e.g. "1:00").
+Pass src/poster from the call site, built with the static tag's "as" form, so that
+tests/unit/test_static_references.py guards the files exist. Never autoplays,
+and Dismiss hides it for this page view only (no storage).
+
+data-tutorial-video lets the recorder hide embeds so they don't film themselves.
+{% endcomment %}
+<div data-tutorial-video x-data="{ show: true, open: false }" x-show="show"
+     class="rounded-xl bg-[#151b33] border border-white/10 overflow-hidden">
+    <div class="flex items-center justify-between gap-3 px-3 pt-2">
+        <span class="text-[0.65rem] uppercase tracking-widest text-gray-500">Quick tutorial</span>
+        <button type="button" @click="show = false; $refs.player.pause()" aria-label="Dismiss"
+                class="text-gray-500 hover:text-white transition-colors p-1">
+            <i class="fas fa-times text-xs"></i>
+        </button>
+    </div>
+    <button type="button" x-show="!open" @click="open = true; $refs.player.play()"
+            aria-label="Play {{ title }}"
+            class="w-full flex items-center gap-3 p-3 text-left hover:bg-white/5 transition-colors">
+        <img src="{{ poster }}" alt="" width="45" height="98" loading="lazy"
+             class="w-12 h-[104px] object-cover rounded-md border border-white/10 flex-shrink-0">
+        <span class="min-w-0 flex-1">
+            <span class="block font-serif italic text-white text-base">{{ title }}</span>
+            <span class="block text-gray-500 text-xs mt-1">{{ duration }} &middot; no sound needed</span>
+        </span>
+        <span class="flex-shrink-0 px-3 py-2 bg-luxury-gold text-black font-bold rounded-sm uppercase text-[0.65rem] tracking-widest">
+            <i class="fas fa-play mr-1"></i>Play
+        </span>
+    </button>
+    <div x-cloak x-show="open" class="p-3 pt-1">
+        <video x-ref="player" controls playsinline preload="none" poster="{{ poster }}"
+               aria-label="{{ title }}"
+               class="mx-auto block w-full max-w-[280px] rounded-md border border-white/10 bg-black">
+            <source src="{{ src }}" type="video/mp4">
+        </video>
+    </div>
+</div>
