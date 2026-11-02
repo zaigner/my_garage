@@ -17,7 +17,8 @@ import pytest
 from django.conf import settings
 from django.contrib.staticfiles import finders
 
-STATIC_TAG_RE = re.compile(r"""\{%\s*static\s+['"]([^'"]+)['"]\s*%\}""")
+# Matches both {% static 'x' %} and {% static 'x' as name %}.
+STATIC_TAG_RE = re.compile(r"""\{%\s*static\s+['"]([^'"]+)['"](?:\s+as\s+\w+)?\s*%\}""")
 
 TEMPLATE_DIRS = [
     Path(settings.BASE_DIR) / "templates",
@@ -40,6 +41,18 @@ STATIC_REFERENCES = _static_references()
 def test_templates_reference_static_files():
     """The scan must find something, or the test below passes vacuously."""
     assert STATIC_REFERENCES
+
+
+def test_as_form_tutorial_references_are_scanned():
+    expected = {
+        (template, path)
+        for template in (
+            "templates/pages/onboarding.html",
+            "src/my_garage/templates/my_garage/collection_templates.html",
+        )
+        for path in ("tutorials/video1.mp4", "tutorials/video1.jpg")
+    }
+    assert expected <= set(STATIC_REFERENCES)
 
 
 @pytest.mark.parametrize(("template", "path"), STATIC_REFERENCES)

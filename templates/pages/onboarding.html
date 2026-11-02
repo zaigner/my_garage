@@ -82,6 +82,9 @@
 
         <!-- Starter collections picker -->
         {% if not all_adopted %}
+        {% static 'tutorials/video1.mp4' as video1_src %}
+        {% static 'tutorials/video1.jpg' as video1_poster %}
+        {% include "includes/_tutorial_video.html" with src=video1_src poster=video1_poster title="Your vault in 60 seconds" duration="1:00" %}
         <section class="space-y-5" x-data="{ picked: [] }">
             <div class="text-center space-y-2">
                 <h2 class="font-serif text-2xl italic text-luxury-white">
