@@ -58,3 +58,9 @@
 - source_spec: `_bmad-output/specs/spec-tutorial-videos/stories/1-fix-welcome-checklist-step-2-link.md`
   summary: Name the DB field the success signal uses for a guest's first sign-in.
   evidence: `last_login` is overwritten each login; `date_joined` is first sign-in only if guests self-register, not if the owner pre-creates accounts. SPEC success-signal gap, Story 1 review.
+- source_spec: `_bmad-output/specs/spec-tutorial-videos/stories/2-recorder-harness-embed-partial-video-1.md`
+  summary: Block server-side external calls during recording; `config.settings.tutorials` inherits the real `.env` keys (GOOGLE_API_KEY, MARKETCHECK_API_KEY) and eager Celery, and the browser allowlist cannot see server-side calls.
+  evidence: Unverified, medium if true. Video 1 reaches no `.delay()`; the server-side callers are the valuation/enrich/OCR views (`views.py:562/602/885`). Settle it for Story 3/4 by listing every view each new flow hits; if any reaches those, blank the keys in the tutorials settings or fail on outbound HTTP. Story 2 review, BH3/EC7.
+- source_spec: `_bmad-output/specs/spec-tutorial-videos/stories/2-recorder-harness-embed-partial-video-1.md`
+  summary: Document the recorder in CLAUDE.md §2/§3: `scripts/record_tutorials/`, `config/settings/tutorials.py`, the `tutorials` pixi env, `TUTORIALS_DEBUG_DIR`, and the 6 MB budget.
+  evidence: Only the `pixi run record-tutorials` line was added; a future session won't find the layout or debug hook. Story 2 review, BH12.
