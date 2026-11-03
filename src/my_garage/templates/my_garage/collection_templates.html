@@ -46,8 +46,10 @@
         {% else %}
         {% static 'tutorials/video1.mp4' as video1_src %}
         {% static 'tutorials/video1.jpg' as video1_poster %}
+        {% static 'tutorials/video1-desktop.mp4' as video1_desktop_src %}
+        {% static 'tutorials/video1-desktop.jpg' as video1_desktop_poster %}
         <div class="mb-6">
-            {% include "includes/_tutorial_video.html" with src=video1_src poster=video1_poster title="Your vault in 60 seconds" duration="1:00" %}
+            {% include "includes/_tutorial_video.html" with src=video1_src poster=video1_poster desktop_src=video1_desktop_src desktop_poster=video1_desktop_poster title="Your vault in 60 seconds" duration="1:00" %}
         </div>
         <form method="post" class="space-y-6">
             {% csrf_token %}

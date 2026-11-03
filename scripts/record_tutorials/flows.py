@@ -33,11 +33,12 @@ def video1(rec) -> None:
     overlays.caption(rec, "Pick what you collect", 4500)
     wine = page.locator("label:has(input[name=blueprints][value=wine-collection])")
     horology = page.locator("label:has(input[name=blueprints][value=horology-salon])")
-    overlays.glide(rec, 195, 420, 900)
+    overlays.glide(rec, *rec.variant.center, 900)
     page.wait_for_timeout(2500)
 
-    rec.step("tap two starters")
-    overlays.caption(rec, "Tap two starters", 1500)
+    verb = rec.variant.verb
+    rec.step(f"{verb.lower()} two starters")
+    overlays.caption(rec, f"{verb} two starters", 1500)
     overlays.tap(rec, wine)
     page.wait_for_timeout(3500)
     overlays.tap(rec, horology)

@@ -64,3 +64,7 @@
 - source_spec: `_bmad-output/specs/spec-tutorial-videos/stories/2-recorder-harness-embed-partial-video-1.md`
   summary: Document the recorder in CLAUDE.md §2/§3: `scripts/record_tutorials/`, `config/settings/tutorials.py`, the `tutorials` pixi env, `TUTORIALS_DEBUG_DIR`, and the 6 MB budget.
   evidence: Only the `pixi run record-tutorials` line was added; a future session won't find the layout or debug hook. Story 2 review, BH12.
+
+- source_spec: `_bmad-output/specs/spec-tutorial-videos/stories/3-desktop-variant-for-tutorial-videos.md`
+  summary: Add a browser test for the tutorial embed's Play handler (variant choice by `matchMedia`, `currentSrc` and poster, only one MP4 requested).
+  evidence: The functional tests only search the rendered HTML for the `matchMedia` string and the `data-*` URLs, so a swapped ternary or a wrong dataset key would still pass. Story 3 checked it by hand with a scratch Playwright script at 1280/768/767/390 px. Playwright exists only in the `tutorials` pixi env, so a CI test needs new test infrastructure.

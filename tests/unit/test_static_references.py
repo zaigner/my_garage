@@ -50,7 +50,12 @@ def test_as_form_tutorial_references_are_scanned():
             "templates/pages/onboarding.html",
             "src/my_garage/templates/my_garage/collection_templates.html",
         )
-        for path in ("tutorials/video1.mp4", "tutorials/video1.jpg")
+        for path in (
+            "tutorials/video1.mp4",
+            "tutorials/video1.jpg",
+            "tutorials/video1-desktop.mp4",
+            "tutorials/video1-desktop.jpg",
+        )
     }
     assert expected <= set(STATIC_REFERENCES)
 
