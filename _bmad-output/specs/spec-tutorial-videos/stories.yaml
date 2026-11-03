@@ -28,21 +28,42 @@
     the story's Implementation Notes; if it can't fit about 2 MB with
     legible captions, ask the owner before changing the budget.
 - id: "3"
-  title: "Video 2: your first item"
+  title: Desktop variant for tutorial videos
   description: >-
-    Script, record and embed Video 2 in the collection list empty state,
-    absent once the collection has an item (CAP-3).
+    Give the recorder a desktop profile alongside the phone one, re-record
+    Video 1 in both variants, and make the embed partial pick the variant by
+    viewport width (768px) when Play is pressed, with a CSS-toggled thumbnail
+    and a wider desktop player (CAP-7, CAP-5, CAP-6; recording-pipeline.md
+    "Capture" and "Variant selection"). Phone files keep their names;
+    desktop files are videoN-desktop.mp4/.jpg.
   spec_checkpoint: true
   done_checkpoint: false
   invoke_dev_with: >-
-    Reuse Story 2's harness and caption helpers. The photo fixture must
-    already be upright (no EXIF rotation), so frames match across runs.
+    Settle the desktop viewport by checking frames at the real /welcome/
+    player width (about 620px); start near 880x550 and stay at or above
+    768px wide. Video 1's phone flow opens the hamburger, which the desktop
+    nav doesn't have, so branch that step on the variant. Record the
+    desktop variant's size and encoder settings in Implementation Notes.
+    The static-reference test must cover both new files on both pages.
+    The owner checks playback on a laptop and an iPhone.
 - id: "4"
+  title: "Video 2: your first item"
+  description: >-
+    Script, record and embed Video 2, in both variants, in the collection
+    list empty state, absent once the collection has an item (CAP-3, CAP-7).
+  spec_checkpoint: true
+  done_checkpoint: false
+  invoke_dev_with: >-
+    Reuse the harness, caption helpers and variant profiles from Stories 2
+    and 3. The photo fixture must already be upright (no EXIF rotation), so
+    frames match across runs.
+- id: "5"
   title: "Video 3: build a collection for anything"
   description: >-
-    Script, record and embed Video 3 on /collections/create/ in create mode
-    only, with the generate-schema request intercepted; then verify full
-    CAP-6 acceptance across all three videos (CAP-4, CAP-6).
+    Script, record and embed Video 3, in both variants, on
+    /collections/create/ in create mode only, with the generate-schema
+    request intercepted; then verify full CAP-6 and CAP-7 acceptance across
+    all three videos (CAP-4, CAP-6, CAP-7).
   spec_checkpoint: true
   done_checkpoint: false
   invoke_dev_with: >-

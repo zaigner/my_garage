@@ -32,16 +32,20 @@ Pain to solve, ahead of time. my_garage is about to open to invited friends and 
   - **success:** Video 3 renders on `/collections/create/` in create mode and not when editing an existing collection; its captions present the suggested fields as an example, not what the guest will get.
 - **CAP-5**
   - **intent:** A guest can watch any tutorial in place, sound off, and dismiss it when done.
-  - **success:** Each embed shows a poster frame, never autoplays, plays inline on iPhone Safari and desktop Chrome, has captions legible on a phone, and hides on dismiss for the rest of that page view (no persistence across reloads).
+  - **success:** Each embed shows a poster frame, never autoplays, plays inline on iPhone Safari and desktop Chrome, has captions and UI text legible on a phone and on a laptop at the player's default width, and hides on dismiss for the rest of that page view (no persistence across reloads).
 - **CAP-6**
   - **intent:** The owner can regenerate all three videos and their posters after a UI change with one command.
-  - **success:** `pixi run record-tutorials` on a clean checkout writes three MP4s and three JPEG posters to `static/tutorials/` in under 5 minutes, with no manual steps and no AI API calls. Two runs produce the same data, suggested fields, captions and timing. A broken selector fails the run with a non-zero exit. `pixi run record-tutorials <video>` (e.g. `video2`) re-records only that video and its poster and leaves the other files byte-for-byte unchanged. The run also exits non-zero when the three MP4s together exceed 6 MB.
+  - **success:** `pixi run record-tutorials` on a clean checkout writes both variants (CAP-7) of all three videos, six MP4s and six JPEG posters, to `static/tutorials/` in under 10 minutes, with no manual steps and no AI API calls. Two runs produce the same data, suggested fields, captions and timing. A broken selector fails the run with a non-zero exit. `pixi run record-tutorials <video>` (e.g. `video2`) re-records both variants of only that video and leaves the other files byte-for-byte unchanged. The run also exits non-zero when all the MP4s together exceed 6 MB.
+- **CAP-7**
+  - **intent:** A guest sees each tutorial recorded in the layout they are looking at: the phone recording on a narrow screen, a desktop recording on a wide one.
+  - **success:** Each video has a phone and a desktop variant. When the viewport is at least 768px wide (the `md` breakpoint where `_nav.html` switches to the desktop nav), the embed shows the desktop thumbnail and plays the desktop MP4 with its poster; below 768px it shows and plays the phone ones. Only the chosen MP4 is downloaded, and only once Play is pressed. The desktop player is wider than the phone player's 280px and fits the page column without horizontal scrolling.
 
 ## Constraints
 
-- Recordings are phone-size only (390×844): on-screen captions, no audio, a visible cursor and tap highlight.
+- Each video is recorded twice from the same seeded data and script: a phone variant at 390×844 and a desktop variant at a viewport just past the 768px breakpoint (about 880×550), narrow enough that UI text stays legible in a player about 620px wide (the `/welcome/` column is `max-w-2xl`). Both have on-screen captions, no audio, and a visible cursor and tap/click highlight.
+- The variant is chosen in the browser by viewport width, never by user-agent or device detection on the server. A narrow desktop window shows the phone layout, so it gets the phone video.
 - Videos are served as Django static files from `static/tutorials/` (WhiteNoise, behind Cloudflare Access). Not `media/`, which holds owner-scoped uploads, and no external host.
-- The three videos combined weigh at most 6 MB. One reason is that static files ship in the Docker image and image pulls on the Pi nodes already take minutes. The other is that the MP4s are committed, so every re-record adds its new files to git history for good. The brief's 15 MB is an outer limit; 6 MB keeps refreshes cheap.
+- All the tutorial MP4s combined, both variants of all three videos, weigh at most 6 MB. One reason is that static files ship in the Docker image and image pulls on the Pi nodes already take minutes. The other is that the MP4s are committed, so every re-record adds its new files to git history for good. The brief's 15 MB is an outer limit; 6 MB keeps refreshes cheap.
 - Each output is H.264 MP4 (`yuv420p`, `+faststart`) with a JPEG poster, which iOS Safari needs for inline playback.
 - A recording run makes no external API calls: the Collection Curator schema request returns a fixed response, and every run uses a throwaway SQLite database seeded with fixed demo data, never `db.sqlite3`.
 - Every `{% static %}` reference must exist, or manifest storage returns a 500 (`tests/unit/test_static_references.py` enforces this). The generated MP4s and posters are therefore committed to the repo, and an embed can't merge before the files it references.
@@ -52,7 +56,9 @@ Pain to solve, ahead of time. my_garage is about to open to invited friends and 
 
 - Valuation and receipt-upload (OCR) videos.
 - Estate & Legacy videos, including the beneficiary walkthrough.
-- Desktop-size recordings.
+- Picking the variant from the user-agent or on the server.
+- Switching variant mid-playback when the window is resized; the choice is made when Play is pressed.
+- Re-recording one variant of a video on its own; a re-record always produces both.
 - Voiceover or any audio (deferred, not rejected).
 - Public or external hosting (YouTube, CDN).
 - Play analytics.
@@ -68,7 +74,8 @@ Pain to solve, ahead of time. my_garage is about to open to invited friends and 
 ## Assumptions
 
 - Target video lengths: Video 1 about 60 s, Video 2 about 90 s, Video 3 about 2 min. These come from the brief and are unconfirmed.
-- The task name `record-tutorials` and the 5-minute re-record budget come from the brief and are unconfirmed.
-- The 6 MB size budget was set on 2026-10-29, replacing the brief's 15 MB. It assumes phone-size screen recordings encode to about 1–2 MB each. That figure is an estimate, and Story 2 measures it on Video 1.
+- The task name `record-tutorials` comes from the brief and is unconfirmed. The brief's 5-minute run budget became 10 minutes on 2026-11-03, because recording runs in real time and each video is now recorded twice (Video 1 alone took about 66 s per variant).
+- The 6 MB size budget was set on 2026-10-29, replacing the brief's 15 MB. Story 2 measured the Video 1 phone variant at 193 KB, so six files should fit easily. Story 3 measures the desktop variant.
+- The desktop viewport of about 880×550 is an estimate. Story 3 settles the exact size by checking legibility at the real player width.
 - "First session" means the same calendar day as the guest's first sign-in.
 - Recordings show only seeded demo data, never real user data.
