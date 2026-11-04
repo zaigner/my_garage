@@ -5,7 +5,8 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
-WIDTH, HEIGHT = 390, 844
+from .variants import Variant
+
 FPS = 20
 CRF = 26
 SIZE_BUDGET_BYTES = 6 * 1024 * 1024
@@ -15,7 +16,7 @@ class BudgetError(RuntimeError):
     """The committed MP4s together exceed the size budget."""
 
 
-def encode_args(src: Path, dst: Path, trim_s: float = 0.0) -> list[str]:
+def encode_args(src: Path, dst: Path, trim_s: float, variant: Variant) -> list[str]:
     """ffmpeg argv turning Playwright's WebM into an iOS-safe H.264 MP4."""
     return [
         "ffmpeg",
@@ -27,7 +28,7 @@ def encode_args(src: Path, dst: Path, trim_s: float = 0.0) -> list[str]:
         "-i",
         str(src),
         "-vf",
-        f"scale={WIDTH}:{HEIGHT}:flags=lanczos,fps={FPS}",
+        f"scale={variant.width}:{variant.height}:flags=lanczos,fps={FPS}",
         "-c:v",
         "libx264",
         "-profile:v",

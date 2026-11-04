@@ -20,10 +20,10 @@ from my_garage.management.commands.seed_tutorial_demo import (
 
 from . import encode, overlays
 from .flows import FLOWS
+from .variants import VARIANTS, Variant
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 OUT_DIR = REPO_ROOT / "static" / "tutorials"
-VIEWPORT = {"width": 390, "height": 844}
 SELECTOR_TIMEOUT_MS = 10_000
 
 
@@ -34,10 +34,11 @@ class StepError(RuntimeError):
 class Recorder:
     """What a flow sees: the page, a step log and the cursor position."""
 
-    def __init__(self) -> None:
+    def __init__(self, variant: Variant) -> None:
+        self.variant = variant
         self.page = None
         self.current_step = "(start)"
-        self.mouse_xy = (195.0, 700.0)
+        self.mouse_xy = tuple(float(v) for v in variant.cursor_start)
         self.lines: list[str] = []
 
     def log(self, line: str) -> None:
@@ -49,7 +50,7 @@ class Recorder:
         self.log(f"step: {name}")
         debug_dir = os.environ.get("TUTORIALS_DEBUG_DIR")
         if debug_dir and self.page is not None:
-            slug = name.replace(" ", "-")
+            slug = f"{self.variant.name}-" + name.replace(" ", "-")
             self.page.screenshot(
                 path=str(Path(debug_dir) / f"step-{len(self.lines):02d}-{slug}.png")
             )
@@ -104,12 +105,14 @@ def _start_server(env: dict[str, str], port: int) -> subprocess.Popen:
     raise RuntimeError("app server did not become ready within 60 s")
 
 
-def _record(name: str, base_url: str, work: Path, violations: list[str]) -> Path:
+def _record(
+    name: str, base_url: str, work: Path, violations: list[str], variant: Variant
+) -> Path:
     """Run one flow in a fresh context; return the raw WebM path."""
     from playwright.sync_api import sync_playwright  # lazy: only the recorder needs it
 
     flow = FLOWS[name]
-    rec = Recorder()
+    rec = Recorder(variant)
     state_path = work / "state.json"
 
     def guard(route):
@@ -124,7 +127,7 @@ def _record(name: str, base_url: str, work: Path, violations: list[str]) -> Path
         browser = p.chromium.launch()
         try:
             # Sign in outside the recording so the video opens on the first page.
-            login_ctx = browser.new_context(viewport=VIEWPORT)
+            login_ctx = browser.new_context(viewport=variant.viewport)
             login_ctx.set_default_timeout(SELECTOR_TIMEOUT_MS)
             login_ctx.route("**/*", guard)
             login = login_ctx.new_page()
@@ -140,20 +143,21 @@ def _record(name: str, base_url: str, work: Path, violations: list[str]) -> Path
             login_ctx.storage_state(path=state_path)
             login_ctx.close()
 
+            # Playwright's screencast draws the page at 1x in the corner of a larger
+            # record size, so record at the viewport size (DPR 1) to fill the frame.
             video_dir = work / "video"
             ctx = browser.new_context(
-                viewport=VIEWPORT,
-                device_scale_factor=2,
+                viewport=variant.viewport,
                 storage_state=state_path,
                 record_video_dir=str(video_dir),
                 record_video_size={
-                    "width": VIEWPORT["width"] * 2,
-                    "height": VIEWPORT["height"] * 2,
+                    "width": variant.width,
+                    "height": variant.height,
                 },
             )
             ctx.set_default_timeout(SELECTOR_TIMEOUT_MS)
             ctx.route("**/*", guard)
-            overlays.install(ctx)
+            overlays.install(ctx, variant)
             rec.page = ctx.new_page()
             t0 = time.monotonic()
             try:
@@ -167,7 +171,7 @@ def _record(name: str, base_url: str, work: Path, violations: list[str]) -> Path
                 debug_dir = os.environ.get("TUTORIALS_DEBUG_DIR")
                 if debug_dir and rec.page is not None:
                     rec.page.screenshot(
-                        path=str(Path(debug_dir) / f"{name}-failure.png")
+                        path=str(Path(debug_dir) / f"{name}-{variant.name}-failure.png")
                     )
                 msg = str(exc).splitlines()[0] if str(exc) else type(exc).__name__
                 raise StepError(
@@ -182,30 +186,50 @@ def _record(name: str, base_url: str, work: Path, violations: list[str]) -> Path
     return webm
 
 
-def record_one(name: str, base_url: str) -> None:
+def record_one(name: str, base_url: str, reset_db=None) -> None:
+    """Record and encode every variant, then copy all files; any failure writes none.
+
+    ``reset_db`` restores the seeded database before each variant, so both
+    start from the same first-time vault.
+    """
     flow = FLOWS[name]
     print(f"Recording {name}: {flow.title}", flush=True)
     work = Path(tempfile.mkdtemp(prefix=f"tut-{name}-"))
     violations: list[str] = []
+    outputs: list[Path] = []
     try:
-        try:
-            webm = _record(name, base_url, work, violations)
-        except Exception as exc:
+        for variant in VARIANTS:
+            print(f" variant: {variant.name}", flush=True)
+            if reset_db is not None:
+                reset_db()
+            vwork = work / variant.name
+            vwork.mkdir()
+            try:
+                webm = _record(name, base_url, vwork, violations, variant)
+            except Exception as exc:
+                if violations:
+                    raise StepError(
+                        f"[{variant.name}] blocked external request: {violations[0]}"
+                    ) from exc
+                if isinstance(exc, StepError):
+                    raise StepError(f"[{variant.name}] {exc}") from exc
+                raise
             if violations:
-                raise StepError(f"blocked external request: {violations[0]}") from exc
-            raise
-        if violations:
-            raise StepError(f"blocked external request: {violations[0]}")
-        trim = float((work / "trim.txt").read_text())
-        mp4, poster = work / f"{name}.mp4", work / f"{name}.jpg"
-        encode.run_ffmpeg(encode.encode_args(webm, mp4, trim))
-        encode.run_ffmpeg(encode.poster_args(mp4, poster, flow.poster_at_s))
+                raise StepError(
+                    f"[{variant.name}] blocked external request: {violations[0]}"
+                )
+            trim = float((vwork / "trim.txt").read_text())
+            stem = f"{name}{variant.suffix}"
+            mp4, poster = vwork / f"{stem}.mp4", vwork / f"{stem}.jpg"
+            encode.run_ffmpeg(encode.encode_args(webm, mp4, trim, variant))
+            encode.run_ffmpeg(encode.poster_args(mp4, poster, flow.poster_at_s))
+            outputs += [mp4, poster]
         OUT_DIR.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(mp4, OUT_DIR / mp4.name)
-        shutil.copyfile(poster, OUT_DIR / poster.name)
-        print(
-            f"Wrote {mp4.name} ({mp4.stat().st_size / 1024:.0f} KB) and {poster.name}"
-        )
+        for f in outputs:
+            shutil.copyfile(f, OUT_DIR / f.name)
+        for f in outputs:
+            if f.suffix == ".mp4":
+                print(f"Wrote {f.name} ({f.stat().st_size / 1024:.0f} KB)")
     finally:
         shutil.rmtree(work, ignore_errors=True)
 
@@ -221,9 +245,17 @@ def run(names: list[str]) -> int:
         _manage(env, "seed_tutorial_demo")
         port = _free_port()
         server = _start_server(env, port)
+        pristine = tmp / "pristine.sqlite3"
+        shutil.copyfile(db_path, pristine)
+
+        def reset_db() -> None:
+            # Safe under the live server: connections close after each request
+            # (CONN_MAX_AGE 0) and SQLite uses a rollback journal, not WAL.
+            shutil.copyfile(pristine, db_path)
+
         base_url = f"http://127.0.0.1:{port}"
         for name in names:
-            record_one(name, base_url)
+            record_one(name, base_url, reset_db)
     finally:
         if server is not None:
             server.terminate()

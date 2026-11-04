@@ -43,16 +43,45 @@ def test_video_attributes(client, guest, url_name):
     assert "playsinline" in tag
     assert 'preload="none"' in tag
     assert "controls" in tag
-    assert "poster=" in tag and "video1.jpg" in tag
     assert "autoplay" not in tag
     assert "muted" not in tag
 
 
 @pytest.mark.parametrize("url_name", PAGES)
-def test_source_and_dismiss_without_storage(client, guest, url_name):
+def test_video_has_no_src_source_or_poster_until_play(client, guest, url_name):
     client.force_login(guest)
     html = client.get(reverse(url_name)).content.decode()
-    assert "tutorials/video1.mp4" in html
+    tag = _video_tag(html)
+    # data-* attributes carry the URLs; the bare attributes must not exist.
+    bare = re.sub(r'data-[\w-]+="[^"]*"', "", tag)
+    assert " src=" not in bare and " poster=" not in bare
+    assert "<source" not in html[html.index("<video") : html.index("</video>")]
+    assert re.search(r'data-phone-src="[^"]*tutorials/video1\.mp4"', tag)
+    assert re.search(r'data-phone-poster="[^"]*tutorials/video1\.jpg"', tag)
+    assert re.search(r'data-desktop-src="[^"]*tutorials/video1-desktop\.mp4"', tag)
+    assert re.search(r'data-desktop-poster="[^"]*tutorials/video1-desktop\.jpg"', tag)
+
+
+@pytest.mark.parametrize("url_name", PAGES)
+def test_both_thumbnails_are_toggled_by_css(client, guest, url_name):
+    client.force_login(guest)
+    html = client.get(reverse(url_name)).content.decode()
+    phone = re.search(r'<img[^>]*src="[^"]*tutorials/video1\.jpg"[^>]*>', html)
+    desktop = re.search(
+        r'<img[^>]*src="[^"]*tutorials/video1-desktop\.jpg"[^>]*>', html
+    )
+    assert phone and desktop
+    assert 'class="md:hidden' in phone.group(0)
+    assert 'class="hidden md:block' in desktop.group(0)
+
+
+@pytest.mark.parametrize("url_name", PAGES)
+def test_play_picks_variant_by_media_query_and_dismiss_without_storage(
+    client, guest, url_name
+):
+    client.force_login(guest)
+    html = client.get(reverse(url_name)).content.decode()
+    assert "matchMedia('(min-width: 768px)')" in html
     assert 'aria-label="Dismiss"' in html
     embed = html[html.index("data-tutorial-video") :]
     embed = embed[: embed.index("</video>")]

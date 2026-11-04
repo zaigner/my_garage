@@ -1,14 +1,30 @@
 {% comment %}
 Collapsed tutorial-video card. Tapping it expands an inline player in place.
 
-Params: src, poster, title, duration (display text, e.g. "1:00").
-Pass src/poster from the call site, built with the static tag's "as" form, so that
+Params: src, poster, desktop_src, desktop_poster, title, duration (display text,
+e.g. "1:00"). Pass the four URLs from the call site, built with the static tag's "as" form, so that
 tests/unit/test_static_references.py guards the files exist. Never autoplays,
 and Dismiss hides it for this page view only (no storage).
 
+The thumbnail is chosen with CSS (md = 768px). The <video> carries its URLs in
+data-* attributes and gets src/poster only when Play is pressed, from
+matchMedia('(min-width: 768px)'), so only the matching MP4 is requested.
+
 data-tutorial-video lets the recorder hide embeds so they don't film themselves.
 {% endcomment %}
-<div data-tutorial-video x-data="{ show: true, open: false }" x-show="show"
+<div data-tutorial-video x-data="{
+         show: true, open: false, wide: false,
+         play() {
+             const v = this.$refs.player;
+             this.wide = window.matchMedia('(min-width: 768px)').matches;
+             const pick = this.wide ? 'desktop' : 'phone';
+             v.poster = v.dataset[pick + 'Poster'];
+             v.src = v.dataset[pick + 'Src'];
+             this.open = true;
+             v.load();
+             v.play();
+         }
+     }" x-show="show"
      class="rounded-xl bg-[#151b33] border border-white/10 overflow-hidden">
     <div class="flex items-center justify-between gap-3 px-3 pt-2">
         <span class="text-[0.65rem] uppercase tracking-widest text-gray-500">Quick tutorial</span>
@@ -17,11 +33,13 @@ data-tutorial-video lets the recorder hide embeds so they don't film themselves.
             <i class="fas fa-times text-xs"></i>
         </button>
     </div>
-    <button type="button" x-show="!open" @click="open = true; $refs.player.play()"
+    <button type="button" x-show="!open" @click="play()"
             aria-label="Play {{ title }}"
             class="w-full flex items-center gap-3 p-3 text-left hover:bg-white/5 transition-colors">
         <img src="{{ poster }}" alt="" width="45" height="98" loading="lazy"
-             class="w-12 h-[104px] object-cover rounded-md border border-white/10 flex-shrink-0">
+             class="md:hidden w-12 h-[104px] object-cover rounded-md border border-white/10 flex-shrink-0">
+        <img src="{{ desktop_poster }}" alt="" width="96" height="74" loading="lazy"
+             class="hidden md:block w-24 h-[74px] object-cover rounded-md border border-white/10 flex-shrink-0">
         <span class="min-w-0 flex-1">
             <span class="block font-serif italic text-white text-base">{{ title }}</span>
             <span class="block text-gray-500 text-xs mt-1">{{ duration }} &middot; no sound needed</span>
@@ -31,10 +49,11 @@ data-tutorial-video lets the recorder hide embeds so they don't film themselves.
         </span>
     </button>
     <div x-cloak x-show="open" class="p-3 pt-1">
-        <video x-ref="player" controls playsinline preload="none" poster="{{ poster }}"
+        <video x-ref="player" controls playsinline preload="none"
                aria-label="{{ title }}"
-               class="mx-auto block w-full max-w-[280px] rounded-md border border-white/10 bg-black">
-            <source src="{{ src }}" type="video/mp4">
-        </video>
+               data-phone-src="{{ src }}" data-phone-poster="{{ poster }}"
+               data-desktop-src="{{ desktop_src }}" data-desktop-poster="{{ desktop_poster }}"
+               :class="wide ? 'max-w-[880px] aspect-[880/680]' : 'max-w-[280px] aspect-[390/844]'"
+               class="mx-auto block w-full rounded-md border border-white/10 bg-black"></video>
     </div>
 </div>

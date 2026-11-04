@@ -23,9 +23,10 @@ If a selector times out or a step fails, the run exits non-zero. A failure usual
 ## Capture
 
 - Variants: a profile per variant sets the viewport, the encode size and the caption copy.
-  - Phone: 390×844, recorded at `device_scale_factor` 2, then downscaled in ffmpeg so text stays sharp.
-  - Desktop: about 880×550, also recorded at DPR 2 and downscaled. It must be at least 768px wide so the desktop nav (`md:flex` in `_nav.html`) shows. Settle the exact size by checking frames at the real player width.
-- Flows: a flow's steps may branch on the variant where the layouts differ. For example, Video 1 opens the hamburger (`button[aria-label="Navigation menu"]`) on the phone, but at 768px and above the desktop nav (`md:flex`) is already showing. Check how it lists collections (inline or in a dropdown) before scripting that step. Fixed glide coordinates such as `glide(rec, 195, 420, …)` are phone-specific. Keep the same beats and caption order in both variants. Caption copy may say "Click" on desktop where the phone says "Tap".
+  - Phone: 390×844.
+  - Desktop: 880×680. It must be at least 768px wide, the `md` breakpoint where the collection grids and page headers change. The height keeps the nav dropdown's "Your Collections" links in view (the dropdown is `absolute` in a `sticky` nav, so scrolling can't reach them).
+  - Both variants record at DPR 1 with `record_video_size` equal to the viewport. Playwright's screencast draws the page at 1x in the corner of a larger record size, so a 2x size leaves the page in the top-left quarter of the frame.
+- Flows: one flow serves both variants, because `_nav.html` has no desktop nav and the hamburger (`button[aria-label="Navigation menu"]`) is the only nav at every width. Variant-specific values come from `rec.variant` (for example the glide point, the viewport centre). Keep the same beats and caption order. Captions say "Click" on desktop where the phone says "Tap".
 - Cursor: Playwright doesn't draw the pointer. Inject a CSS cursor that follows the mouse, plus a click ripple, with `page.add_init_script()`.
 - Captions: page overlays tied to script steps, for example a `caption("Pick what you collect")` helper that shows a styled element and waits a fixed time. Style them in the collection theme: gold `#D4AF37` text on navy `#0B1026`, Playfair Display. Fixed waits (no timing that depends on load speed) keep runs identical.
 
@@ -42,7 +43,7 @@ If a selector times out or a step fails, the run exits non-zero. A failure usual
 
 ## Embed partial
 
-`templates/includes/_tutorial_video.html` takes `src`, `poster` and `title`. Markup: `<video controls playsinline preload="none" poster=…>`, with no `autoplay` and no `muted` autoplay trick. A dismiss control hides the embed for the current page view only, with no storage.
+`templates/includes/_tutorial_video.html` takes `src`, `poster`, `desktop_src`, `desktop_poster`, `title` and `duration`. Markup: `<video controls playsinline preload="none">` with no `src`, `<source>` or `poster` until Play (the URLs sit in `data-*` attributes), and no `autoplay` and no `muted` autoplay trick. A dismiss control hides the embed for the current page view only, with no storage.
 
 **Variant selection (CAP-7).** The partial also takes `desktop_src` and `desktop_poster`, built at the call site with the `{% static … as name %}` form, so the static-reference test guards them too.
 - The collapsed card's thumbnail is two `<img>` elements toggled with Tailwind (`md:hidden` and `hidden md:block`). This is pure CSS, so it stays right on resize, and lazy-loading skips the hidden one.
@@ -53,4 +54,4 @@ If a selector times out or a step fails, the run exits non-zero. A failure usual
 
 All the MP4s together, both variants of every video, stay at or under 6 MB (SPEC constraint). After writing its output, the run sums every MP4 in `static/tutorials/` and exits non-zero if the total is over 6 MB. It sums them all even when only one video was re-recorded.
 
-Starting encoder settings: x264 with `-crf 28` to `-crf 30`, `-preset slow`, and `-tune stillimage` or `-tune animation` (whichever gives the smaller file for the same legibility), at 15–24 fps. Mostly static UI compresses well, so expect about 1–2 MB per video. Story 2 measured the Video 1 phone variant at 193 KB (CRF 26, 20 fps, `-tune animation`). Story 3 measures the desktop variant, which has more pixels and will be larger. If captions are no longer legible on a phone at a size that fits the budget, ask the owner before raising the budget.
+Starting encoder settings: x264 with `-crf 28` to `-crf 30`, `-preset slow`, and `-tune stillimage` or `-tune animation` (whichever gives the smaller file for the same legibility), at 15–24 fps. Mostly static UI compresses well, so expect about 1–2 MB per video. Story 3 measured the Video 1 phone variant at 525 KB and the desktop variant at 662 KB, 1.16 MB in total (CRF 26, 20 fps, `-tune animation`). Story 2's 193 KB came from the corner-framed DPR-2 recording. If captions are no longer legible on a phone at a size that fits the budget, ask the owner before raising the budget.

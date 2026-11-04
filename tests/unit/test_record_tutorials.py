@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import sys
+from pathlib import Path
 
 import pytest
 from record_tutorials import __main__ as cli
 from record_tutorials import encode, overlays
 from record_tutorials.flows import FLOWS
+from record_tutorials.variants import DESKTOP, PHONE, VARIANTS
 
 
 def test_registry_has_video1_only():
@@ -29,14 +31,33 @@ def test_one_bad_name_among_good_touches_nothing(capsys, monkeypatch):
 
 
 def test_encode_args_are_ios_safe(tmp_path):
-    args = encode.encode_args(tmp_path / "in.webm", tmp_path / "out.mp4", 1.25)
+    args = encode.encode_args(tmp_path / "in.webm", tmp_path / "out.mp4", 1.25, PHONE)
     assert args[args.index("-pix_fmt") + 1] == "yuv420p"
     assert args[args.index("-movflags") + 1] == "+faststart"
     assert args[args.index("-c:v") + 1] == "libx264"
     assert "-an" in args  # no audio
     assert args[args.index("-ss") + 1] == "1.25"
-    assert f"scale={encode.WIDTH}:{encode.HEIGHT}" in args[args.index("-vf") + 1]
+    assert "scale=390:844" in args[args.index("-vf") + 1]
     assert args[-1] == str(tmp_path / "out.mp4")
+
+
+@pytest.mark.parametrize("variant", VARIANTS)
+def test_encode_scale_follows_the_variant(tmp_path, variant):
+    args = encode.encode_args(tmp_path / "i.webm", tmp_path / "o.mp4", 0, variant)
+    assert f"scale={variant.width}:{variant.height}:" in args[args.index("-vf") + 1]
+
+
+def test_variants_phone_then_desktop():
+    assert [v.suffix for v in VARIANTS] == ["", "-desktop"]
+    assert (PHONE.width, PHONE.height) == (390, 844)
+    assert DESKTOP.width >= 768
+    assert (PHONE.verb, DESKTOP.verb) == ("Tap", "Click")
+
+
+def test_cursor_start_comes_from_the_variant():
+    assert "[440, 600]" in overlays.init_script(DESKTOP)
+    assert "[195, 700]" in overlays.init_script(PHONE)
+    assert "__CURSOR_XY__" not in overlays.init_script(PHONE)
 
 
 def test_poster_args_take_one_frame(tmp_path):
@@ -110,7 +131,7 @@ def _no_ffmpeg(args):
 
 
 def test_ui_drift_writes_nothing_and_names_the_step(harness, monkeypatch):
-    def drift(name, base_url, work, violations):
+    def drift(name, base_url, work, violations, variant):
         raise harness.StepError("step 'tap two starters' failed at /welcome/")
 
     monkeypatch.setattr(harness, "_record", drift)
@@ -131,7 +152,7 @@ def test_cli_exits_non_zero_naming_the_failed_step(harness, monkeypatch, capsys)
 
 @pytest.mark.parametrize("flow_raises", [False, True])
 def test_external_request_fails_naming_the_url(harness, monkeypatch, flow_raises):
-    def call_out(name, base_url, work, violations):
+    def call_out(name, base_url, work, violations, variant):
         violations.append("https://generativelanguage.googleapis.com/v1/x")
         if flow_raises:
             raise RuntimeError("net::ERR_FAILED")
@@ -171,7 +192,9 @@ def test_full_run_exits_0_and_removes_the_temp_db(harness, monkeypatch):
     monkeypatch.setattr(
         harness,
         "record_one",
-        lambda name, base_url: (harness.OUT_DIR / f"{name}.mp4").write_bytes(b"x"),
+        lambda name, base_url, reset_db=None: (
+            harness.OUT_DIR / f"{name}.mp4"
+        ).write_bytes(b"x"),
     )
     assert harness.run(["video1"]) == 0
     assert (harness.OUT_DIR / "video1.mp4").exists()
@@ -182,7 +205,7 @@ def test_over_budget_keeps_files_and_exits_non_zero(harness, monkeypatch, capsys
     db_paths = []
     _stub_run_plumbing(harness, monkeypatch, db_paths)
 
-    def big(name, base_url):
+    def big(name, base_url, reset_db=None):
         with open(harness.OUT_DIR / f"{name}.mp4", "wb") as f:
             f.truncate(encode.SIZE_BUDGET_BYTES + 1)  # sparse: no real 6 MB write
 
@@ -203,7 +226,12 @@ def test_run_uses_throwaway_db_and_tutorials_settings(monkeypatch, tmp_path):
     from record_tutorials import harness
 
     manage_envs, server_envs = [], []
-    monkeypatch.setattr(harness, "_manage", lambda env, *a: manage_envs.append(env))
+
+    def fake_manage(env, *a):
+        manage_envs.append(env)
+        Path(env["TUTORIALS_DB_PATH"]).touch()  # stands in for the migrated DB
+
+    monkeypatch.setattr(harness, "_manage", fake_manage)
 
     class FakeServer:
         def terminate(self):
@@ -217,10 +245,33 @@ def test_run_uses_throwaway_db_and_tutorials_settings(monkeypatch, tmp_path):
         return FakeServer()
 
     monkeypatch.setattr(harness, "_start_server", fake_start)
-    monkeypatch.setattr(harness, "record_one", lambda name, url: None)
+    resets = []
+
+    def fake_record_one(name, url, reset_db=None):
+        resets.append(reset_db)
+
+    monkeypatch.setattr(harness, "record_one", fake_record_one)
     monkeypatch.setattr(harness, "OUT_DIR", tmp_path)
 
+    seeded = {}
+    real_manage = fake_manage
+
+    def seeding_manage(env, *a):
+        real_manage(env, *a)
+        Path(env["TUTORIALS_DB_PATH"]).write_bytes(b"seeded")
+        seeded["path"] = Path(env["TUTORIALS_DB_PATH"])
+
+    monkeypatch.setattr(harness, "_manage", seeding_manage)
+
+    def fake_record_one2(name, url, reset_db=None):
+        seeded["path"].write_bytes(b"mutated")
+        reset_db()
+        seeded["after"] = seeded["path"].read_bytes()
+
+    monkeypatch.setattr(harness, "record_one", fake_record_one2)
+
     assert harness.run(["video1"]) == 0
+    assert seeded["after"] == b"seeded"
     assert manage_envs and server_envs
     for env in manage_envs + server_envs:
         assert env["DJANGO_SETTINGS_MODULE"] == "config.settings.tutorials"
@@ -229,3 +280,53 @@ def test_run_uses_throwaway_db_and_tutorials_settings(monkeypatch, tmp_path):
     assert "db.sqlite3" not in {
         e["TUTORIALS_DB_PATH"].rsplit("/", 1)[-1] for e in manage_envs
     }
+
+
+def _stub_recording(harness, monkeypatch, fail_on=None, events=None):
+    """Stub the browser and ffmpeg; return the list of variants recorded."""
+    seen = []
+
+    def fake_record(name, base_url, work, violations, variant):
+        seen.append(variant.name)
+        if events is not None:
+            events.append(f"record:{variant.name}")
+        if variant.name == fail_on:
+            raise harness.StepError("step 'open the menu' failed")
+        (work / "trim.txt").write_text("0.00")
+        return work / "raw.webm"
+
+    def fake_ffmpeg(args):
+        from pathlib import Path
+
+        Path(args[-1]).write_bytes(b"x")
+
+    monkeypatch.setattr(harness, "_record", fake_record)
+    monkeypatch.setattr(encode, "run_ffmpeg", fake_ffmpeg)
+    return seen
+
+
+def test_record_one_writes_all_four_files(harness, monkeypatch):
+    events = []
+    seen = _stub_recording(harness, monkeypatch, events=events)
+    harness.record_one("video1", "http://127.0.0.1:1", lambda: events.append("reset"))
+    assert seen == ["phone", "desktop"]
+    # each variant starts from the seeded database
+    assert events == ["reset", "record:phone", "reset", "record:desktop"]
+    assert sorted(p.name for p in harness.OUT_DIR.iterdir()) == [
+        "video1-desktop.jpg",
+        "video1-desktop.mp4",
+        "video1.jpg",
+        "video1.mp4",
+    ]
+
+
+def test_desktop_failure_leaves_all_four_files_untouched(harness, monkeypatch):
+    names = ["video1.mp4", "video1.jpg", "video1-desktop.mp4", "video1-desktop.jpg"]
+    for n in names:
+        (harness.OUT_DIR / n).write_bytes(f"old-{n}".encode())
+    _stub_recording(harness, monkeypatch, fail_on="desktop")
+    with pytest.raises(harness.StepError, match=r"\[desktop\] step 'open the menu'"):
+        harness.record_one("video1", "http://127.0.0.1:1")
+    assert sorted(p.name for p in harness.OUT_DIR.iterdir()) == sorted(names)
+    for n in names:
+        assert (harness.OUT_DIR / n).read_bytes() == f"old-{n}".encode()

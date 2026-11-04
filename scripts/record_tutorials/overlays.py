@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 # Hosts the browser may reach: the local app plus the CDNs the templates load.
 LOCAL_HOSTS = {"127.0.0.1"}
 CDN_ALLOWLIST = {
@@ -52,7 +54,7 @@ INIT_SCRIPT = r"""
     const caption = document.createElement('div');
     caption.id = '__tut_caption';
     root.appendChild(caption);
-    let xy = [195, 700];
+    let xy = __CURSOR_XY__;
     try { xy = JSON.parse(sessionStorage.getItem('__tut_xy')) || xy; } catch (e) {}
     const place = (x, y) => {
       cursor.style.transform = `translate(${x}px, ${y}px)`;
@@ -82,9 +84,13 @@ INIT_SCRIPT = r"""
 """
 
 
-def install(context) -> None:
+def init_script(variant) -> str:
+    return INIT_SCRIPT.replace("__CURSOR_XY__", json.dumps(list(variant.cursor_start)))
+
+
+def install(context, variant) -> None:
     """Add the overlays to every page the context opens."""
-    context.add_init_script(INIT_SCRIPT)
+    context.add_init_script(init_script(variant))
 
 
 def caption(rec, text: str, hold_ms: int) -> None:
